@@ -8,10 +8,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Conectar na VPS e executar deploy
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: echo deploy
+      - name: Disparar deploy via webhook
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST https://suaigreja.top/deploy-hook \
+            -H "X-Deploy-Secret: ${{ secrets.DEPLOY_WEBHOOK_SECRET }}")
+          echo "status=$status"
+          test "$status" = "202"
