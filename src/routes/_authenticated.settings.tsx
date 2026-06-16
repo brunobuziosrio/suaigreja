@@ -63,10 +63,6 @@ function SettingsPage() {
   const [logoUploading, setLogoUploading] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  useEffect(() => {
-    setLogoError(false);
-  }, [form.brand_logo_url]);
-
   const { data: account, isLoading } = useQuery({
     queryKey: ["my-account"],
     queryFn: () => getAccount(),
@@ -143,6 +139,10 @@ function SettingsPage() {
       });
     }
   }, [account]);
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [form.brand_logo_url]);
 
   const mut = useMutation({
     mutationFn: () =>
