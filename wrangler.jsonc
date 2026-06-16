@@ -7,9 +7,6 @@
   "assets": {
     "directory": "dist/client",
   },
-  "routes": [
-    { "pattern": "suaigreja.top/*", "zone_name": "suaigreja.top" }
-  ],
   "vars": {
     "SUPABASE_URL": "https://db.suaigreja.top",
     "SUPABASE_PUBLISHABLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzM1Njg5NjAwLCJleHAiOjIwNTEyMjI0MDB9.U0wwvITEtPx4Majfm68oYM2Y6om1cCYMrt47A1ClIPU"
