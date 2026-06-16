@@ -102,7 +102,7 @@ function AdminPage() {
   if (checking) {
     return (
       <AppShell>
-        <div className="p-6 text-sm text-muted-foreground">Verificando permissões…</div>
+        <div className="text-sm text-muted-foreground">Verificando permissões…</div>
       </AppShell>
     );
   }
@@ -110,15 +110,13 @@ function AdminPage() {
   if (!isAdmin) {
     return (
       <AppShell>
-        <div className="p-6 max-w-xl">
-          <Card className="p-8 text-center">
-            <ShieldCheck className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <h1 className="text-xl font-semibold">Área restrita</h1>
-            <p className="text-sm text-muted-foreground mt-2">
-              Esta página é só para administradores da plataforma.
-            </p>
-          </Card>
-        </div>
+        <Card className="p-8 text-center">
+          <ShieldCheck className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+          <h1 className="text-xl font-semibold">Área restrita</h1>
+          <p className="text-sm text-muted-foreground mt-2">
+            Esta página é só para administradores da plataforma.
+          </p>
+        </Card>
       </AppShell>
     );
   }
@@ -132,7 +130,7 @@ function AdminPage() {
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">

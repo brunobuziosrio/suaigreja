@@ -48,7 +48,7 @@ function EbdPage() {
 
   return (
     <AppShell>
-      <div className="p-6 max-w-6xl">
+      <div>
         <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">

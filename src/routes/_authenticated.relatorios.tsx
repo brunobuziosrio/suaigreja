@@ -42,7 +42,7 @@ function ReportsPage() {
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6 max-w-7xl">
+      <div className="space-y-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Relatórios</h1>

@@ -57,7 +57,7 @@ function CheckinPage() {
 
   return (
     <AppShell>
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2"><QrCode className="h-6 w-6" /> Check-in de Cultos</h1>

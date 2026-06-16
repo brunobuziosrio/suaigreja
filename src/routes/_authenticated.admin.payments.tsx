@@ -30,26 +30,24 @@ function AdminPaymentsPage() {
   if (checking) {
     return (
       <AppShell>
-        <div className="p-6 text-sm text-muted-foreground">Verificando permissões…</div>
+        <div className="text-sm text-muted-foreground">Verificando permissões…</div>
       </AppShell>
     );
   }
   if (!isAdmin) {
     return (
       <AppShell>
-        <div className="p-6 max-w-xl">
-          <Card className="p-8 text-center">
-            <ShieldCheck className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <h1 className="text-xl font-semibold">Área restrita</h1>
-          </Card>
-        </div>
+        <Card className="p-8 text-center">
+          <ShieldCheck className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+          <h1 className="text-xl font-semibold">Área restrita</h1>
+        </Card>
       </AppShell>
     );
   }
 
   return (
     <AppShell>
-      <div className="p-6 space-y-6 max-w-4xl">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
             <WalletCards className="h-6 w-6" /> Pagamentos da plataforma

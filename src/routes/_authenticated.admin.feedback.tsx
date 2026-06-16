@@ -76,7 +76,7 @@ function AdminFeedbackPage() {
   if (checking) {
     return (
       <AppShell>
-        <div className="p-6"><Loader2 className="h-5 w-5 animate-spin" /></div>
+        <div><Loader2 className="h-5 w-5 animate-spin" /></div>
       </AppShell>
     );
   }
@@ -84,19 +84,17 @@ function AdminFeedbackPage() {
   if (!isAdmin) {
     return (
       <AppShell>
-        <div className="p-6 max-w-md">
-          <Card className="p-6 text-center">
-            <ShieldCheck className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-            <p className="font-medium">Acesso restrito a administradores.</p>
-          </Card>
-        </div>
+        <Card className="p-6 text-center">
+          <ShieldCheck className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+          <p className="font-medium">Acesso restrito a administradores.</p>
+        </Card>
       </AppShell>
     );
   }
 
   return (
     <AppShell>
-      <div className="p-6 max-w-6xl">
+      <>
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Atualizações & Sugestões</h1>
           <p className="text-muted-foreground text-sm mt-1">

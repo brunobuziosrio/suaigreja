@@ -37,7 +37,7 @@ function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-muted/30 py-12 px-4">
-      <div className="max-w-3xl mx-auto">
+      <div className="w-full">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-semibold tracking-tight">Bem-vindo!</h1>
           <p className="text-muted-foreground mt-2">

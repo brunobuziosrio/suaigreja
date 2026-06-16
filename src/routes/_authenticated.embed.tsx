@@ -104,7 +104,7 @@ add_shortcode('suaigreja_agenda', function ($atts) {
 
   return (
     <AppShell>
-      <div className="p-6 max-w-3xl space-y-6">
+      <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Compartilhar agenda

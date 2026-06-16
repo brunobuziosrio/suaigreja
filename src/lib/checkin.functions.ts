@@ -79,18 +79,44 @@ export const publicCheckin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: session, error: sErr } = await supabaseAdmin
       .from("checkin_sessions")
-      .select("id, account_id, active")
+      .select("id, account_id, active, title")
       .eq("id", data.session_id)
       .maybeSingle();
+    
     if (sErr || !session || !session.active) throw new Error("Sessão não encontrada ou encerrada");
-    const { error } = await supabaseAdmin.from("checkin_entries").insert({
+    
+    // Register the check-in entry
+    const { error: insertErr } = await supabaseAdmin.from("checkin_entries").insert({
       account_id: session.account_id,
       session_id: session.id,
       member_id: data.member_id || null,
       visitor_name: data.visitor_name || null,
       visitor_phone: data.visitor_phone || null,
     });
-    if (error) throw new Error(error.message);
+    
+    if (insertErr) throw new Error(insertErr.message);
+
+    // If it's a visitor, also ensure they are in the visitors table
+    if (!data.member_id && data.visitor_name) {
+      // Check if visitor already exists for this account
+      const { data: existingVisitor } = await supabaseAdmin
+        .from("visitors")
+        .select("id")
+        .eq("account_id", session.account_id)
+        .eq("phone", data.visitor_phone || "")
+        .maybeSingle();
+
+      if (!existingVisitor) {
+        await supabaseAdmin.from("visitors").insert({
+          account_id: session.account_id,
+          name: data.visitor_name,
+          phone: data.visitor_phone || null,
+          status: "new",
+          how_found: `Check-in: ${session.title}`,
+        });
+      }
+    }
+    
     return { ok: true };
   });
 

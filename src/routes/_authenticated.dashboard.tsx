@@ -70,7 +70,7 @@ function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="p-6 max-w-6xl">
+      <div>
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight">Visao geral</h1>
           <p className="text-muted-foreground text-sm mt-1">

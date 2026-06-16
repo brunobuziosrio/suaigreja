@@ -496,7 +496,7 @@ function HubEditor() {
 
   return (
     <AppShell>
-      <div className="max-w-5xl mx-auto p-4 sm:p-6">
+      <div>
         <div className="mb-5">
           <h1 className="text-2xl font-semibold flex items-center gap-2">
             {(() => { const M = TAB_META[tab].Icon; return <M className="h-5 w-5 text-muted-foreground" />; })()}
@@ -507,7 +507,7 @@ function HubEditor() {
           </p>
         </div>
 
-        <div className="max-w-3xl space-y-4">
+        <div className="space-y-4">
 
         {slug && tab === "geral" && (
           <Card className="p-4 flex items-center gap-3">

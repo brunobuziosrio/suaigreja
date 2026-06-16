@@ -368,7 +368,7 @@ function AgendaPage() {
 
   return (
     <AppShell>
-      <div className="p-6 flex gap-6 items-start">
+      <div className="flex gap-6 items-start">
         {/* Palette */}
         <aside className="w-[280px] shrink-0 sticky top-6">
           <Card
