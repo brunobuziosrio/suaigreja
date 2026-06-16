@@ -75,11 +75,6 @@ function PlatformBrandingSection() {
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  useEffect(() => {
-    setIconError(false);
-    setLogoError(false);
-  }, [form.icon_url, form.logo_url]);
-
   const { data: paymentSettings } = useQuery({
     queryKey: ["platform-payment-settings"],
     queryFn: () => fetchPaymentSettings(),
@@ -131,6 +126,11 @@ function PlatformBrandingSection() {
       });
     }
   }, [branding]);
+
+  useEffect(() => {
+    setIconError(false);
+    setLogoError(false);
+  }, [form.icon_url, form.logo_url]);
 
   const saveMut = useMutation({
     mutationFn: () =>
