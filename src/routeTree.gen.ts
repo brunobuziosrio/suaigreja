@@ -15,6 +15,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VSiteIdRouteImport } from './routes/v.$siteId'
+import { Route as ReciboDonationIdRouteImport } from './routes/recibo.$donationId'
 import { Route as OSiteIdRouteImport } from './routes/o.$siteId'
 import { Route as NSlugRouteImport } from './routes/n.$slug'
 import { Route as EventosSlugRouteImport } from './routes/eventos.$slug'
@@ -48,12 +49,14 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as NSlugPostIdRouteImport } from './routes/n.$slug.$postId'
+import { Route as ApiPublicMercadopagoWebhookRouteImport } from './routes/api.public.mercadopago-webhook'
 import { Route as ApiPublicAtivopayWebhookRouteImport } from './routes/api.public.ativopay-webhook'
 import { Route as AuthenticatedMarketplaceSlugRouteImport } from './routes/_authenticated.marketplace.$slug'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated.admin.products'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated.admin.feedback'
 import { Route as ApiPublicInstagramCallbackRouteImport } from './routes/api.public.instagram.callback'
 import { Route as ApiPublicCronWhatsappBirthdaysRouteImport } from './routes/api.public.cron.whatsapp-birthdays'
+import { Route as ApiPublicCronTitheReminderRouteImport } from './routes/api.public.cron.tithe-reminder'
 import { Route as ApiPublicAgendaSiteIdRouteImport } from './routes/api.public.agenda.$siteId'
 
 const UpdatePasswordRoute = UpdatePasswordRouteImport.update({
@@ -83,6 +86,11 @@ const IndexRoute = IndexRouteImport.update({
 const VSiteIdRoute = VSiteIdRouteImport.update({
   id: '/v/$siteId',
   path: '/v/$siteId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReciboDonationIdRoute = ReciboDonationIdRouteImport.update({
+  id: '/recibo/$donationId',
+  path: '/recibo/$donationId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OSiteIdRoute = OSiteIdRouteImport.update({
@@ -252,6 +260,12 @@ const NSlugPostIdRoute = NSlugPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => NSlugRoute,
 } as any)
+const ApiPublicMercadopagoWebhookRoute =
+  ApiPublicMercadopagoWebhookRouteImport.update({
+    id: '/api/public/mercadopago-webhook',
+    path: '/api/public/mercadopago-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicAtivopayWebhookRoute =
   ApiPublicAtivopayWebhookRouteImport.update({
     id: '/api/public/ativopay-webhook',
@@ -286,6 +300,12 @@ const ApiPublicCronWhatsappBirthdaysRoute =
   ApiPublicCronWhatsappBirthdaysRouteImport.update({
     id: '/api/public/cron/whatsapp-birthdays',
     path: '/api/public/cron/whatsapp-birthdays',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCronTitheReminderRoute =
+  ApiPublicCronTitheReminderRouteImport.update({
+    id: '/api/public/cron/tithe-reminder',
+    path: '/api/public/cron/tithe-reminder',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicAgendaSiteIdRoute = ApiPublicAgendaSiteIdRouteImport.update({
@@ -330,14 +350,17 @@ export interface FileRoutesByFullPath {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
+  '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
+  '/api/public/cron/tithe-reminder': typeof ApiPublicCronTitheReminderRoute
   '/api/public/cron/whatsapp-birthdays': typeof ApiPublicCronWhatsappBirthdaysRoute
   '/api/public/instagram/callback': typeof ApiPublicInstagramCallbackRoute
 }
@@ -377,14 +400,17 @@ export interface FileRoutesByTo {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
+  '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
+  '/api/public/cron/tithe-reminder': typeof ApiPublicCronTitheReminderRoute
   '/api/public/cron/whatsapp-birthdays': typeof ApiPublicCronWhatsappBirthdaysRoute
   '/api/public/instagram/callback': typeof ApiPublicInstagramCallbackRoute
 }
@@ -426,14 +452,17 @@ export interface FileRoutesById {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
+  '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
+  '/api/public/cron/tithe-reminder': typeof ApiPublicCronTitheReminderRoute
   '/api/public/cron/whatsapp-birthdays': typeof ApiPublicCronWhatsappBirthdaysRoute
   '/api/public/instagram/callback': typeof ApiPublicInstagramCallbackRoute
 }
@@ -475,14 +504,17 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/recibo/$donationId'
     | '/v/$siteId'
     | '/admin/feedback'
     | '/admin/products'
     | '/marketplace/$slug'
     | '/api/public/ativopay-webhook'
+    | '/api/public/mercadopago-webhook'
     | '/n/$slug/$postId'
     | '/admin/'
     | '/api/public/agenda/$siteId'
+    | '/api/public/cron/tithe-reminder'
     | '/api/public/cron/whatsapp-birthdays'
     | '/api/public/instagram/callback'
   fileRoutesByTo: FileRoutesByTo
@@ -522,14 +554,17 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/recibo/$donationId'
     | '/v/$siteId'
     | '/admin/feedback'
     | '/admin/products'
     | '/marketplace/$slug'
     | '/api/public/ativopay-webhook'
+    | '/api/public/mercadopago-webhook'
     | '/n/$slug/$postId'
     | '/admin'
     | '/api/public/agenda/$siteId'
+    | '/api/public/cron/tithe-reminder'
     | '/api/public/cron/whatsapp-birthdays'
     | '/api/public/instagram/callback'
   id:
@@ -570,14 +605,17 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/recibo/$donationId'
     | '/v/$siteId'
     | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/products'
     | '/_authenticated/marketplace/$slug'
     | '/api/public/ativopay-webhook'
+    | '/api/public/mercadopago-webhook'
     | '/n/$slug/$postId'
     | '/_authenticated/admin/'
     | '/api/public/agenda/$siteId'
+    | '/api/public/cron/tithe-reminder'
     | '/api/public/cron/whatsapp-birthdays'
     | '/api/public/instagram/callback'
   fileRoutesById: FileRoutesById
@@ -597,9 +635,12 @@ export interface RootRouteChildren {
   EventosSlugRoute: typeof EventosSlugRoute
   NSlugRoute: typeof NSlugRouteWithChildren
   OSiteIdRoute: typeof OSiteIdRoute
+  ReciboDonationIdRoute: typeof ReciboDonationIdRoute
   VSiteIdRoute: typeof VSiteIdRoute
   ApiPublicAtivopayWebhookRoute: typeof ApiPublicAtivopayWebhookRoute
+  ApiPublicMercadopagoWebhookRoute: typeof ApiPublicMercadopagoWebhookRoute
   ApiPublicAgendaSiteIdRoute: typeof ApiPublicAgendaSiteIdRoute
+  ApiPublicCronTitheReminderRoute: typeof ApiPublicCronTitheReminderRoute
   ApiPublicCronWhatsappBirthdaysRoute: typeof ApiPublicCronWhatsappBirthdaysRoute
   ApiPublicInstagramCallbackRoute: typeof ApiPublicInstagramCallbackRoute
 }
@@ -646,6 +687,13 @@ declare module '@tanstack/react-router' {
       path: '/v/$siteId'
       fullPath: '/v/$siteId'
       preLoaderRoute: typeof VSiteIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recibo/$donationId': {
+      id: '/recibo/$donationId'
+      path: '/recibo/$donationId'
+      fullPath: '/recibo/$donationId'
+      preLoaderRoute: typeof ReciboDonationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/o/$siteId': {
@@ -879,6 +927,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NSlugPostIdRouteImport
       parentRoute: typeof NSlugRoute
     }
+    '/api/public/mercadopago-webhook': {
+      id: '/api/public/mercadopago-webhook'
+      path: '/api/public/mercadopago-webhook'
+      fullPath: '/api/public/mercadopago-webhook'
+      preLoaderRoute: typeof ApiPublicMercadopagoWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ativopay-webhook': {
       id: '/api/public/ativopay-webhook'
       path: '/api/public/ativopay-webhook'
@@ -919,6 +974,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/cron/whatsapp-birthdays'
       fullPath: '/api/public/cron/whatsapp-birthdays'
       preLoaderRoute: typeof ApiPublicCronWhatsappBirthdaysRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/tithe-reminder': {
+      id: '/api/public/cron/tithe-reminder'
+      path: '/api/public/cron/tithe-reminder'
+      fullPath: '/api/public/cron/tithe-reminder'
+      preLoaderRoute: typeof ApiPublicCronTitheReminderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/agenda/$siteId': {
@@ -1030,9 +1092,12 @@ const rootRouteChildren: RootRouteChildren = {
   EventosSlugRoute: EventosSlugRoute,
   NSlugRoute: NSlugRouteWithChildren,
   OSiteIdRoute: OSiteIdRoute,
+  ReciboDonationIdRoute: ReciboDonationIdRoute,
   VSiteIdRoute: VSiteIdRoute,
   ApiPublicAtivopayWebhookRoute: ApiPublicAtivopayWebhookRoute,
+  ApiPublicMercadopagoWebhookRoute: ApiPublicMercadopagoWebhookRoute,
   ApiPublicAgendaSiteIdRoute: ApiPublicAgendaSiteIdRoute,
+  ApiPublicCronTitheReminderRoute: ApiPublicCronTitheReminderRoute,
   ApiPublicCronWhatsappBirthdaysRoute: ApiPublicCronWhatsappBirthdaysRoute,
   ApiPublicInstagramCallbackRoute: ApiPublicInstagramCallbackRoute,
 }

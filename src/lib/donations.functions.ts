@@ -1,9 +1,82 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 import QRCode from "qrcode";
 import { buildPixBrCode } from "./pix-brcode";
+
+const MERCADOPAGO_BASE_URL = "https://api.mercadopago.com";
+
+async function generateDonationPixViaMercadoPago(opts: {
+  accountId: string;
+  campaignId: string;
+  amountCents: number;
+  accessToken: string;
+  donorName?: string | null;
+  donorEmail?: string | null;
+  donorPhone?: string | null;
+  description: string;
+}) {
+  const host = getRequestHost();
+  const protocol = host?.includes("localhost") ? "http" : "https";
+  const notificationUrl = `${protocol}://${host}/api/public/mercadopago-webhook?account_id=${opts.accountId}`;
+
+  const response = await fetch(`${MERCADOPAGO_BASE_URL}/v1/payments`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${opts.accessToken}`,
+      "X-Idempotency-Key": `${opts.campaignId}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    },
+    body: JSON.stringify({
+      transaction_amount: Math.round(opts.amountCents) / 100,
+      description: opts.description,
+      payment_method_id: "pix",
+      payer: { email: opts.donorEmail || "doador@email.com", first_name: opts.donorName || "Doador" },
+      notification_url: notificationUrl,
+      external_reference: `${opts.accountId}:${opts.campaignId}:${Date.now()}`,
+    }),
+  });
+
+  const raw = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error((raw as { message?: string } | null)?.message ?? "Não foi possível gerar o Pix no Mercado Pago.");
+  }
+
+  const txData = (raw as Record<string, unknown>)?.point_of_interaction as
+    | { transaction_data?: { qr_code?: string; qr_code_base64?: string } }
+    | undefined;
+  const copyPaste = txData?.transaction_data?.qr_code ?? null;
+  const qrBase64 = txData?.transaction_data?.qr_code_base64 ?? null;
+  const paymentId = String((raw as Record<string, unknown>)?.id ?? "");
+
+  const { data: inserted, error } = await supabaseAdmin
+    .from("donations")
+    .insert({
+      account_id: opts.accountId,
+      campaign_id: opts.campaignId,
+      donor_name: opts.donorName || null,
+      donor_email: opts.donorEmail || null,
+      donor_phone: opts.donorPhone || null,
+      amount_cents: opts.amountCents,
+      status: "pending",
+      mercadopago_payment_id: paymentId || null,
+      copy_paste: copyPaste,
+      qr_code: qrBase64,
+      raw_response: raw as never,
+    })
+    .select("id")
+    .single();
+  if (error) throw new Error(error.message);
+
+  return {
+    payload: copyPaste ?? "",
+    qrDataUrl: qrBase64 ? `data:image/png;base64,${qrBase64}` : "",
+    donationId: inserted.id as string,
+    tracked: true as const,
+  };
+}
 
 const slugValidator = (input: { slug: string }) => {
   const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
@@ -72,6 +145,9 @@ const PixGenInput = z.object({
   slug: z.string().min(1).max(64),
   id: z.string().uuid(),
   amountCents: z.number().int().min(0).max(100_000_000).optional(),
+  donorName: z.string().max(120).optional(),
+  donorEmail: z.string().email().max(160).optional(),
+  donorPhone: z.string().max(40).optional(),
 });
 
 export const generateDonationPix = createServerFn({ method: "POST" })
@@ -82,11 +158,34 @@ export const generateDonationPix = createServerFn({ method: "POST" })
     if (!account) throw new Error("Igreja não encontrada");
     const { data: campaign } = await supabaseAdmin
       .from("donation_campaigns")
-      .select("id, pix_key, recipient_name, recipient_city, active")
+      .select("id, title, pix_key, recipient_name, recipient_city, active")
       .eq("account_id", account.id)
       .eq("id", data.id)
       .maybeSingle();
     if (!campaign || !campaign.active) throw new Error("Campanha indisponível");
+
+    const { data: mpConnection } = await supabaseAdmin
+      .from("mercadopago_connections")
+      .select("access_token")
+      .eq("account_id", account.id)
+      .maybeSingle();
+
+    if (mpConnection?.access_token) {
+      if (!data.amountCents || data.amountCents <= 0) {
+        throw new Error("Informe um valor para continuar com a doação.");
+      }
+      return generateDonationPixViaMercadoPago({
+        accountId: account.id,
+        campaignId: campaign.id,
+        amountCents: data.amountCents,
+        accessToken: mpConnection.access_token,
+        donorName: data.donorName,
+        donorEmail: data.donorEmail,
+        donorPhone: data.donorPhone,
+        description: `Doação - ${campaign.title}`,
+      });
+    }
+
     const payload = buildPixBrCode({
       pixKey: campaign.pix_key,
       merchantName: campaign.recipient_name,
@@ -94,7 +193,31 @@ export const generateDonationPix = createServerFn({ method: "POST" })
       amountCents: data.amountCents,
     });
     const qrDataUrl = await QRCode.toDataURL(payload, { margin: 1, width: 320 });
-    return { payload, qrDataUrl };
+    return { payload, qrDataUrl, donationId: null, tracked: false as const };
+  });
+
+export const getPublicDonationReceipt = createServerFn({ method: "GET" })
+  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: donation } = await supabaseAdmin
+      .from("donations")
+      .select("id, account_id, campaign_id, donor_name, amount_cents, status, paid_at, mercadopago_payment_id, created_at")
+      .eq("id", data.id)
+      .eq("status", "paid")
+      .maybeSingle();
+    if (!donation) return null;
+
+    const { data: account } = await supabaseAdmin
+      .from("accounts")
+      .select("brand_title, primary_color")
+      .eq("id", donation.account_id)
+      .maybeSingle();
+
+    const { data: campaign } = donation.campaign_id
+      ? await supabaseAdmin.from("donation_campaigns").select("title").eq("id", donation.campaign_id).maybeSingle()
+      : { data: null };
+
+    return { donation, church: account, campaignTitle: campaign?.title ?? null };
   });
 
 // ============== ADMIN ==============
@@ -152,4 +275,89 @@ export const deleteDonationCampaign = createServerFn({ method: "POST" })
     const { error } = await supabase.from("donation_campaigns").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+export const getDonationCampaignStats = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data: campaigns, error: campaignsError } = await supabase
+      .from("donation_campaigns")
+      .select("id, title, goal_cents")
+      .eq("account_id", userId);
+    if (campaignsError) throw new Error(campaignsError.message);
+
+    const { data: donations, error: donationsError } = await supabase
+      .from("donations")
+      .select("campaign_id, amount_cents")
+      .eq("account_id", userId)
+      .eq("status", "paid");
+    if (donationsError) throw new Error(donationsError.message);
+
+    const raisedByCampaign = new Map<string, number>();
+    for (const d of donations ?? []) {
+      if (!d.campaign_id) continue;
+      raisedByCampaign.set(d.campaign_id, (raisedByCampaign.get(d.campaign_id) ?? 0) + d.amount_cents);
+    }
+
+    return (campaigns ?? []).map((c) => ({
+      campaignId: c.id,
+      title: c.title,
+      goalCents: c.goal_cents,
+      raisedCents: raisedByCampaign.get(c.id) ?? 0,
+    }));
+  });
+
+export const listDonationsByCampaign = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { campaignId: string }) => z.object({ campaignId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: rows, error } = await supabase
+      .from("donations")
+      .select("id, donor_name, amount_cents, status, paid_at, created_at")
+      .eq("account_id", userId)
+      .eq("campaign_id", data.campaignId)
+      .eq("status", "paid")
+      .order("paid_at", { ascending: false })
+      .limit(50);
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+export const getDonationsMonthlyReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { year: number }) => z.object({ year: z.number().int().min(2020).max(2100) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const start = `${data.year}-01-01T00:00:00.000Z`;
+    const end = `${data.year + 1}-01-01T00:00:00.000Z`;
+    const { data: rows, error } = await supabase
+      .from("donations")
+      .select("amount_cents, paid_at, donor_name, campaign_id")
+      .eq("account_id", userId)
+      .eq("status", "paid")
+      .gte("paid_at", start)
+      .lt("paid_at", end)
+      .order("paid_at", { ascending: true });
+    if (error) throw new Error(error.message);
+
+    const byMonth = new Map<number, { count: number; totalCents: number }>();
+    for (const r of rows ?? []) {
+      if (!r.paid_at) continue;
+      const month = new Date(r.paid_at).getUTCMonth();
+      const entry = byMonth.get(month) ?? { count: 0, totalCents: 0 };
+      entry.count += 1;
+      entry.totalCents += r.amount_cents;
+      byMonth.set(month, entry);
+    }
+
+    return {
+      rows: rows ?? [],
+      monthly: Array.from({ length: 12 }, (_, month) => ({
+        month: month + 1,
+        count: byMonth.get(month)?.count ?? 0,
+        totalCents: byMonth.get(month)?.totalCents ?? 0,
+      })),
+    };
   });

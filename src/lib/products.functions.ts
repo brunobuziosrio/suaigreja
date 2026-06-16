@@ -2,13 +2,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
 import QRCode from "qrcode";
 import { z } from "zod";
 
 const ATIVOPAY_BASE_URL = "https://api-gateway.ativopay.com";
 
-function getAtivoPayKey() {
-  const key = process.env.ATIVOPAY_API_KEY;
+async function getAtivoPayKey() {
+  const key = await resolveAtivoPayApiKey();
   if (!key) throw new Error("ATIVOPAY_API_KEY não configurada.");
   return key;
 }
@@ -97,7 +98,7 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "AtivoB2B/1.0",
-        "x-api-key": getAtivoPayKey(),
+        "x-api-key": await getAtivoPayKey(),
       },
       body: JSON.stringify({
         pix: { expiresInDays: 1 },

@@ -460,6 +460,81 @@ export type Database = {
         }
         Relationships: []
       }
+      donations: {
+        Row: {
+          account_id: string
+          amount_cents: number
+          campaign_id: string | null
+          copy_paste: string | null
+          created_at: string
+          donor_email: string | null
+          donor_name: string | null
+          donor_phone: string | null
+          id: string
+          member_id: string | null
+          mercadopago_payment_id: string | null
+          paid_at: string | null
+          qr_code: string | null
+          raw_response: Json | null
+          status: string
+          updated_at: string
+          webhook_payload: Json | null
+        }
+        Insert: {
+          account_id: string
+          amount_cents: number
+          campaign_id?: string | null
+          copy_paste?: string | null
+          created_at?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          donor_phone?: string | null
+          id?: string
+          member_id?: string | null
+          mercadopago_payment_id?: string | null
+          paid_at?: string | null
+          qr_code?: string | null
+          raw_response?: Json | null
+          status?: string
+          updated_at?: string
+          webhook_payload?: Json | null
+        }
+        Update: {
+          account_id?: string
+          amount_cents?: number
+          campaign_id?: string | null
+          copy_paste?: string | null
+          created_at?: string
+          donor_email?: string | null
+          donor_name?: string | null
+          donor_phone?: string | null
+          id?: string
+          member_id?: string | null
+          mercadopago_payment_id?: string | null
+          paid_at?: string | null
+          qr_code?: string | null
+          raw_response?: Json | null
+          status?: string
+          updated_at?: string
+          webhook_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "donations_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "donation_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "donations_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ebd_attendance: {
         Row: {
           account_id: string
@@ -1119,6 +1194,7 @@ export type Database = {
           full_name: string
           gender: string | null
           id: string
+          is_tither: boolean
           marital_status: string | null
           member_since: string | null
           notes: string | null
@@ -1142,6 +1218,7 @@ export type Database = {
           full_name: string
           gender?: string | null
           id?: string
+          is_tither?: boolean
           marital_status?: string | null
           member_since?: string | null
           notes?: string | null
@@ -1165,6 +1242,7 @@ export type Database = {
           full_name?: string
           gender?: string | null
           id?: string
+          is_tither?: boolean
           marital_status?: string | null
           member_since?: string | null
           notes?: string | null
@@ -1175,6 +1253,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      mercadopago_connections: {
+        Row: {
+          access_token: string
+          account_id: string
+          connected_at: string
+          public_key: string | null
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          account_id: string
+          connected_at?: string
+          public_key?: string | null
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          account_id?: string
+          connected_at?: string
+          public_key?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mercadopago_connections_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: true
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       news_posts: {
         Row: {
@@ -1315,6 +1425,30 @@ export type Database = {
           logo_height_px?: number
           logo_url?: string | null
           subtitle?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_payment_settings: {
+        Row: {
+          ativopay_api_key: string | null
+          ativopay_webhook_secret: string | null
+          id: boolean
+          mercadopago_access_token: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativopay_api_key?: string | null
+          ativopay_webhook_secret?: string | null
+          id?: boolean
+          mercadopago_access_token?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativopay_api_key?: string | null
+          ativopay_webhook_secret?: string | null
+          id?: boolean
+          mercadopago_access_token?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1823,34 +1957,70 @@ export type Database = {
           account_id: string
           birthday_enabled: boolean
           birthday_template: string
+          celula_reminder_enabled: boolean
+          celula_reminder_template: string
           created_at: string
           credits_balance: number
+          culto_reminder_enabled: boolean
+          culto_reminder_template: string
           enabled: boolean
+          newsletter_enabled: boolean
+          newsletter_template: string
+          prayer_request_enabled: boolean
+          prayer_request_template: string
           send_hour_brt: number
           sender_name: string | null
+          tithe_reminder_enabled: boolean
+          tithe_reminder_template: string
           updated_at: string
+          welcome_enabled: boolean
+          welcome_template: string
         }
         Insert: {
           account_id: string
           birthday_enabled?: boolean
           birthday_template?: string
+          celula_reminder_enabled?: boolean
+          celula_reminder_template?: string
           created_at?: string
           credits_balance?: number
+          culto_reminder_enabled?: boolean
+          culto_reminder_template?: string
           enabled?: boolean
+          newsletter_enabled?: boolean
+          newsletter_template?: string
+          prayer_request_enabled?: boolean
+          prayer_request_template?: string
           send_hour_brt?: number
           sender_name?: string | null
+          tithe_reminder_enabled?: boolean
+          tithe_reminder_template?: string
           updated_at?: string
+          welcome_enabled?: boolean
+          welcome_template?: string
         }
         Update: {
           account_id?: string
           birthday_enabled?: boolean
           birthday_template?: string
+          celula_reminder_enabled?: boolean
+          celula_reminder_template?: string
           created_at?: string
           credits_balance?: number
+          culto_reminder_enabled?: boolean
+          culto_reminder_template?: string
           enabled?: boolean
+          newsletter_enabled?: boolean
+          newsletter_template?: string
+          prayer_request_enabled?: boolean
+          prayer_request_template?: string
           send_hour_brt?: number
           sender_name?: string | null
+          tithe_reminder_enabled?: boolean
+          tithe_reminder_template?: string
           updated_at?: string
+          welcome_enabled?: boolean
+          welcome_template?: string
         }
         Relationships: []
       }

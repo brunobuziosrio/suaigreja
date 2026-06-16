@@ -3,15 +3,16 @@ import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
+import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
 import QRCode from "qrcode";
 import { z } from "zod";
 
 const ATIVOPAY_BASE_URL = "https://api-gateway.ativopay.com";
 
-function getAtivoPayKey() {
-  const key = process.env.ATIVOPAY_API_KEY;
+async function getAtivoPayKey() {
+  const key = await resolveAtivoPayApiKey();
   if (!key) {
-    throw new Error("A chave da AtivoPay ainda não foi configurada. Adicione ATIVOPAY_API_KEY para gerar cobranças reais.");
+    throw new Error("A chave da AtivoPay ainda não foi configurada. Configure em Configurações > Plataforma.");
   }
   return key;
 }
@@ -74,7 +75,7 @@ export const getBillingSetup = createServerFn({ method: "GET" })
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { account: data, hasAtivoPayKey: !!process.env.ATIVOPAY_API_KEY };
+    return { account: data, hasAtivoPayKey: !!(await resolveAtivoPayApiKey()) };
   });
 
 export const createPixPayment = createServerFn({ method: "POST" })
@@ -97,7 +98,7 @@ export const createPixPayment = createServerFn({ method: "POST" })
       headers: {
         "Content-Type": "application/json",
         "User-Agent": "AtivoB2B/1.0",
-        "x-api-key": getAtivoPayKey(),
+        "x-api-key": await getAtivoPayKey(),
       },
       body: JSON.stringify({
         pix: { expiresInDays: 1 },

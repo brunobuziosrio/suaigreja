@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
+import { resolveAtivoPayWebhookSecret } from "@/lib/admin-payment-settings.functions";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -79,7 +80,7 @@ export const Route = createFileRoute("/api/public/ativopay-webhook")({
     handlers: {
       OPTIONS: async () => new Response(null, { status: 204, headers: CORS }),
       POST: async ({ request }) => {
-        const expectedSecret = process.env.ATIVOPAY_WEBHOOK_SECRET;
+        const expectedSecret = await resolveAtivoPayWebhookSecret();
         if (!expectedSecret) return json({ error: "webhook not configured" }, 500);
         const received = request.headers.get("x-webhook-secret");
         if (received !== expectedSecret) return json({ error: "unauthorized" }, 401);

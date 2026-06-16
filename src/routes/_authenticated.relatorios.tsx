@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Download, TrendingUp, Users2, Calendar, GraduationCap } from "lucide-react";
+import { Download, TrendingUp, Users2, Calendar, GraduationCap, HandCoins } from "lucide-react";
 import { getEbdMonthly, getCheckinMonthly, getSmallGroupsReport } from "@/lib/reports.functions";
+import { getDonationsMonthlyReport } from "@/lib/donations.functions";
 
 export const Route = createFileRoute("/_authenticated/relatorios")({
   component: ReportsPage,
@@ -79,6 +80,7 @@ function ReportsPage() {
             <TabsTrigger value="ebd"><GraduationCap className="h-4 w-4 mr-1" />EBD</TabsTrigger>
             <TabsTrigger value="cultos"><Calendar className="h-4 w-4 mr-1" />Cultos</TabsTrigger>
             <TabsTrigger value="celulas"><Users2 className="h-4 w-4 mr-1" />Células</TabsTrigger>
+            <TabsTrigger value="doacoes"><HandCoins className="h-4 w-4 mr-1" />Doações</TabsTrigger>
           </TabsList>
 
           <TabsContent value="ebd" className="mt-4">
@@ -89,6 +91,9 @@ function ReportsPage() {
           </TabsContent>
           <TabsContent value="celulas" className="mt-4">
             <SmallGroupsReport />
+          </TabsContent>
+          <TabsContent value="doacoes" className="mt-4">
+            <DonationsReport year={year} />
           </TabsContent>
         </Tabs>
       </div>
@@ -302,6 +307,75 @@ function SmallGroupsReport() {
                   </TableCell>
                   <TableCell className="text-right font-semibold">{g.members}</TableCell>
                   <TableCell className="text-right">{g.occupancy != null ? `${g.occupancy}%` : "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function fmtBRL(cents: number) {
+  return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
+  new Date(2000, i, 1).toLocaleDateString("pt-BR", { month: "long" }),
+);
+
+function DonationsReport({ year }: { year: number }) {
+  const fn = useServerFn(getDonationsMonthlyReport);
+  const { data, isLoading } = useQuery({
+    queryKey: ["donations-monthly", year],
+    queryFn: () => fn({ data: { year } }),
+  });
+
+  if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (!data || data.rows.length === 0)
+    return <p className="text-sm text-muted-foreground">Nenhuma doação confirmada neste ano.</p>;
+
+  const totalCents = data.monthly.reduce((s, m) => s + m.totalCents, 0);
+  const totalCount = data.monthly.reduce((s, m) => s + m.count, 0);
+
+  const exportCsv = () => {
+    const rows: (string | number)[][] = [["Mês", "Quantidade de doações", "Total arrecadado"]];
+    for (const m of data.monthly) {
+      rows.push([MONTH_NAMES[m.month - 1], m.count, fmtBRL(m.totalCents)]);
+    }
+    downloadCsv(`doacoes-${year}.csv`, rows);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <KpiCard label="Doações pagas no ano" value={totalCount} />
+        <KpiCard label="Total arrecadado" value={fmtBRL(totalCents)} icon={<TrendingUp className="h-4 w-4" />} />
+        <KpiCard label="Ticket médio" value={totalCount ? fmtBRL(Math.round(totalCents / totalCount)) : fmtBRL(0)} />
+      </div>
+      <div className="flex justify-end">
+        <Button size="sm" variant="outline" onClick={exportCsv}><Download className="h-4 w-4 mr-1" />Exportar CSV</Button>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Por mês</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Mês</TableHead>
+                <TableHead className="text-right">Doações</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.monthly.map((m) => (
+                <TableRow key={m.month}>
+                  <TableCell className="capitalize">{MONTH_NAMES[m.month - 1]}</TableCell>
+                  <TableCell className="text-right">{m.count}</TableCell>
+                  <TableCell className="text-right font-semibold">{fmtBRL(m.totalCents)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

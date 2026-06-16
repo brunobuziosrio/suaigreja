@@ -35,6 +35,7 @@ const upsertSchema = z.object({
   notes: z.string().max(2000).optional().nullable(),
   cpf: z.string().max(20).optional().nullable(),
   congregation: z.string().max(160).optional().nullable(),
+  is_tither: z.boolean().optional().default(false),
 });
 
 export const upsertMember = createServerFn({ method: "POST" })
@@ -60,6 +61,7 @@ export const upsertMember = createServerFn({ method: "POST" })
       notes: data.notes?.trim() || null,
       cpf: data.cpf?.trim() || null,
       congregation: data.congregation?.trim() || null,
+      is_tither: data.is_tither ?? false,
     };
     if (data.id) {
       const { error } = await supabase

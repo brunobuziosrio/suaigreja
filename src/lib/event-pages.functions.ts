@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
 import QRCode from "qrcode";
 import { z } from "zod";
 
@@ -298,7 +299,7 @@ export const registerForEvent = createServerFn({ method: "POST" })
     }
 
     // Paid event → generate Pix
-    const apiKey = process.env.ATIVOPAY_API_KEY;
+    const apiKey = await resolveAtivoPayApiKey();
     if (!apiKey) {
       return {
         registrationId: reg.id,

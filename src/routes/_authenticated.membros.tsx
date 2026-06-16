@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -42,13 +43,14 @@ type Form = {
   notes: string;
   cpf: string;
   congregation: string;
+  is_tither: boolean;
 };
 
 const empty: Form = {
   full_name: "", photo_url: "", email: "", phone: "", birth_date: "",
   gender: "", marital_status: "", role: "membro", member_since: "",
   status: "ativo", address_city: "", address_state: "", notes: "",
-  cpf: "", congregation: "",
+  cpf: "", congregation: "", is_tither: false,
 };
 
 const ROLES = ["membro", "visitante", "lider", "diacono", "obreiro", "pastor"];
@@ -83,6 +85,7 @@ function MembersPage() {
         notes: input.notes.trim() || null,
         cpf: input.cpf.trim() || null,
         congregation: input.congregation.trim() || null,
+        is_tither: input.is_tither,
       },
     }),
     onSuccess: () => {
@@ -208,6 +211,13 @@ function MembersPage() {
                   <div className="space-y-2"><Label>Igreja / Congregação</Label>
                     <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" /></div>
                 </div>
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <Label>Dizimista</Label>
+                    <p className="text-xs text-muted-foreground">Recebe lembrete mensal de contribuição via WhatsApp</p>
+                  </div>
+                  <Switch checked={form.is_tither} onCheckedChange={(v) => setForm({ ...form, is_tither: v })} />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2"><Label>Cidade</Label>
                     <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} /></div>
@@ -277,6 +287,7 @@ function MembersPage() {
                       address_city: m.address_city ?? "", address_state: m.address_state ?? "",
                       notes: m.notes ?? "",
                       cpf: (m as any).cpf ?? "", congregation: (m as any).congregation ?? "",
+                      is_tither: (m as any).is_tither ?? false,
                     });
                     setOpen(true);
                   }}><Pencil className="h-4 w-4" /></Button>

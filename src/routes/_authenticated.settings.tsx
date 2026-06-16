@@ -26,6 +26,12 @@ import { Check, X, Loader2, Copy } from "lucide-react";
 import { useBranding } from "@/hooks/use-branding";
 import { adminUpdateBranding } from "@/lib/branding.functions";
 import { getIsAdmin } from "@/lib/admin.functions";
+import { getPlatformPaymentSettings, updatePlatformPaymentSettings } from "@/lib/admin-payment-settings.functions";
+import {
+  getMyMercadoPagoConnection,
+  saveMercadoPagoConnection,
+  disconnectMercadoPago,
+} from "@/lib/mercadopago-connections.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useRef } from "react";
 import { MemberCard } from "@/components/member-card";
@@ -508,6 +514,8 @@ function SettingsPage() {
           </div>
         </Card>
 
+        <MercadoPagoSection />
+
         <PlatformBrandingSection />
 
         <MemberCardSettingsCard form={form} setForm={setForm} />
@@ -843,9 +851,91 @@ function ChurchIdentityCard({
   );
 }
 
+function MercadoPagoSection() {
+  const fetchConnection = useServerFn(getMyMercadoPagoConnection);
+  const saveConnection = useServerFn(saveMercadoPagoConnection);
+  const removeConnection = useServerFn(disconnectMercadoPago);
+  const qc = useQueryClient();
+  const [accessToken, setAccessToken] = useState("");
+  const [publicKey, setPublicKey] = useState("");
+
+  const { data: connection, isLoading } = useQuery({
+    queryKey: ["mercadopago-connection"],
+    queryFn: () => fetchConnection(),
+  });
+
+  const saveMut = useMutation({
+    mutationFn: () => saveConnection({ data: { accessToken, publicKey: publicKey || null } }),
+    onSuccess: () => {
+      toast.success("Mercado Pago conectado! As doações agora vão direto para sua conta.");
+      setAccessToken("");
+      setPublicKey("");
+      qc.invalidateQueries({ queryKey: ["mercadopago-connection"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: () => removeConnection(),
+    onSuccess: () => {
+      toast.success("Mercado Pago desconectado. As doações voltam a usar o Pix simples.");
+      qc.invalidateQueries({ queryKey: ["mercadopago-connection"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="p-6 space-y-4">
+      <div>
+        <h2 className="text-base font-semibold">Mercado Pago (doações)</h2>
+        <p className="text-xs text-muted-foreground mt-1">
+          Conecte sua própria conta do Mercado Pago para que as doações dos fiéis caiam direto na conta da
+          sua igreja, com confirmação automática de pagamento. Sem conectar, as doações continuam usando o
+          Pix simples (copia e cola), sem rastreio de pagamento.
+        </p>
+      </div>
+
+      {!isLoading && connection?.connected ? (
+        <div className="rounded-md border bg-muted/40 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <Check className="h-4 w-4 text-green-600" />
+            Conectado
+          </div>
+          <Button variant="outline" size="sm" onClick={() => removeMut.mutate()} disabled={removeMut.isPending}>
+            {removeMut.isPending ? "Desconectando…" : "Desconectar"}
+          </Button>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Access Token</Label>
+            <Input
+              type="password"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="APP_USR-..."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Public Key (opcional)</Label>
+            <Input value={publicKey} onChange={(e) => setPublicKey(e.target.value)} placeholder="APP_USR-..." />
+          </div>
+          <div className="sm:col-span-2 flex justify-end">
+            <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || accessToken.trim().length < 10}>
+              {saveMut.isPending ? "Conectando…" : "Conectar Mercado Pago"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 function PlatformBrandingSection() {
   const checkAdmin = useServerFn(getIsAdmin);
   const updateBranding = useServerFn(adminUpdateBranding);
+  const fetchPaymentSettings = useServerFn(getPlatformPaymentSettings);
+  const savePaymentSettings = useServerFn(updatePlatformPaymentSettings);
   const { data: adminCheck } = useQuery({
     queryKey: ["is-admin"],
     queryFn: () => checkAdmin(),
@@ -855,6 +945,37 @@ function PlatformBrandingSection() {
   const iconInputRef = useRef<HTMLInputElement | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState<"icon" | "logo" | null>(null);
+
+  const { data: paymentSettings } = useQuery({
+    queryKey: ["platform-payment-settings"],
+    queryFn: () => fetchPaymentSettings(),
+    enabled: !!adminCheck?.isAdmin,
+  });
+
+  const [paymentForm, setPaymentForm] = useState({
+    ativopayApiKey: "",
+    ativopayWebhookSecret: "",
+    mercadopagoAccessToken: "",
+  });
+
+  useEffect(() => {
+    if (paymentSettings) {
+      setPaymentForm({
+        ativopayApiKey: paymentSettings.ativopayApiKey,
+        ativopayWebhookSecret: paymentSettings.ativopayWebhookSecret,
+        mercadopagoAccessToken: paymentSettings.mercadopagoAccessToken,
+      });
+    }
+  }, [paymentSettings]);
+
+  const savePaymentMut = useMutation({
+    mutationFn: () => savePaymentSettings({ data: paymentForm }),
+    onSuccess: () => {
+      toast.success("Configurações de pagamento atualizadas");
+      qc.invalidateQueries({ queryKey: ["platform-payment-settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const [form, setForm] = useState({
     brand_text: "",
@@ -1093,6 +1214,48 @@ function PlatformBrandingSection() {
         <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
           {saveMut.isPending ? "Salvando…" : "Salvar identidade"}
         </Button>
+      </div>
+
+      {/* GRUPO 3: Gateways de pagamento da plataforma */}
+      <div className="rounded-md border p-4 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold">Gateways de pagamento (assinatura)</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            AtivoPay recebe o pagamento das assinaturas das igrejas. O campo de Mercado Pago da plataforma
+            fica reservado para uma futura migração — ainda não está em uso na cobrança.
+          </p>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">AtivoPay — API Key</Label>
+            <Input
+              type="password"
+              value={paymentForm.ativopayApiKey}
+              onChange={(e) => setPaymentForm({ ...paymentForm, ativopayApiKey: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">AtivoPay — Webhook Secret</Label>
+            <Input
+              type="password"
+              value={paymentForm.ativopayWebhookSecret}
+              onChange={(e) => setPaymentForm({ ...paymentForm, ativopayWebhookSecret: e.target.value })}
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label className="text-xs">Mercado Pago da plataforma — Access Token (reservado)</Label>
+            <Input
+              type="password"
+              value={paymentForm.mercadopagoAccessToken}
+              onChange={(e) => setPaymentForm({ ...paymentForm, mercadopagoAccessToken: e.target.value })}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end border-t pt-3">
+          <Button onClick={() => savePaymentMut.mutate()} disabled={savePaymentMut.isPending}>
+            {savePaymentMut.isPending ? "Salvando…" : "Salvar gateways"}
+          </Button>
+        </div>
       </div>
     </Card>
   );

@@ -6,6 +6,7 @@ import {
   listMyDonationCampaigns,
   upsertDonationCampaign,
   deleteDonationCampaign,
+  getDonationCampaignStats,
 } from "@/lib/donations.functions";
 import { getMyAccount, updateAccountSettings } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -59,7 +60,10 @@ export function DonationsManager({ slug }: { slug?: string | null }) {
   const list = useServerFn(listMyDonationCampaigns);
   const save = useServerFn(upsertDonationCampaign);
   const remove = useServerFn(deleteDonationCampaign);
+  const fetchStats = useServerFn(getDonationCampaignStats);
   const { data: items = [], isLoading } = useQuery({ queryKey: ["my-donations"], queryFn: () => list() });
+  const { data: stats = [] } = useQuery({ queryKey: ["donation-campaign-stats"], queryFn: () => fetchStats() });
+  const statsByCampaign = new Map(stats.map((s: any) => [s.campaignId, s]));
   const [editing, setEditing] = useState<Campaign | null>(null);
 
   const saveMut = useMutation({
@@ -134,7 +138,25 @@ export function DonationsManager({ slug }: { slug?: string | null }) {
                 <p className="text-[11px] text-muted-foreground mt-1">
                   {c.pix_key_type} · {c.recipient_name}
                 </p>
-                {c.goal_cents > 0 && <p className="text-xs mt-1">Meta: {fmtBRL(c.goal_cents)}</p>}
+                {(() => {
+                  const s = statsByCampaign.get(c.id);
+                  const raised = s?.raisedCents ?? 0;
+                  if (!c.goal_cents && raised === 0) return null;
+                  const pct = c.goal_cents ? Math.min(100, Math.round((raised / c.goal_cents) * 100)) : null;
+                  return (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs">
+                        Arrecadado: <strong>{fmtBRL(raised)}</strong>
+                        {c.goal_cents ? <> de {fmtBRL(c.goal_cents)} ({pct}%)</> : null}
+                      </p>
+                      {pct !== null && (
+                        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="flex flex-col gap-1">
                 <Button size="icon" variant="ghost" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button>
