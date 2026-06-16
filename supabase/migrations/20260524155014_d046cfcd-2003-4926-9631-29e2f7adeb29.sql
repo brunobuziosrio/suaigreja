@@ -1,0 +1,1 @@
+ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS force_show_type boolean NOT NULL DEFAULT false;

@@ -1,0 +1,1 @@
+ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS hub_highlights jsonb NOT NULL DEFAULT '[]'::jsonb;

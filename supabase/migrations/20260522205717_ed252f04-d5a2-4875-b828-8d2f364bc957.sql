@@ -1,0 +1,3 @@
+ALTER TABLE public.celebration_types
+  ADD COLUMN IF NOT EXISTS color text NOT NULL DEFAULT '#467da5',
+  ADD COLUMN IF NOT EXISTS icon text NOT NULL DEFAULT '';

@@ -1,0 +1,1 @@
+ALTER TABLE public.accounts ADD COLUMN IF NOT EXISTS hub_show_all_locations boolean NOT NULL DEFAULT false;
