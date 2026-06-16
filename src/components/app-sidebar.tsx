@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   LayoutDashboard, MapPin, ListChecks, CalendarDays, Code2, Settings, ShieldCheck,
   WalletCards, Store, Package, Users, CalendarHeart, HandHeart, UserPlus, Globe,
@@ -90,12 +90,6 @@ export function AppSidebar() {
 
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);
-
-  // Reset error states when branding data changes
-  useEffect(() => {
-    setIconError(false);
-    setLogoError(false);
-  }, [branding.icon_url, branding.logo_url]);
 
   const isInHub = currentPath === "/hub";
   const isInAgenda = agendaItems.some((i) => currentPath === i.url);

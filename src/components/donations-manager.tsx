@@ -458,8 +458,8 @@ function FixedImageCard() {
   });
 
   async function uploadFile(file: File) {
-    if (!/\.(png|jpg|jpeg|webp)$/i.test(file.name)) {
-      toast.error("Use PNG, JPG ou WEBP.");
+    if (!/\.(png|jpg|jpeg|webp|ico)$/i.test(file.name)) {
+      toast.error("Use PNG, JPG, WEBP ou ICO.");
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -468,15 +468,17 @@ function FixedImageCard() {
     }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `donations-fixed/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setUrl(pub.publicUrl);
-      saveMut.mutate(pub.publicUrl);
+      const base64 = await fileToBase64(file);
+      const res = await uploadAccountAsset({
+        data: {
+          folder: "donations-image",
+          filename: file.name,
+          contentType: file.type,
+          base64,
+        },
+      });
+      setUrl(res.url);
+      saveMut.mutate(res.url);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
