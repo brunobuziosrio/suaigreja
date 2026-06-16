@@ -1,22 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RELIGION_PROFILES, type ReligionProfile } from "@/lib/religion-profiles";
+import { cn } from "@/lib/utils";
+import { RotateCcw } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useRef, useState } from "react";
+import {
+  getMyAccount,
+  updateAccountSettings,
+  checkSlugAvailability,
+  updateCustomSlug,
+} from "@/lib/account.functions";
+import { listEvents } from "@/lib/events.functions";
+import { listTypes } from "@/lib/types.functions";
+import { PublicAgendaView } from "@/components/public-agenda-view";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Settings, Upload } from "lucide-react";
-import { getMyAccount, updateAccountSettings } from "@/lib/account.functions";
+import { Check, X, Loader2, Copy } from "lucide-react";
 import {
   getMyMercadoPagoConnection,
   saveMercadoPagoConnection,
   disconnectMercadoPago,
 } from "@/lib/mercadopago-connections.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { useRef } from "react";
+import { MemberCard } from "@/components/member-card";
 
 const DEFAULT_COLOR = "#467da5";
 
@@ -27,192 +41,390 @@ export const Route = createFileRoute("/_authenticated/settings")({
 function SettingsPage() {
   const getAccount = useServerFn(getMyAccount);
   const updateSettings = useServerFn(updateAccountSettings);
-  const fetchMPConnection = useServerFn(getMyMercadoPagoConnection);
-  const saveMPConnection = useServerFn(saveMercadoPagoConnection);
-  const disconnectMP = useServerFn(disconnectMercadoPago);
+  const checkSlug = useServerFn(checkSlugAvailability);
+  const saveSlug = useServerFn(updateCustomSlug);
+  const fetchEvents = useServerFn(listEvents);
+  const fetchTypes = useServerFn(listTypes);
   const qc = useQueryClient();
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
 
-  const logoInputRef = useRef<HTMLInputElement>(null);
-
-  const [form, setForm] = useState({
-    brand_title: "",
-    brand_subtitle: "",
-    primary_color: DEFAULT_COLOR,
-    show_live_fields: true,
-    allow_public_members: false,
-  });
-
-  const [mpToken, setMpToken] = useState("");
-
-  const { data: account } = useQuery({
+  const { data: account, isLoading } = useQuery({
     queryKey: ["my-account"],
     queryFn: () => getAccount(),
   });
 
-  const { data: mpConnection } = useQuery({
-    queryKey: ["mercadopago-connection"],
-    queryFn: () => fetchMPConnection(),
+  const { data: previewEvents } = useQuery({
+    queryKey: ["settings-preview-events"],
+    queryFn: () => {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const today = new Date();
+      const end = new Date();
+      end.setDate(end.getDate() + 30);
+      const fmt = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      return fetchEvents({ data: { from: fmt(today), to: fmt(end) } });
+    },
   });
 
-  const saveSettingsMut = useMutation({
+  const { data: previewTypes = [] } = useQuery({
+    queryKey: ["types"],
+    queryFn: () => fetchTypes(),
+  });
+
+  const [form, setForm] = useState({
+    brand_title: "",
+    brand_today_title: "",
+    brand_subtitle: "",
+    brand_empty_message: "",
+    primary_color: DEFAULT_COLOR,
+    brand_logo_url: "",
+    brand_logo_height_px: 32,
+    brand_footer_logo_url: "",
+    card_logo_url: "",
+    card_logo_height_px: 72,
+    card_accent_color: "#c8102e",
+    card_footer_text:
+      "É assegurada nos termos da lei, a prestação de assistência religiosa nas entidades civis e militares de internação coletiva. Art 5º, VII, Constituição Federal.",
+    card_title_size_px: 36,
+    card_footer_size_px: 12,
+    card_field_size_px: 15,
+    card_label_size_px: 13,
+    show_end_time: false,
+    show_live_fields: true,
+    force_show_type: false,
+    religion_profile: "catolico" as ReligionProfile,
+  });
+
+  useEffect(() => {
+    if (account) {
+      setForm({
+        brand_title: account.brand_title ?? "",
+        brand_today_title: account.brand_today_title ?? "Celebrações de hoje",
+        brand_subtitle: account.brand_subtitle ?? "",
+        brand_empty_message: account.brand_empty_message ?? "",
+        primary_color: account.primary_color ?? DEFAULT_COLOR,
+        brand_logo_url: account.brand_logo_url ?? "",
+        brand_logo_height_px: account.brand_logo_height_px ?? 32,
+        brand_footer_logo_url: account.brand_footer_logo_url ?? "",
+        card_logo_url: (account as any).card_logo_url ?? "",
+        card_logo_height_px: (account as any).card_logo_height_px ?? 72,
+        card_accent_color: (account as any).card_accent_color ?? "#c8102e",
+        card_footer_text:
+          (account as any).card_footer_text ??
+          "É assegurada nos termos da lei, a prestação de assistência religiosa nas entidades civis e militares de internação coletiva. Art 5º, VII, Constituição Federal.",
+        card_title_size_px: (account as any).card_title_size_px ?? 36,
+        card_footer_size_px: (account as any).card_footer_size_px ?? 12,
+        card_field_size_px: (account as any).card_field_size_px ?? 15,
+        card_label_size_px: (account as any).card_label_size_px ?? 13,
+        show_end_time: account.show_end_time ?? false,
+        show_live_fields: account.show_live_fields ?? true,
+        force_show_type: account.force_show_type ?? false,
+        religion_profile: (account.religion_profile ?? "catolico") as ReligionProfile,
+      });
+    }
+  }, [account]);
+
+  const mut = useMutation({
     mutationFn: () =>
       updateSettings({
         data: {
-          brand_title: form.brand_title,
-          brand_subtitle: form.brand_subtitle,
-          primary_color: form.primary_color,
-          show_live_fields: form.show_live_fields,
-          allow_public_members: form.allow_public_members,
+          ...form,
+          brand_logo_url: form.brand_logo_url || null,
+          brand_logo_height_px: Number(form.brand_logo_height_px) || 32,
+          brand_footer_logo_url: form.brand_footer_logo_url || null,
+          card_logo_url: form.card_logo_url || null,
+          card_logo_height_px: Number(form.card_logo_height_px) || 72,
+          card_accent_color: form.card_accent_color,
+          card_footer_text: form.card_footer_text,
+          card_title_size_px: Number(form.card_title_size_px) || 36,
+          card_footer_size_px: Number(form.card_footer_size_px) || 12,
+          card_field_size_px: Number(form.card_field_size_px) || 15,
+          card_label_size_px: Number(form.card_label_size_px) || 13,
         },
       }),
     onSuccess: () => {
       toast.success("Configurações salvas");
       qc.invalidateQueries({ queryKey: ["my-account"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+    onError: (e: Error) => toast.error(e.message ?? "Erro ao salvar"),
   });
 
-  const saveMPMut = useMutation({
-    mutationFn: () => saveMPConnection({ data: { access_token: mpToken } }),
-    onSuccess: () => {
-      toast.success("Mercado Pago conectado");
-      setMpToken("");
-      qc.invalidateQueries({ queryKey: ["mercadopago-connection"] });
+  const [slugInput, setSlugInput] = useState("");
+  const [slugStatus, setSlugStatus] = useState<
+    | { kind: "idle" }
+    | { kind: "checking" }
+    | { kind: "available" }
+    | { kind: "taken"; reason: string }
+    | { kind: "invalid"; reason: string }
+  >({ kind: "idle" });
+
+  useEffect(() => {
+    setSlugInput(account?.custom_slug ?? "");
+  }, [account?.custom_slug]);
+
+  const currentSlug = account?.custom_slug ?? "";
+  const normalizedInput = slugInput.trim().toLowerCase();
+
+  useEffect(() => {
+    if (!normalizedInput || normalizedInput === currentSlug) {
+      setSlugStatus({ kind: "idle" });
+      return;
+    }
+    if (!/^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/.test(normalizedInput)) {
+      setSlugStatus({
+        kind: "invalid",
+        reason: "3-40 letras minúsculas, números ou hífen",
+      });
+      return;
+    }
+    setSlugStatus({ kind: "checking" });
+    const handle = setTimeout(async () => {
+      try {
+        const res = await checkSlug({ data: { slug: normalizedInput } });
+        if (res.available) setSlugStatus({ kind: "available" });
+        else setSlugStatus({ kind: "taken", reason: res.reason });
+      } catch (e) {
+        setSlugStatus({
+          kind: "invalid",
+          reason: (e as Error).message ?? "Erro ao verificar",
+        });
+      }
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [normalizedInput, currentSlug, checkSlug]);
+
+  const slugMut = useMutation({
+    mutationFn: (slug: string | null) => saveSlug({ data: { slug } }),
+    onSuccess: (res) => {
+      toast.success(
+        res.slug
+          ? "Nome curto atualizado. Links antigos com o nome anterior pararam de funcionar."
+          : "Nome curto removido. Apenas o código fixo funciona agora.",
+      );
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao conectar"),
+    onError: (e: Error) => toast.error(e.message ?? "Erro ao salvar"),
   });
 
-  const disconnectMPMut = useMutation({
-    mutationFn: () => disconnectMP(),
-    onSuccess: () => {
-      toast.success("Mercado Pago desconectado");
-      qc.invalidateQueries({ queryKey: ["mercadopago-connection"] });
-    },
-    onError: (e: any) => toast.error(e?.message || "Erro ao desconectar"),
-  });
+  const publicOrigin = "https://suaigreja.top";
+  const fixedUrl = account ? `${publicOrigin}/a/${account.site_id}` : "";
+  const slugUrl = currentSlug ? `${publicOrigin}/a/${currentSlug}` : "";
+  const copy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Link copiado");
+  };
 
   return (
     <AppShell>
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <Settings className="h-6 w-6" /> Configurações
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Identidade da sua igreja e integrações.
-          </p>
-        </div>
+      <div className="w-full space-y-6">
+        <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Perfil, campos do formulário, textos e aparência da sua agenda pública.
+        </p>
 
-        {/* Identidade */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Identidade da Igreja</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label>Nome da Igreja</Label>
-              <Input
-                value={form.brand_title}
-                onChange={(e) => setForm({ ...form, brand_title: e.target.value })}
-                placeholder="Ex: Igreja Apostólica"
-              />
+        <Card className="p-6 space-y-5">
+          <div>
+            <h2 className="text-base font-semibold">Endereço público</h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              O endereço onde sua agenda fica disponível na internet.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+              Código fixo (sempre funciona)
+            </Label>
+            <div className="flex gap-2">
+              <Input readOnly value={fixedUrl} className="font-mono text-sm" />
+              <Button variant="outline" type="button" onClick={() => copy(fixedUrl)}>
+                <Copy className="h-4 w-4" />
+              </Button>
             </div>
-            <div>
-              <Label>Subtítulo</Label>
-              <Input
-                value={form.brand_subtitle}
-                onChange={(e) => setForm({ ...form, brand_subtitle: e.target.value })}
-                placeholder="Ex: Comunidade de fé"
-              />
-            </div>
-            <div>
-              <Label>Cor Principal</Label>
-              <div className="flex gap-2">
+          </div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <Label htmlFor="custom_slug">
+              Nome curto da igreja (opcional)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Crie um endereço mais bonito, ex:{" "}
+              <span className="font-mono">{publicOrigin}/a/matriz-sp</span>. Use de
+              3 a 40 letras minúsculas, números ou hífen.
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center rounded-md border bg-muted/40 pl-3 pr-1 flex-1 focus-within:ring-1 focus-within:ring-ring">
+                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                  {publicOrigin}/a/
+                </span>
                 <Input
-                  type="color"
-                  value={form.primary_color}
-                  onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                  className="w-20 h-10"
+                  id="custom_slug"
+                  value={slugInput}
+                  onChange={(e) =>
+                    setSlugInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))
+                  }
+                  placeholder="minha-igreja"
+                  maxLength={40}
+                  className="border-0 shadow-none focus-visible:ring-0 font-mono text-sm bg-transparent"
                 />
-                <Input
-                  value={form.primary_color}
-                  onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                  className="flex-1"
-                />
-              </div>
-            </div>
-            <Button onClick={() => saveSettingsMut.mutate()} disabled={saveSettingsMut.isPending}>
-              {saveSettingsMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Salvar
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Agenda */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Aparência</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label>Mostrar horários ao vivo</Label>
-              <Switch
-                checked={form.show_live_fields}
-                onCheckedChange={(v) => setForm({ ...form, show_live_fields: v })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label>Permitir membros públicos</Label>
-              <Switch
-                checked={form.allow_public_members}
-                onCheckedChange={(v) => setForm({ ...form, allow_public_members: v })}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Mercado Pago */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Mercado Pago</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {mpConnection ? (
-              <>
-                <div className="p-3 bg-green-50 text-green-700 rounded text-sm">
-                  ✓ Mercado Pago conectado
+                <div className="pr-2">
+                  {slugStatus.kind === "checking" && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  {slugStatus.kind === "available" && (
+                    <Check className="h-4 w-4 text-green-600" />
+                  )}
+                  {(slugStatus.kind === "taken" || slugStatus.kind === "invalid") && (
+                    <X className="h-4 w-4 text-destructive" />
+                  )}
                 </div>
+              </div>
+              <Button
+                type="button"
+                onClick={() => slugMut.mutate(normalizedInput || null)}
+                disabled={
+                  slugMut.isPending ||
+                  normalizedInput === currentSlug ||
+                  (normalizedInput !== "" && slugStatus.kind !== "available")
+                }
+              >
+                {slugMut.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+              {currentSlug && (
                 <Button
-                  variant="destructive"
-                  onClick={() => disconnectMPMut.mutate()}
-                  disabled={disconnectMPMut.isPending}
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setSlugInput("");
+                    slugMut.mutate(null);
+                  }}
+                  disabled={slugMut.isPending}
                 >
-                  Desconectar
+                  Remover
                 </Button>
-              </>
-            ) : (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Conecte seu Mercado Pago para aceitar doações.
-                </p>
-                <Textarea
-                  value={mpToken}
-                  onChange={(e) => setMpToken(e.target.value)}
-                  placeholder="Cole seu access token do Mercado Pago"
-                  rows={3}
-                />
-                <Button
-                  onClick={() => saveMPMut.mutate()}
-                  disabled={saveMPMut.isPending || !mpToken.trim()}
-                >
-                  {saveMPMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Conectar Mercado Pago
-                </Button>
-              </>
+              )}
+            </div>
+            {(slugStatus.kind === "taken" || slugStatus.kind === "invalid") && (
+              <p className="text-xs text-destructive">{slugStatus.reason}</p>
             )}
-          </CardContent>
+            {slugStatus.kind === "available" && (
+              <p className="text-xs text-green-600">Disponível</p>
+            )}
+
+            {currentSlug && (
+              <div className="space-y-2 pt-3">
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Endereço atual
+                </Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={slugUrl} className="font-mono text-sm" />
+                  <Button variant="outline" type="button" onClick={() => copy(slugUrl)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-md p-2 mt-2">
+              ⚠️ Atenção: ao alterar ou remover o nome curto, links antigos
+              compartilhados com o nome anterior <strong>param de funcionar</strong>.
+              O código fixo acima continua funcionando sempre.
+            </p>
+          </div>
         </Card>
+
+        <Card className="p-6">
+          <div className="flex justify-end">
+            <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
+              {mut.isPending ? "Salvando..." : "Salvar alterações"}
+            </Button>
+          </div>
+        </Card>
+
+        <MercadoPagoSection />
       </div>
     </AppShell>
+  );
+}
+
+function MercadoPagoSection() {
+  const fetchConnection = useServerFn(getMyMercadoPagoConnection);
+  const saveConnection = useServerFn(saveMercadoPagoConnection);
+  const removeConnection = useServerFn(disconnectMercadoPago);
+  const qc = useQueryClient();
+  const [accessToken, setAccessToken] = useState("");
+  const [publicKey, setPublicKey] = useState("");
+
+  const { data: connection, isLoading } = useQuery({
+    queryKey: ["mercadopago-connection"],
+    queryFn: () => fetchConnection(),
+  });
+
+  const saveMut = useMutation({
+    mutationFn: () => saveConnection({ data: { accessToken, publicKey: publicKey || null } }),
+    onSuccess: () => {
+      toast.success("Mercado Pago conectado! As doações agora vão direto para sua conta.");
+      setAccessToken("");
+      setPublicKey("");
+      qc.invalidateQueries({ queryKey: ["mercadopago-connection"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: () => removeConnection(),
+    onSuccess: () => {
+      toast.success("Mercado Pago desconectado. As doações voltam a usar o Pix simples.");
+      qc.invalidateQueries({ queryKey: ["mercadopago-connection"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="p-6 space-y-4">
+      <div>
+        <h2 className="text-base font-semibold">Mercado Pago (doações)</h2>
+        <p className="text-xs text-muted-foreground mt-1">
+          Conecte sua própria conta do Mercado Pago para que as doações dos fiéis caiam direto na conta da
+          sua igreja, com confirmação automática de pagamento.
+        </p>
+      </div>
+
+      {!isLoading && connection?.connected ? (
+        <div className="rounded-md border bg-muted/40 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <Check className="h-4 w-4 text-green-600" />
+            Conectado
+          </div>
+          <Button variant="outline" size="sm" onClick={() => removeMut.mutate()} disabled={removeMut.isPending}>
+            {removeMut.isPending ? "Desconectando…" : "Desconectar"}
+          </Button>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Access Token</Label>
+            <Input
+              type="password"
+              value={accessToken}
+              onChange={(e) => setAccessToken(e.target.value)}
+              placeholder="APP_USR-..."
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Public Key (opcional)</Label>
+            <Input value={publicKey} onChange={(e) => setPublicKey(e.target.value)} placeholder="APP_USR-..." />
+          </div>
+          <div className="sm:col-span-2 flex justify-end">
+            <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || accessToken.trim().length < 10}>
+              {saveMut.isPending ? "Conectando…" : "Conectar Mercado Pago"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </Card>
   );
 }
