@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </header>
-        <div className="p-6">
+        <div className="p-6 w-full">
           {children}
         </div>
       </SidebarInset>

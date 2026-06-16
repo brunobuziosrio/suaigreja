@@ -496,7 +496,7 @@ function HubEditor() {
 
   return (
     <AppShell>
-      <div>
+      <div className="w-full">
         <div className="mb-5">
           <h1 className="text-2xl font-semibold flex items-center gap-2">
             {(() => { const M = TAB_META[tab].Icon; return <M className="h-5 w-5 text-muted-foreground" />; })()}

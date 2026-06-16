@@ -73,7 +73,7 @@ function TypesPage() {
 
   return (
     <AppShell>
-      <div>
+      <div className="w-full">
         <div className="flex items-end justify-between mb-6 gap-4">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Tipos de celebração</h1>

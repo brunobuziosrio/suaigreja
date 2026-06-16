@@ -30,7 +30,7 @@ function AdminPaymentsPage() {
   if (checking) {
     return (
       <AppShell>
-        <div className="text-sm text-muted-foreground">Verificando permissões…</div>
+        <div className="w-full text-sm text-muted-foreground">Verificando permissões…</div>
       </AppShell>
     );
   }
@@ -72,6 +72,13 @@ function PlatformBrandingSection() {
   const iconInputRef = useRef<HTMLInputElement | null>(null);
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState<"icon" | "logo" | null>(null);
+  const [iconError, setIconError] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  useEffect(() => {
+    setIconError(false);
+    setLogoError(false);
+  }, [form.icon_url, form.logo_url]);
 
   const { data: paymentSettings } = useQuery({
     queryKey: ["platform-payment-settings"],
@@ -240,7 +247,7 @@ function PlatformBrandingSection() {
             </Button>
           )}
         </div>
-        {form.logo_url && (
+        {form.logo_url && !logoError && (
           <div className="flex items-center gap-3">
             <div className="rounded-md border bg-muted/40 p-3 inline-block">
               <img
@@ -248,6 +255,7 @@ function PlatformBrandingSection() {
                 alt="Logo"
                 style={{ height: form.logo_height_px }}
                 className="w-auto object-contain"
+                onError={() => setLogoError(true)}
               />
             </div>
             <div className="space-y-1">
@@ -264,6 +272,9 @@ function PlatformBrandingSection() {
               />
             </div>
           </div>
+        )}
+        {logoError && form.logo_url && (
+          <p className="text-xs text-destructive">Erro ao carregar a logo. Verifique o link.</p>
         )}
 
         <div className="grid sm:grid-cols-2 gap-3 border-t pt-3">
@@ -327,10 +338,18 @@ function PlatformBrandingSection() {
           )}
         </div>
 
-        {form.icon_url && (
+        {form.icon_url && !iconError && (
           <div className="border-t pt-3">
-            <img src={form.icon_url} alt="" className="h-12 w-12 rounded-md border object-cover" />
+            <img 
+              src={form.icon_url} 
+              alt="" 
+              className="h-12 w-12 rounded-md border object-cover" 
+              onError={() => setIconError(true)}
+            />
           </div>
+        )}
+        {iconError && form.icon_url && (
+          <p className="text-xs text-destructive">Erro ao carregar o ícone. Verifique o link.</p>
         )}
       </div>
 

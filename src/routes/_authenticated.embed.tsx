@@ -29,7 +29,7 @@ function EmbedPage() {
   if (isLoading || !account) {
     return (
       <AppShell>
-        <div className="p-6 flex justify-center">
+        <div className="w-full p-6 flex justify-center">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       </AppShell>

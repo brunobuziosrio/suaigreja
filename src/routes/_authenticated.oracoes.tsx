@@ -44,7 +44,7 @@ function PrayersPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2">
             <HandHeart className="h-6 w-6" /> Pedidos de Oração

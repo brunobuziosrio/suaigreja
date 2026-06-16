@@ -130,7 +130,7 @@ function MembersPage() {
 
   return (
     <AppShell>
-      <div>
+      <div className="w-full">
         <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">Membros</h1>

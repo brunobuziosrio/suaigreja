@@ -87,6 +87,15 @@ export function AppSidebar() {
   const { data: brandingData } = useBranding();
   const branding = brandingData ?? BRANDING_DEFAULTS;
 
+  const [iconError, setIconError] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  // Reset error states when branding data changes
+  useEffect(() => {
+    setIconError(false);
+    setLogoError(false);
+  }, [branding.icon_url, branding.logo_url]);
+
   const isInHub = currentPath === "/hub";
   const isInAgenda = agendaItems.some((i) => currentPath === i.url);
   const isInPeople = peopleItems.some((i) => currentPath === i.url);
@@ -99,11 +108,12 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border px-3 py-3 group-data-[collapsible=icon]:px-2">
         <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
-          {branding.icon_url ? (
+          {branding.icon_url && !iconError ? (
             <img
               src={branding.icon_url}
               alt=""
               className="h-8 w-8 shrink-0 rounded-md object-cover shadow-sm"
+              onError={() => setIconError(true)}
             />
           ) : (
             <span
@@ -114,12 +124,13 @@ export function AppSidebar() {
             </span>
           )}
           <span className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden min-w-0">
-            {branding.logo_url ? (
+            {branding.logo_url && !logoError ? (
               <img
                 src={branding.logo_url}
                 alt={branding.brand_text}
                 style={{ height: branding.logo_height_px }}
                 className="w-auto object-contain"
+                onError={() => setLogoError(true)}
               />
             ) : (
               <span className="font-serif text-base font-semibold tracking-tight text-sidebar-foreground truncate">

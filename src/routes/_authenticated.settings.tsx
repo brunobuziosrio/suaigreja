@@ -48,6 +48,11 @@ function SettingsPage() {
   const qc = useQueryClient();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState(false);
+
+  useEffect(() => {
+    setLogoError(false);
+  }, [form.brand_logo_url]);
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["my-account"],
@@ -221,7 +226,7 @@ function SettingsPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Perfil, campos do formulário, textos e aparência da sua agenda pública.
@@ -591,8 +596,8 @@ function ChurchIdentityCard({
   const [footerUploading, setFooterUploading] = useState(false);
 
   async function uploadLogoFile(file: File, field: "brand_logo_url" | "brand_footer_logo_url", setBusy: (b: boolean) => void) {
-    if (!/\.(png|jpg|jpeg|webp)$/i.test(file.name)) {
-      toast.error("Use PNG (transparente), JPG ou WEBP.");
+    if (!/\.(png|jpg|jpeg|webp|ico)$/i.test(file.name)) {
+      toast.error("Use PNG, JPG, WEBP ou ICO.");
       return;
     }
     if (file.size > 3 * 1024 * 1024) {
@@ -733,14 +738,20 @@ function ChurchIdentityCard({
             </span>
           </div>
         )}
-        {form.brand_logo_url && (
+        {form.brand_logo_url && !logoError && (
           <div className="rounded-md border bg-muted/40 p-3 inline-block">
             <img
               src={form.brand_logo_url}
               alt="Logo da igreja"
               style={{ height: form.brand_logo_height_px }}
               className="w-auto object-contain"
+              onError={() => setLogoError(true)}
             />
+          </div>
+        )}
+        {logoError && form.brand_logo_url && (
+          <div className="p-3 border border-dashed rounded-md text-xs text-muted-foreground bg-muted/20">
+            A imagem da logo não pôde ser carregada ou o link é inválido.
           </div>
         )}
         <div className="grid sm:grid-cols-[160px_1fr] gap-3 items-start pt-2">
@@ -937,8 +948,8 @@ function MemberCardSettingsCard({
   const [removingBg, setRemovingBg] = useState(false);
 
   async function uploadLogo(file: File) {
-    if (!/\.(png|jpg|jpeg|webp)$/i.test(file.name)) {
-      toast.error("Use PNG (transparente), JPG ou WEBP.");
+    if (!/\.(png|jpg|jpeg|webp|ico)$/i.test(file.name)) {
+      toast.error("Use PNG, JPG, WEBP ou ICO.");
       return;
     }
     if (file.size > 3 * 1024 * 1024) {

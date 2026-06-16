@@ -415,14 +415,16 @@ const ALLOWED_IMAGE_MIME = new Set([
   "image/png",
   "image/webp",
   "image/gif",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
 ]);
-const ALLOWED_IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif"]);
+const ALLOWED_IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "ico"]);
 
 const UploadInput = z.object({
   folder: z.enum(["hub-cover", "gallery", "slide", "news"]),
   filename: z.string().min(1).max(120),
   contentType: z.string().min(1).max(100).refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
-    message: "contentType não permitido. Use JPEG, PNG, WEBP ou GIF.",
+    message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
   }),
   // base64-encoded file bytes (no data: prefix), max ~8MB encoded
   base64: z.string().min(1).max(12_000_000),

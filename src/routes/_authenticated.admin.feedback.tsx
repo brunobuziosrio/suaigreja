@@ -76,7 +76,7 @@ function AdminFeedbackPage() {
   if (checking) {
     return (
       <AppShell>
-        <div><Loader2 className="h-5 w-5 animate-spin" /></div>
+        <div className="w-full"><Loader2 className="h-5 w-5 animate-spin" /></div>
       </AppShell>
     );
   }
@@ -211,7 +211,7 @@ function AdminFeedbackPage() {
             )}
           </Card>
         </div>
-      </div>
+      </>
     </AppShell>
   );
 }

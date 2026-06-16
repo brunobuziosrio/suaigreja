@@ -195,7 +195,7 @@ function WhatsappPage() {
 
   return (
     <AppShell>
-      <div className="space-y-6">
+      <div className="w-full space-y-6">
         <div className="flex items-center gap-3">
           <MessageCircle className="h-7 w-7 text-emerald-600" />
           <div>

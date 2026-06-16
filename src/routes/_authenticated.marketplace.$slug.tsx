@@ -42,7 +42,7 @@ function ProductDetail() {
   if (isLoading) {
     return (
       <AppShell>
-        <div className="p-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="w-full p-6 flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Carregando…
         </div>
       </AppShell>

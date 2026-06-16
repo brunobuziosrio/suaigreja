@@ -283,7 +283,7 @@ function AdminProductsPage() {
   if (checking) {
     return (
       <AppShell>
-        <div className="text-sm text-muted-foreground">Verificando permissões…</div>
+        <div className="w-full text-sm text-muted-foreground">Verificando permissões…</div>
       </AppShell>
     );
   }
