@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Settings } from "lucide-react";
+import { Loader2, Settings, Upload } from "lucide-react";
 import { getMyAccount, updateAccountSettings } from "@/lib/account.functions";
 import {
   getMyMercadoPagoConnection,
@@ -31,10 +32,14 @@ function SettingsPage() {
   const disconnectMP = useServerFn(disconnectMercadoPago);
   const qc = useQueryClient();
 
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
   const [form, setForm] = useState({
     brand_title: "",
     brand_subtitle: "",
     primary_color: DEFAULT_COLOR,
+    show_live_fields: true,
+    allow_public_members: false,
   });
 
   const [mpToken, setMpToken] = useState("");
@@ -56,6 +61,8 @@ function SettingsPage() {
           brand_title: form.brand_title,
           brand_subtitle: form.brand_subtitle,
           primary_color: form.primary_color,
+          show_live_fields: form.show_live_fields,
+          allow_public_members: form.allow_public_members,
         },
       }),
     onSuccess: () => {
@@ -92,11 +99,11 @@ function SettingsPage() {
             <Settings className="h-6 w-6" /> Configurações
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Identidade da sua igreja e integrações de pagamento.
+            Identidade da sua igreja e integrações.
           </p>
         </div>
 
-        {/* Configurações Gerais */}
+        {/* Identidade */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Identidade da Igreja</CardTitle>
@@ -130,7 +137,6 @@ function SettingsPage() {
                 <Input
                   value={form.primary_color}
                   onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                  placeholder="#467da5"
                   className="flex-1"
                 />
               </div>
@@ -139,6 +145,29 @@ function SettingsPage() {
               {saveSettingsMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Salvar
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Agenda */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Aparência</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label>Mostrar horários ao vivo</Label>
+              <Switch
+                checked={form.show_live_fields}
+                onCheckedChange={(v) => setForm({ ...form, show_live_fields: v })}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label>Permitir membros públicos</Label>
+              <Switch
+                checked={form.allow_public_members}
+                onCheckedChange={(v) => setForm({ ...form, allow_public_members: v })}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -163,13 +192,19 @@ function SettingsPage() {
               </>
             ) : (
               <>
+                <p className="text-sm text-muted-foreground">
+                  Conecte seu Mercado Pago para aceitar doações.
+                </p>
                 <Textarea
                   value={mpToken}
                   onChange={(e) => setMpToken(e.target.value)}
                   placeholder="Cole seu access token do Mercado Pago"
                   rows={3}
                 />
-                <Button onClick={() => saveMPMut.mutate()} disabled={saveMPMut.isPending || !mpToken}>
+                <Button
+                  onClick={() => saveMPMut.mutate()}
+                  disabled={saveMPMut.isPending || !mpToken.trim()}
+                >
                   {saveMPMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Conectar Mercado Pago
                 </Button>

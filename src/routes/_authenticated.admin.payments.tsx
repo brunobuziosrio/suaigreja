@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { ShieldCheck, WalletCards, Loader2 } from "lucide-react";
 import { getIsAdmin } from "@/lib/admin.functions";
 import { getPlatformPaymentSettings, updatePlatformPaymentSettings } from "@/lib/admin-payment-settings.functions";
+import { useBranding } from "@/hooks/use-branding";
 
 export const Route = createFileRoute("/_authenticated/admin/payments")({
   component: AdminPaymentsPage,
@@ -26,6 +27,8 @@ function AdminPaymentsPage() {
     queryKey: ["is-admin"],
     queryFn: () => checkAdmin(),
   });
+
+  const { data: branding } = useBranding();
 
   const { data: paymentSettings } = useQuery({
     queryKey: ["platform-payment-settings"],
@@ -76,10 +79,28 @@ function AdminPaymentsPage() {
             <WalletCards className="h-6 w-6" /> Pagamentos da plataforma
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Configuração de gateways de pagamento para toda a plataforma SaaS.
+            Identidade visual e gateways de pagamento da plataforma SaaS.
           </p>
         </div>
 
+        {/* Identidade da Plataforma */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Identidade da Plataforma</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-muted rounded text-sm">
+              <p className="font-medium mb-2">Branding atual:</p>
+              <p>Nome: <span className="font-semibold">{branding?.brand_text || "Não configurado"}</span></p>
+              <p>Subtítulo: <span className="font-semibold">{branding?.subtitle || "Não configurado"}</span></p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Configure a identidade visual no painel principal de branding.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* AtivoPay */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">AtivoPay</CardTitle>
@@ -93,6 +114,7 @@ function AdminPaymentsPage() {
                 onChange={(e) => setForm({ ...form, ativopayApiKey: e.target.value })}
                 placeholder="sk_live_..."
               />
+              <p className="text-xs text-muted-foreground mt-1">Sua chave privada de API do AtivoPay</p>
             </div>
             <div>
               <Label>Webhook Secret</Label>
@@ -102,11 +124,24 @@ function AdminPaymentsPage() {
                 onChange={(e) => setForm({ ...form, ativopayWebhookSecret: e.target.value })}
                 placeholder="whsec_..."
               />
+              <p className="text-xs text-muted-foreground mt-1">Secret para validar webhooks do AtivoPay</p>
             </div>
             <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
               {saveMut.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              Salvar configurações
+              Salvar configurações AtivoPay
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Mercado Pago Reservado */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Mercado Pago da Plataforma</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Token de Mercado Pago para transações da plataforma (reservado para implementação futura).
+            </p>
           </CardContent>
         </Card>
       </div>
