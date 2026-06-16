@@ -8,11 +8,11 @@ const alertVariants = cva(
   {
     variants: {
       variant: {
-        default: "border-liturgical bg-liturgical-soft text-liturgical [&>svg]:text-liturgical",
-        success: "border-evergreen bg-evergreen-soft text-evergreen [&>svg]:text-evergreen",
+        default: "border-sand bg-sand-soft text-sand-deep [&>svg]:text-sand",
+        success: "border-forest bg-forest-soft text-forest [&>svg]:text-forest",
         warning: "border-amber bg-amber-soft text-amber [&>svg]:text-amber",
         error: "border-coral bg-coral-soft text-coral [&>svg]:text-coral",
-        info: "border-liturgical bg-liturgical-soft text-liturgical [&>svg]:text-liturgical",
+        info: "border-ocean bg-ocean-soft text-ocean [&>svg]:text-ocean",
       },
     },
     defaultVariants: {

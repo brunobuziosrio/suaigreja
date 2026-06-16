@@ -5,19 +5,19 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-liturgical disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-sand disabled:pointer-events-none disabled:opacity-50 disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-liturgical text-white hover:bg-liturgical-light shadow-sm disabled:bg-stone-faint disabled:text-stone-light",
-        primary: "bg-liturgical text-white hover:bg-liturgical-light shadow-sm disabled:bg-stone-faint",
-        secondary: "border border-stone-light text-ink hover:border-liturgical-light hover:bg-liturgical-soft/30",
-        success: "bg-evergreen text-white hover:bg-evergreen-light shadow-sm disabled:bg-stone-faint",
-        warning: "bg-amber text-white hover:bg-amber/90 shadow-sm disabled:bg-stone-faint",
-        destructive: "bg-coral text-white hover:bg-coral/90 shadow-sm disabled:bg-stone-faint",
-        outline: "border border-stone-light text-ink hover:border-stone hover:bg-background",
-        ghost: "text-liturgical hover:bg-liturgical-soft/20",
-        link: "text-liturgical hover:text-liturgical-light underline-offset-4 hover:underline",
+        default: "bg-sand text-slate-faint hover:bg-sand-light shadow-sm disabled:bg-slate-faint disabled:text-slate-light",
+        primary: "bg-sand text-slate-faint hover:bg-sand-light shadow-sm disabled:bg-slate-faint",
+        secondary: "border border-slate-light text-foreground hover:border-ocean-light hover:bg-ocean-soft/20",
+        success: "bg-forest text-white hover:bg-forest-light shadow-sm disabled:bg-slate-faint",
+        warning: "bg-amber text-white hover:bg-amber/90 shadow-sm disabled:bg-slate-faint",
+        destructive: "bg-coral text-white hover:bg-coral/90 shadow-sm disabled:bg-slate-faint",
+        outline: "border border-slate-light text-foreground hover:border-slate hover:bg-background",
+        ghost: "text-sand hover:bg-sand-soft/30",
+        link: "text-ocean hover:text-ocean-light underline-offset-4 hover:underline",
       },
       size: {
         xs: "h-8 px-2.5 text-xs rounded-md",
