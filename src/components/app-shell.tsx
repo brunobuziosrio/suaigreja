@@ -36,10 +36,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </header>
-        <div className="w-full flex justify-center">
-          <div className="p-6 w-full max-w-6xl">
-            {children}
-          </div>
+        <div className="p-6 w-full max-w-7xl mx-auto">
+          {children}
         </div>
       </SidebarInset>
     </SidebarProvider>

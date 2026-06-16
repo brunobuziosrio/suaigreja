@@ -79,6 +79,50 @@ export const updateCustomSlug = createServerFn({ method: "POST" })
     return { ok: true, slug: parsed.slug };
   });
 
+const ALLOWED_IMAGE_MIME = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/x-icon",
+  "image/vnd.microsoft.icon",
+]);
+const ALLOWED_IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "ico"]);
+
+const UploadInput = z.object({
+  folder: z.enum(["church-logo", "card-logo", "donations-image"]),
+  filename: z.string().min(1).max(120),
+  contentType: z.string().min(1).max(100).refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
+    message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
+  }),
+  base64: z.string().min(1).max(12_000_000),
+});
+
+export const uploadAccountAsset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => UploadInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+    if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
+    const rand = Math.random().toString(36).slice(2, 8);
+    const path = `${data.folder}/${userId}-${Date.now()}-${rand}.${ext}`;
+    const bytes = Buffer.from(data.base64, "base64");
+    
+    // Fix for "mime type image/x-icon is not supported"
+    let contentType = data.contentType.toLowerCase();
+    if (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") {
+      contentType = "image/png";
+    }
+
+    const { error } = await supabaseAdmin.storage
+      .from("product-images")
+      .upload(path, bytes, { contentType, upsert: false });
+    if (error) throw new Error(error.message);
+    const { data: pub } = supabaseAdmin.storage.from("product-images").getPublicUrl(path);
+    return { url: pub.publicUrl };
+  });
+
 export const getMyAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

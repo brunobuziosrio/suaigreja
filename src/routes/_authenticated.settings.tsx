@@ -16,6 +16,7 @@ import {
   updateAccountSettings,
   checkSlugAvailability,
   updateCustomSlug,
+  uploadAccountAsset,
 } from "@/lib/account.functions";
 import { listEvents } from "@/lib/events.functions";
 import { listTypes } from "@/lib/types.functions";
@@ -33,6 +34,18 @@ import { useRef } from "react";
 import { MemberCard } from "@/components/member-card";
 
 const DEFAULT_COLOR = "#467da5";
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+}
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -606,21 +619,16 @@ function ChurchIdentityCard({
     }
     setBusy(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `church-logo/${crypto.randomUUID()}.${ext}`;
-
-      // Fix for "mime type image/x-icon is not supported"
-      let contentType = file.type;
-      if (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") {
-        contentType = "image/png";
-      }
-
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, [field]: pub.publicUrl }));
+      const base64 = await fileToBase64(file);
+      const res = await uploadAccountAsset({
+        data: {
+          folder: "church-logo",
+          filename: file.name,
+          contentType: file.type,
+          base64,
+        },
+      });
+      setForm((f: any) => ({ ...f, [field]: res.url }));
       toast.success("Logo enviado. Não esqueça de salvar.");
     } catch (e) {
       toast.error((e as Error).message);
@@ -642,13 +650,17 @@ function ChurchIdentityCard({
       const inputBlob = await res.blob();
       const outBlob = await removeBackground(inputBlob, { output: { format: "image/png" } });
       const file = new File([outBlob], `logo-${Date.now()}.png`, { type: "image/png" });
-      const path = `church-logo/${crypto.randomUUID()}.png`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: "image/png" });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, [field]: pub.publicUrl }));
+      
+      const base64 = await fileToBase64(file);
+      const uploadRes = await uploadAccountAsset({
+        data: {
+          folder: "church-logo",
+          filename: file.name,
+          contentType: file.type,
+          base64,
+        },
+      });
+      setForm((f: any) => ({ ...f, [field]: uploadRes.url }));
       toast.success("Fundo removido! Não esqueça de salvar.", { id: tId });
     } catch (e) {
       toast.error("Falha ao remover fundo: " + (e as Error).message, { id: tId });
@@ -965,14 +977,16 @@ function MemberCardSettingsCard({
     }
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `card-logo/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, card_logo_url: pub.publicUrl }));
+      const base64 = await fileToBase64(file);
+      const res = await uploadAccountAsset({
+        data: {
+          folder: "card-logo",
+          filename: file.name,
+          contentType: file.type,
+          base64,
+        },
+      });
+      setForm((f: any) => ({ ...f, card_logo_url: res.url }));
       toast.success("Logo enviada. Não esqueça de salvar.");
     } catch (e) {
       toast.error((e as Error).message);
@@ -992,13 +1006,17 @@ function MemberCardSettingsCard({
       const inputBlob = await res.blob();
       const outBlob = await removeBackground(inputBlob, { output: { format: "image/png" } });
       const file = new File([outBlob], `card-${Date.now()}.png`, { type: "image/png" });
-      const path = `card-logo/${crypto.randomUUID()}.png`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: "image/png" });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, card_logo_url: pub.publicUrl }));
+      
+      const base64 = await fileToBase64(file);
+      const uploadRes = await uploadAccountAsset({
+        data: {
+          folder: "card-logo",
+          filename: file.name,
+          contentType: file.type,
+          base64,
+        },
+      });
+      setForm((f: any) => ({ ...f, card_logo_url: uploadRes.url }));
       toast.success("Fundo removido! Não esqueça de salvar.", { id: tId });
     } catch (e) {
       toast.error("Falha ao remover fundo: " + (e as Error).message, { id: tId });

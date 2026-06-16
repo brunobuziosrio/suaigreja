@@ -8,7 +8,7 @@ import {
   deleteDonationCampaign,
   getDonationCampaignStats,
 } from "@/lib/donations.functions";
-import { getMyAccount, updateAccountSettings } from "@/lib/account.functions";
+import { getMyAccount, updateAccountSettings, uploadAccountAsset } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,18 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { HandCoins, Plus, Trash2, Pencil, Star, ExternalLink, Loader2, Image as ImageIcon } from "lucide-react";
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const base64 = (reader.result as string).split(",")[1];
+      resolve(base64);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+}
 
 type Campaign = {
   id?: string;
