@@ -164,9 +164,16 @@ function PlatformBrandingSection() {
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";
       const path = `branding/${kind}-${crypto.randomUUID()}.${ext}`;
+      
+      // Fix for "mime type image/x-icon is not supported"
+      let contentType = file.type;
+      if (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") {
+        contentType = "image/png";
+      }
+
       const { error } = await supabase.storage
         .from("product-images")
-        .upload(path, file, { upsert: false, contentType: file.type });
+        .upload(path, file, { upsert: false, contentType });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
       const dims = await new Promise<{ w: number; h: number } | null>((resolve) => {

@@ -440,9 +440,16 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${userId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
     const bytes = Buffer.from(data.base64, "base64");
+    
+    // Fix for "mime type image/x-icon is not supported" in Supabase Storage
+    let contentType = data.contentType.toLowerCase();
+    if (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") {
+      contentType = "image/png";
+    }
+
     const { error } = await supabaseAdmin.storage
       .from("event-covers")
-      .upload(path, bytes, { contentType: data.contentType.toLowerCase(), upsert: false });
+      .upload(path, bytes, { contentType, upsert: false });
     if (error) throw new Error(error.message);
     const { data: pub } = supabaseAdmin.storage.from("event-covers").getPublicUrl(path);
     return { url: pub.publicUrl };
