@@ -34,28 +34,35 @@ const hubSubItems = [
   { tab: "slides", title: "Slides", icon: LayoutTemplate },
   { tab: "destaques", title: "Destaques", icon: Sparkle },
   { tab: "mensagem", title: "Mensagem da semana", icon: MessageSquareQuote },
+  { tab: "noticias", title: "Notícias", icon: Newspaper },
   { tab: "secoes", title: "Seções visíveis", icon: Eye },
   { tab: "contatos", title: "Contatos & Redes", icon: Share2 },
   { tab: "doacoes", title: "Doações (Pix)", icon: HandCoins },
 ] as const;
 
-const communityItems = [
+const agendaItems = [
   { title: "Agenda", url: "/agenda", icon: CalendarDays },
   { title: "Eventos", url: "/eventos", icon: CalendarHeart },
-  { title: "Notícias", url: "/hub", search: { tab: "noticias" }, icon: Newspaper },
   { title: "Transmissões", url: "/transmissoes", icon: Radio },
+  { title: "Check-in de Cultos", url: "/checkin", icon: QrCode },
+] as const;
+
+const peopleItems = [
+  { title: "Membros", url: "/membros", icon: IdCard },
+  { title: "Visitantes", url: "/visitantes", icon: UserPlus },
+  { title: "Pequenos Grupos / Células", url: "/celulas", icon: Users2 },
   { title: "Pedidos de Oração", url: "/oracoes", icon: HandHeart },
 ] as const;
 
-const pastoralItems = [
-  { title: "Membros", url: "/membros", icon: IdCard },
+const teachingItems = [
   { title: "EBD / Escola Bíblica", url: "/ebd", icon: GraduationCap },
-  { title: "Documentos", url: "/documentos", icon: FileText },
-  { title: "Pequenos Grupos / Células", url: "/celulas", icon: Users2 },
-  { title: "Check-in de Cultos", url: "/checkin", icon: QrCode },
   { title: "Devocional Diário", url: "/devocional", icon: BookOpen },
-  { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+  { title: "Documentos", url: "/documentos", icon: FileText },
+] as const;
+
+const storeItems = [
+  { title: "Plugins & Extras", url: "/marketplace", icon: Store },
+  { title: "Assinatura", url: "/billing", icon: WalletCards },
 ] as const;
 
 const configItems = [
@@ -63,11 +70,6 @@ const configItems = [
   { title: "Tipos de evento", url: "/types", icon: ListChecks },
   { title: "Embed & Integrações", url: "/embed", icon: Code2 },
   { title: "Configurações gerais", url: "/settings", icon: Settings },
-] as const;
-
-const accountItems = [
-  { title: "Plugins & Extras", url: "/marketplace", icon: Store },
-  { title: "Assinatura", url: "/billing", icon: WalletCards },
 ] as const;
 
 export function AppSidebar() {
@@ -85,13 +87,12 @@ export function AppSidebar() {
   const { data: brandingData } = useBranding();
   const branding = brandingData ?? BRANDING_DEFAULTS;
 
-  const isInHub = currentPath === "/hub" && currentHubTab !== "noticias";
-  const isInCommunity = communityItems.some(
-    (i) => currentPath === i.url && (!("search" in i) || currentHubTab === i.search.tab),
-  );
-  const isInPastoral = pastoralItems.some((i) => currentPath === i.url);
+  const isInHub = currentPath === "/hub";
+  const isInAgenda = agendaItems.some((i) => currentPath === i.url);
+  const isInPeople = peopleItems.some((i) => currentPath === i.url);
+  const isInTeaching = teachingItems.some((i) => currentPath === i.url);
+  const isInStore = storeItems.some((i) => currentPath === i.url);
   const isInConfig = configItems.some((i) => currentPath === i.url);
-  const isInAccount = accountItems.some((i) => currentPath === i.url);
   const isInAdmin = currentPath.startsWith("/admin");
 
   return (
@@ -134,6 +135,7 @@ export function AppSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
+        {/* Visão geral */}
         <SidebarGroup>
           <SidebarGroupLabel>Visão geral</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -146,6 +148,14 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={currentPath === "/relatorios"}>
+                  <Link to="/relatorios" className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Relatórios</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -155,7 +165,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Página da Igreja</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <Collapsible defaultOpen={false} className="group/collapse">
+              <Collapsible defaultOpen={isInHub} className="group/collapse">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton isActive={isInHub} className="w-full">
@@ -191,36 +201,60 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Comunidade */}
+        {/* Agenda & Eventos */}
         <SidebarGroup>
-          <SidebarGroupLabel>Comunidade</SidebarGroupLabel>
+          <SidebarGroupLabel>Agenda & Eventos</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <Collapsible open className="group/collapse">
+              <Collapsible defaultOpen={isInAgenda} className="group/collapse">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInCommunity} className="w-full">
+                    <SidebarMenuButton isActive={isInAgenda} className="w-full">
+                      <CalendarDays className="h-4 w-4" />
+                      <span>Agenda & Eventos</span>
+                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarMenuSub>
+                      {agendaItems.map((sub) => (
+                        <SidebarMenuSubItem key={sub.url}>
+                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
+                            <Link to={sub.url} className="flex items-center gap-2">
+                              <sub.icon className="h-3.5 w-3.5" />
+                              <span>{sub.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  </CollapsibleContent>
+                </SidebarMenuItem>
+              </Collapsible>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Pessoas */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Pessoas</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <Collapsible defaultOpen={isInPeople} className="group/collapse">
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton isActive={isInPeople} className="w-full">
                       <Users className="h-4 w-4" />
-                      <span>Comunidade</span>
+                      <span>Pessoas</span>
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {communityItems.map((sub) => (
+                      {peopleItems.map((sub) => (
                         <SidebarMenuSubItem key={sub.url}>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={
-                              currentPath === sub.url &&
-                              (!("search" in sub) || currentHubTab === sub.search.tab)
-                            }
-                          >
-                            <Link
-                              to={sub.url}
-                              search={"search" in sub ? sub.search : undefined}
-                              className="flex items-center gap-2"
-                            >
+                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
+                            <Link to={sub.url} className="flex items-center gap-2">
                               <sub.icon className="h-3.5 w-3.5" />
                               <span>{sub.title}</span>
                             </Link>
@@ -235,23 +269,23 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Pastoral */}
+        {/* Ensino & Discipulado */}
         <SidebarGroup>
-          <SidebarGroupLabel>Pastoral</SidebarGroupLabel>
+          <SidebarGroupLabel>Ensino & Discipulado</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <Collapsible defaultOpen={isInPastoral} className="group/collapse">
+              <Collapsible defaultOpen={isInTeaching} className="group/collapse">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInPastoral} className="w-full">
+                    <SidebarMenuButton isActive={isInTeaching} className="w-full">
                       <BookOpenCheck className="h-4 w-4" />
-                      <span>Membros & EBD</span>
+                      <span>Ensino & Discipulado</span>
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {pastoralItems.map((sub) => (
+                      {teachingItems.map((sub) => (
                         <SidebarMenuSubItem key={sub.url}>
                           <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
                             <Link to={sub.url} className="flex items-center gap-2">
@@ -269,23 +303,40 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Conta & Serviços */}
+        {/* Comunicação */}
         <SidebarGroup>
-          <SidebarGroupLabel>Conta & Serviços</SidebarGroupLabel>
+          <SidebarGroupLabel>Comunicação</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <Collapsible defaultOpen={isInAccount} className="group/collapse">
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={currentPath === "/whatsapp"}>
+                  <Link to="/whatsapp" className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" />
+                    <span>WhatsApp</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Loja & Assinatura */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Loja & Assinatura</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <Collapsible defaultOpen={isInStore} className="group/collapse">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInAccount} className="w-full">
+                    <SidebarMenuButton isActive={isInStore} className="w-full">
                       <Store className="h-4 w-4" />
-                      <span>Planos & Extras</span>
+                      <span>Loja & Assinatura</span>
                       <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <SidebarMenuSub>
-                      {accountItems.map((sub) => (
+                      {storeItems.map((sub) => (
                         <SidebarMenuSubItem key={sub.url}>
                           <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
                             <Link to={sub.url} className="flex items-center gap-2">
@@ -299,7 +350,15 @@ export function AppSidebar() {
                   </CollapsibleContent>
                 </SidebarMenuItem>
               </Collapsible>
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
 
+        {/* Configurações da Igreja */}
+        <SidebarGroup>
+          <SidebarGroupLabel>Configurações da Igreja</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               <Collapsible defaultOpen={isInConfig} className="group/collapse">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
@@ -366,6 +425,14 @@ export function AppSidebar() {
                             <Link to="/admin/feedback" className="flex items-center gap-2">
                               <Megaphone className="h-3.5 w-3.5" />
                               <span>Atualizações & Sugestões</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={currentPath === "/admin/payments"}>
+                            <Link to="/admin/payments" className="flex items-center gap-2">
+                              <WalletCards className="h-3.5 w-3.5" />
+                              <span>Pagamentos da plataforma</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
