@@ -21,7 +21,7 @@ function AdminPaymentsPage() {
   if (checking) {
     return (
       <AppShell>
-        <div className="w-full text-sm text-muted-foreground">Verificando permissões…</div>
+        <div className="text-sm text-muted-foreground">Verificando permissões…</div>
       </AppShell>
     );
   }
@@ -40,16 +40,11 @@ function AdminPaymentsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
-            <WalletCards className="h-6 w-6" /> Pagamentos da plataforma
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Configurações de gateways de pagamento da plataforma SaaS.
-          </p>
-        </div>
+        <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+          <WalletCards className="h-6 w-6" /> Pagamentos da plataforma
+        </h1>
         <Card className="p-6">
-          <p className="text-sm text-muted-foreground">Página em desenvolvimento. Volte em breve.</p>
+          <p className="text-sm text-muted-foreground">Página em desenvolvimento.</p>
         </Card>
       </div>
     </AppShell>
