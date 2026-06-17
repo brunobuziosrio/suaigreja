@@ -28,8 +28,9 @@ import {
 } from "@/lib/admin.functions";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ShieldCheck, Users, Pencil, Check as CheckIcon, X as XIcon } from "lucide-react";
+import { ShieldCheck, Users, Pencil, Check as CheckIcon, X as XIcon, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPage,
@@ -140,6 +141,12 @@ function AdminPage() {
               Gerencie todas as contas do SaaS.
             </p>
           </div>
+          <Link to="/admin/test-data">
+            <Button variant="outline" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Dados de Teste
+            </Button>
+          </Link>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
