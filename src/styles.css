@@ -4,9 +4,84 @@
 
 @custom-variant dark (&:is(.dark *));
 
+:root {
+  --color-sand: #D4A373;
+  --color-sand-hover: #E6B88D;
+  --color-ocean: #0891B2;
+  --color-forest: #166534;
+  --color-forest-hover: #1e7e43;
+  --color-amber: #CA8A04;
+  --color-amber-hover: #dc9f13;
+  --color-error: #DC2626;
+  --color-gold: #C4A747;
+  --color-gold-soft: #D4B76B;
+}
+
 @layer base {
   body {
     @apply bg-white text-gray-900;
+  }
+
+  .bg-sand {
+    background-color: var(--color-sand) !important;
+  }
+
+  .text-sand {
+    color: var(--color-sand) !important;
+  }
+
+  .border-sand {
+    border-color: var(--color-sand) !important;
+  }
+
+  .focus-visible\:ring-sand:focus-visible {
+    outline: none !important;
+    --tw-ring-color: var(--color-sand) !important;
+    box-shadow: 0 0 0 2px var(--color-sand) !important;
+  }
+
+  .bg-ocean {
+    background-color: var(--color-ocean) !important;
+  }
+
+  .text-ocean {
+    color: var(--color-ocean) !important;
+  }
+
+  .border-ocean {
+    border-color: var(--color-ocean) !important;
+  }
+
+  .bg-forest {
+    background-color: var(--color-forest) !important;
+  }
+
+  .text-forest {
+    color: var(--color-forest) !important;
+  }
+
+  .border-forest {
+    border-color: var(--color-forest) !important;
+  }
+
+  .bg-gold {
+    background-color: var(--color-gold) !important;
+  }
+
+  .text-gold {
+    color: var(--color-gold) !important;
+  }
+
+  .bg-gold-soft {
+    background-color: var(--color-gold-soft) !important;
+  }
+
+  .hover\:bg-gold-soft:hover {
+    background-color: var(--color-gold-soft) !important;
+  }
+
+  .hover\:text-gold:hover {
+    color: var(--color-gold) !important;
   }
 }
 

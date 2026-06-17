@@ -97,7 +97,7 @@ function Index() {
             <Button asChild variant="ghost" size="sm" className="text-ink/70 hover:text-ink hover:bg-ink/5">
               <Link to="/login">Entrar</Link>
             </Button>
-            <Button asChild size="sm" className="bg-gold text-ink hover:bg-gold-soft shadow-[0_4px_20px_-4px_oklch(0.82_0.13_82_/_0.5)]">
+            <Button asChild size="sm" style={{ backgroundColor: '#C4A747', color: '#2D2D2D' }} className="hover:bg-gold-soft shadow-[0_4px_20px_-4px_oklch(0.82_0.13_82_/_0.5)]">
               <Link to="/login">Começar 7 dias grátis <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
           </div>
@@ -140,7 +140,8 @@ function Index() {
               <Button
                 asChild
                 size="lg"
-                className="h-12 px-7 text-base bg-gold text-ink hover:bg-gold-soft shadow-[0_10px_40px_-10px_oklch(0.82_0.13_82_/_0.6)] transition-all hover:translate-y-[-1px]"
+                style={{ backgroundColor: '#C4A747', color: '#2D2D2D' }}
+                className="h-12 px-7 text-base hover:bg-gold-soft shadow-[0_10px_40px_-10px_oklch(0.82_0.13_82_/_0.6)] transition-all hover:translate-y-[-1px]"
               >
                 <Link to="/login">Começar 7 dias grátis <ArrowRight className="h-4 w-4" /></Link>
               </Button>
@@ -578,7 +579,7 @@ function Index() {
             Tecnologia com propósito. Beleza com fé. A plataforma que sua igreja merece.
           </p>
           <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg" className="h-12 px-8 text-base bg-gold text-ink hover:bg-gold-soft shadow-[0_10px_40px_-10px_oklch(0.82_0.13_82_/_0.6)]">
+            <Button asChild size="lg" style={{ backgroundColor: '#C4A747', color: '#2D2D2D' }} className="h-12 px-8 text-base hover:bg-gold-soft shadow-[0_10px_40px_-10px_oklch(0.82_0.13_82_/_0.6)]">
               <Link to="/login">Criar minha conta grátis <ArrowRight className="h-4 w-4" /></Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base border-ink/15 bg-ink/5 text-ink hover:bg-ink/10 hover:text-ink">

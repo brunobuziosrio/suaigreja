@@ -10,7 +10,7 @@ const badgeVariants = cva(
       variant: {
         default: "bg-amber-100 text-[#6B4A25]",
         primary: "bg-amber-100 text-[#6B4A25]",
-        success: "bg-green-100 text-[#166534]",
+        success: "bg-green-100 text-forest",
         warning: "bg-yellow-100 text-[#CA8A04]",
         error: "bg-red-100 text-[#DC2626]",
         neutral: "bg-gray-100 text-gray-700",
