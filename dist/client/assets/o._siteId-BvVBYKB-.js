@@ -1,1 +1,0 @@
-import{j as e}from"./index-Ce0EG7uP.js";const t=()=>e.jsx("div",{className:"min-h-screen flex items-center justify-center p-6 text-center",children:e.jsx("p",{children:"Mural não encontrado."})});export{t as notFoundComponent};
