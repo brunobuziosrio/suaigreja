@@ -153,7 +153,7 @@ function FinancesPage() {
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">Total de Doações</p>
                 <p className="text-2xl font-semibold mt-1">{stats.total}</p>
               </div>
-              <Calendar className="h-5 w-5 text-gray-400" />
+              <Calendar className="h-5 w-5 text-stone-light" />
             </div>
           </Card>
 
@@ -257,7 +257,7 @@ function FinancesPage() {
 
         {/* Summary */}
         {filtered.length > 0 && (
-          <Card className="p-4 bg-gray-50">
+          <Card className="p-4 bg-surface-sunken">
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Mostrando</p>

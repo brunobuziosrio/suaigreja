@@ -163,7 +163,7 @@ function TestDataPage() {
                   className={`p-4 border rounded-lg cursor-pointer transition ${
                     selectedAccount === account.id
                       ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
+                      : "border-outline hover:border-outline-strong"
                   }`}
                   onClick={() => setSelectedAccount(account.id)}
                 >
@@ -191,10 +191,10 @@ function TestDataPage() {
               <Plus className="h-5 w-5 text-green-600" />
               Gerar Dados de Teste
             </h2>
-            <p className="text-sm text-gray-700 mb-4">
+            <p className="text-sm text-ink-secondary mb-4">
               Isso criará dados de teste robustos incluindo:
             </p>
-            <ul className="text-sm text-gray-700 space-y-2 mb-6">
+            <ul className="text-sm text-ink-secondary space-y-2 mb-6">
               <li className="flex items-center gap-2">
                 <Users className="h-4 w-4" /> 30 membros com diferentes roles (membros, visitantes, líderes, pastores)
               </li>
@@ -211,7 +211,7 @@ function TestDataPage() {
             <Button
               onClick={() => genMut.mutate(selectedAccount)}
               disabled={genMut.isPending}
-              className="w-full bg-green-600 hover:bg-green-700 text-white"
+              className="w-full bg-forest hover:bg-forest-hover text-white"
             >
               {genMut.isPending ? (
                 <>
@@ -234,7 +234,7 @@ function TestDataPage() {
               <Trash2 className="h-5 w-5 text-red-600" />
               Limpar Todos os Dados de Teste
             </h2>
-            <Alert className="mb-4 border-red-200 bg-white">
+            <Alert className="mb-4 border-coral-soft bg-surface-elevated">
               <AlertTriangle className="h-4 w-4 text-red-600" />
               <AlertDescription className="text-red-700">
                 <strong>Atenção:</strong> Esta ação vai deletar permanentemente todos os {testDataCounts.total} registros

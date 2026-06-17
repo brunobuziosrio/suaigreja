@@ -118,7 +118,7 @@ const TAB_META: Record<HubTab, { label: string; Icon: any; desc: string }> = {
   geral: { label: "Geral", Icon: SettingsIcon, desc: "Endereço público, status da página e WhatsApp." },
   aparencia: { label: "Galeria", Icon: ImageIcon, desc: "Fotos da comunidade." },
   slides: { label: "Slides", Icon: LayoutTemplate, desc: "Carrossel grande logo abaixo do menu." },
-  destaques: { label: "Destaques", Icon: Sparkle, desc: "Números da comunidade com contador animado." },
+  destaques: { label: "Destaques Visuais", Icon: Sparkle, desc: "Números da comunidade com contador animado." },
   mensagem: { label: "Mensagem da semana", Icon: MessageSquareQuote, desc: "Palavra pastoral e versículo." },
   secoes: { label: "Seções visíveis", Icon: Eye, desc: "Ative ou desative módulos do site público." },
   noticias: { label: "Notícias", Icon: Newspaper, desc: "Postagens com foto, título e matéria." },
@@ -653,7 +653,7 @@ function HubEditor() {
         <>
         <Card className="p-5 space-y-3">
           <div className="flex items-start gap-3">
-            <div className="p-2 rounded-md bg-gradient-to-br from-pink-500 to-purple-600 text-white">
+            <div className="p-2 rounded-md bg-gradient-to-br from-sand to-ocean text-white">
               <InstagramIcon className="h-5 w-5" />
             </div>
             <div className="flex-1 min-w-0">
@@ -702,7 +702,7 @@ function HubEditor() {
                   toast.error(e instanceof Error ? e.message : "Falha ao iniciar conexão");
                 }
               }}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:opacity-90 text-white"
+              className="bg-gradient-to-r from-sand to-ocean hover:opacity-90 text-white"
             >
               <Link2 className="h-4 w-4 mr-2" /> Conectar Instagram
             </Button>
@@ -859,7 +859,7 @@ function HubEditor() {
                   <button
                     type="button"
                     onClick={() => setForm({ ...form, gallery_urls: form.gallery_urls.filter((_, idx) => idx !== i) })}
-                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition"
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-foreground/70 text-white opacity-0 group-hover:opacity-100 flex items-center justify-center transition"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -969,7 +969,7 @@ function HubEditor() {
         {tab === "destaques" && (
         <Card className="p-5 space-y-4">
           <div>
-            <h2 className="font-medium">Destaques da comunidade</h2>
+            <h2 className="font-medium">Destaques Visuais</h2>
             <p className="text-xs text-muted-foreground">
               4 cards fixos que aparecem no topo da página pública, com contador animado.
               Preencha apenas o <strong>número</strong> (ex.: <code>35</code>, <code>2000</code>).

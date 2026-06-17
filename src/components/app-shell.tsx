@@ -15,14 +15,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-outline bg-background px-4">
           <div className="flex items-center gap-2">
             <SidebarTrigger />
             <Separator orientation="vertical" className="h-4 mx-1" />
-            <span className="font-semibold">Agenda Religiosa</span>
+            <span className="font-display font-semibold tracking-tight text-ink">
+              Agenda Religiosa
+            </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground hidden sm:inline">{user?.email}</span>
+            <span className="hidden text-sm text-muted-foreground sm:inline">{user?.email}</span>
             <Button
               variant="ghost"
               size="sm"
@@ -31,14 +33,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 navigate({ to: "/login" });
               }}
             >
-              <LogOut className="h-4 w-4 mr-2" />
+              <LogOut className="mr-2 h-4 w-4" />
               Sair
             </Button>
           </div>
         </header>
-        <div className="p-6 w-full">
-          {children}
-        </div>
+        <div className="w-full bg-surface px-4 py-6 sm:px-6">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

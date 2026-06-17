@@ -37,6 +37,7 @@ import { Route as AuthenticatedMembrosRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated.marketplace'
 import { Route as AuthenticatedLocationsRouteImport } from './routes/_authenticated.locations'
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hub'
+import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
 import { Route as AuthenticatedEventosRouteImport } from './routes/_authenticated.eventos'
 import { Route as AuthenticatedEmbedRouteImport } from './routes/_authenticated.embed'
 import { Route as AuthenticatedEbdRouteImport } from './routes/_authenticated.ebd'
@@ -52,6 +53,7 @@ import { Route as NSlugPostIdRouteImport } from './routes/n.$slug.$postId'
 import { Route as ApiPublicMercadopagoWebhookRouteImport } from './routes/api.public.mercadopago-webhook'
 import { Route as ApiPublicAtivopayWebhookRouteImport } from './routes/api.public.ativopay-webhook'
 import { Route as AuthenticatedMarketplaceSlugRouteImport } from './routes/_authenticated.marketplace.$slug'
+import { Route as AuthenticatedAdminTestDataRouteImport } from './routes/_authenticated.admin.test-data'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated.admin.products'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated.admin.payments'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated.admin.feedback'
@@ -201,6 +203,11 @@ const AuthenticatedHubRoute = AuthenticatedHubRouteImport.update({
   path: '/hub',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFinancesRoute = AuthenticatedFinancesRouteImport.update({
+  id: '/finances',
+  path: '/finances',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEventosRoute = AuthenticatedEventosRouteImport.update({
   id: '/eventos',
   path: '/eventos',
@@ -279,6 +286,12 @@ const AuthenticatedMarketplaceSlugRoute =
     path: '/$slug',
     getParentRoute: () => AuthenticatedMarketplaceRoute,
   } as any)
+const AuthenticatedAdminTestDataRoute =
+  AuthenticatedAdminTestDataRouteImport.update({
+    id: '/admin/test-data',
+    path: '/admin/test-data',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminProductsRoute =
   AuthenticatedAdminProductsRouteImport.update({
     id: '/admin/products',
@@ -336,6 +349,7 @@ export interface FileRoutesByFullPath {
   '/ebd': typeof AuthenticatedEbdRoute
   '/embed': typeof AuthenticatedEmbedRoute
   '/eventos': typeof AuthenticatedEventosRoute
+  '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
@@ -362,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
+  '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
@@ -387,6 +402,7 @@ export interface FileRoutesByTo {
   '/ebd': typeof AuthenticatedEbdRoute
   '/embed': typeof AuthenticatedEmbedRoute
   '/eventos': typeof AuthenticatedEventosRoute
+  '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
@@ -413,6 +429,7 @@ export interface FileRoutesByTo {
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
+  '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
@@ -440,6 +457,7 @@ export interface FileRoutesById {
   '/_authenticated/ebd': typeof AuthenticatedEbdRoute
   '/_authenticated/embed': typeof AuthenticatedEmbedRoute
   '/_authenticated/eventos': typeof AuthenticatedEventosRoute
+  '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/hub': typeof AuthenticatedHubRoute
   '/_authenticated/locations': typeof AuthenticatedLocationsRoute
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
@@ -466,6 +484,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
+  '/_authenticated/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/_authenticated/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
@@ -493,6 +512,7 @@ export interface FileRouteTypes {
     | '/ebd'
     | '/embed'
     | '/eventos'
+    | '/finances'
     | '/hub'
     | '/locations'
     | '/marketplace'
@@ -519,6 +539,7 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/admin/payments'
     | '/admin/products'
+    | '/admin/test-data'
     | '/marketplace/$slug'
     | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
@@ -544,6 +565,7 @@ export interface FileRouteTypes {
     | '/ebd'
     | '/embed'
     | '/eventos'
+    | '/finances'
     | '/hub'
     | '/locations'
     | '/marketplace'
@@ -570,6 +592,7 @@ export interface FileRouteTypes {
     | '/admin/feedback'
     | '/admin/payments'
     | '/admin/products'
+    | '/admin/test-data'
     | '/marketplace/$slug'
     | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
@@ -596,6 +619,7 @@ export interface FileRouteTypes {
     | '/_authenticated/ebd'
     | '/_authenticated/embed'
     | '/_authenticated/eventos'
+    | '/_authenticated/finances'
     | '/_authenticated/hub'
     | '/_authenticated/locations'
     | '/_authenticated/marketplace'
@@ -622,6 +646,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/payments'
     | '/_authenticated/admin/products'
+    | '/_authenticated/admin/test-data'
     | '/_authenticated/marketplace/$slug'
     | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
@@ -856,6 +881,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHubRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/finances': {
+      id: '/_authenticated/finances'
+      path: '/finances'
+      fullPath: '/finances'
+      preLoaderRoute: typeof AuthenticatedFinancesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/eventos': {
       id: '/_authenticated/eventos'
       path: '/eventos'
@@ -961,6 +993,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMarketplaceSlugRouteImport
       parentRoute: typeof AuthenticatedMarketplaceRoute
     }
+    '/_authenticated/admin/test-data': {
+      id: '/_authenticated/admin/test-data'
+      path: '/admin/test-data'
+      fullPath: '/admin/test-data'
+      preLoaderRoute: typeof AuthenticatedAdminTestDataRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/products': {
       id: '/_authenticated/admin/products'
       path: '/admin/products'
@@ -1038,6 +1077,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEbdRoute: typeof AuthenticatedEbdRoute
   AuthenticatedEmbedRoute: typeof AuthenticatedEmbedRoute
   AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
+  AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
   AuthenticatedLocationsRoute: typeof AuthenticatedLocationsRoute
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRouteWithChildren
@@ -1053,6 +1093,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
+  AuthenticatedAdminTestDataRoute: typeof AuthenticatedAdminTestDataRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1067,6 +1108,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEbdRoute: AuthenticatedEbdRoute,
   AuthenticatedEmbedRoute: AuthenticatedEmbedRoute,
   AuthenticatedEventosRoute: AuthenticatedEventosRoute,
+  AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
   AuthenticatedLocationsRoute: AuthenticatedLocationsRoute,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRouteWithChildren,
@@ -1082,6 +1124,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
+  AuthenticatedAdminTestDataRoute: AuthenticatedAdminTestDataRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 

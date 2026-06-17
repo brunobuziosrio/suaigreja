@@ -4,6 +4,103 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-sans: "Manrope", "Inter", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Manrope", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+  --color-card: #ffffff;
+  --color-card-foreground: #111827;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111827;
+  --color-primary: #d4a373;
+  --color-primary-foreground: #2d2d2d;
+  --color-secondary: #f3f4f6;
+  --color-secondary-foreground: #111827;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #8b96a8;
+  --color-accent: #f8fafc;
+  --color-accent-foreground: #111827;
+  --color-border: #d1d5db;
+  --color-input: #d1d5db;
+  --color-ring: #d4a373;
+
+  --color-ink: #111827;
+  --color-ink-secondary: #4b5563;
+  --color-stone: #5a6b7d;
+  --color-stone-light: #8b96a8;
+  --color-stone-faint: #c9ced8;
+  --color-outline: #d1d5db;
+  --color-outline-strong: #9ca3af;
+  --color-surface: #f9fafb;
+  --color-surface-elevated: #ffffff;
+  --color-surface-sunken: #f3f4f6;
+  --color-sidebar: #f8fafc;
+  --color-sidebar-foreground: #111827;
+  --color-sidebar-primary: #1e3a5f;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #e8eef5;
+  --color-sidebar-accent-foreground: #111827;
+  --color-sidebar-border: #d1d5db;
+  --color-sidebar-ring: #1e3a5f;
+
+  --color-sand: #D4A373;
+  --color-sand-hover: #E6B88D;
+  --color-ocean: #0891B2;
+  --color-forest: #166534;
+  --color-forest-hover: #1e7e43;
+  --color-amber: #CA8A04;
+  --color-amber-hover: #dc9f13;
+  --color-error: #DC2626;
+  --color-gold: #C4A747;
+  --color-gold-soft: #D4B76B;
+}
+
+:root {
+  --font-sans: "Manrope", "Inter", system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", "Manrope", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+  --color-card: #ffffff;
+  --color-card-foreground: #111827;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #111827;
+  --color-primary: #d4a373;
+  --color-primary-foreground: #2d2d2d;
+  --color-secondary: #f3f4f6;
+  --color-secondary-foreground: #111827;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #8b96a8;
+  --color-accent: #f8fafc;
+  --color-accent-foreground: #111827;
+  --color-border: #d1d5db;
+  --color-input: #d1d5db;
+  --color-ring: #d4a373;
+
+  --color-ink: #111827;
+  --color-ink-secondary: #4b5563;
+  --color-stone: #5a6b7d;
+  --color-stone-light: #8b96a8;
+  --color-stone-faint: #c9ced8;
+  --color-outline: #d1d5db;
+  --color-outline-strong: #9ca3af;
+  --color-surface: #f9fafb;
+  --color-surface-elevated: #ffffff;
+  --color-surface-sunken: #f3f4f6;
+  --color-sidebar: #f8fafc;
+  --color-sidebar-foreground: #111827;
+  --color-sidebar-primary: #1e3a5f;
+  --color-sidebar-primary-foreground: #ffffff;
+  --color-sidebar-accent: #e8eef5;
+  --color-sidebar-accent-foreground: #111827;
+  --color-sidebar-border: #d1d5db;
+  --color-sidebar-ring: #1e3a5f;
+}
+
 :root {
   --color-sand: #D4A373;
   --color-sand-hover: #E6B88D;
@@ -18,8 +115,25 @@
 }
 
 @layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
   body {
-    @apply bg-white text-gray-900;
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+
+  /* Select nativo com fundo branco garantido */
+  select {
+    background-color: white !important;
+    color: #111827 !important;
+    border: 1px solid #d1d5db !important;
+  }
+
+  select option {
+    background-color: white !important;
+    color: #111827 !important;
   }
 
   .bg-sand {
@@ -83,6 +197,17 @@
   .hover\:text-gold:hover {
     color: var(--color-gold) !important;
   }
+}
+
+/* Forçar fundo branco em componentes Radix (Select, Dropdown, etc) que usam Portal */
+[data-radix-portal] div[role="listbox"],
+[data-radix-portal] div[role="menu"],
+[data-radix-select-viewport],
+[data-radix-dropdown-menu-content] {
+  background-color: white !important;
+  color: #111827 !important;
+  border: 1px solid #d1d5db !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
 }
 
 @keyframes marquee {

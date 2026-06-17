@@ -9,14 +9,15 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-sand text-gray-900 hover:bg-[#E6B88D] shadow-sm disabled:bg-gray-300 disabled:text-gray-500",
-        primary: "bg-sand text-gray-900 hover:bg-[#E6B88D] shadow-sm disabled:bg-gray-300",
-        secondary: "border border-gray-400 text-gray-900 hover:border-ocean hover:bg-blue-50",
-        success: "bg-forest text-white hover:bg-[#1e7e43] shadow-sm disabled:bg-gray-300",
-        warning: "bg-[#CA8A04] text-white hover:bg-[#dc9f13] shadow-sm disabled:bg-gray-300",
-        destructive: "bg-[#DC2626] text-white hover:bg-red-700 shadow-sm disabled:bg-gray-300",
-        outline: "border border-gray-400 text-gray-900 hover:border-gray-600 hover:bg-white",
-        ghost: "text-sand hover:bg-amber-50",
+        default:
+          "bg-sand text-ink hover:bg-sand-hover shadow-sm disabled:bg-muted disabled:text-stone-light",
+        primary: "bg-sand text-ink hover:bg-sand-hover shadow-sm disabled:bg-muted",
+        secondary: "border border-outline text-ink hover:border-ocean hover:bg-surface",
+        success: "bg-forest text-white hover:bg-forest-hover shadow-sm disabled:bg-muted",
+        warning: "bg-amber text-white hover:bg-amber-hover shadow-sm disabled:bg-muted",
+        destructive: "bg-error text-white hover:bg-red-700 shadow-sm disabled:bg-muted",
+        outline: "border border-outline text-ink hover:border-outline-strong hover:bg-background",
+        ghost: "text-sand hover:bg-surface-sunken",
         link: "text-ocean hover:text-blue-800 underline-offset-4 hover:underline",
       },
       size: {
@@ -35,19 +36,21 @@ const buttonVariants = cva(
   },
 );
 
-export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
-  asChild?: boolean;
-}
+type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
+  VariantProps<typeof buttonVariants> & {
+    asChild?: boolean;
+  };
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <Comp ref={ref} className={cn(buttonVariants({ variant, size, className }))} {...props} />
     );
   },
 );
+
 Button.displayName = "Button";
 
 export { Button, buttonVariants };

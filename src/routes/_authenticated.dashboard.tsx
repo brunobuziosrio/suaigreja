@@ -196,7 +196,7 @@ function DashboardPage() {
                           href={`https://wa.me/55${m.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Feliz aniversário, ${m.full_name.split(" ")[0]}! 🎉 Que Deus continue te abençoando.`)}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                          className="text-xs px-2 py-1 rounded bg-forest text-white hover:bg-forest-hover"
                         >
                           WhatsApp
                         </a>

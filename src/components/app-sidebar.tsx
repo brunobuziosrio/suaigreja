@@ -33,7 +33,7 @@ const hubSubItems = [
   { tab: "geral", title: "Geral", icon: SettingsIcon },
   { tab: "aparencia", title: "Galeria", icon: ImageIcon },
   { tab: "slides", title: "Slides", icon: LayoutTemplate },
-  { tab: "destaques", title: "Destaques", icon: Sparkle },
+  { tab: "destaques", title: "Destaques Visuais", icon: Sparkle },
   { tab: "mensagem", title: "Mensagem da semana", icon: MessageSquareQuote },
   { tab: "noticias", title: "Notícias", icon: Newspaper },
   { tab: "secoes", title: "Seções visíveis", icon: Eye },
@@ -113,7 +113,7 @@ export function AppSidebar() {
           ) : (
             <span
               aria-hidden
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-[#467da5] to-[#2c5879] text-white font-bold text-sm shadow-sm"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-sidebar-primary to-sand text-sidebar-primary-foreground font-bold text-sm shadow-sm"
             >
               {branding.icon_text}
             </span>
@@ -128,7 +128,7 @@ export function AppSidebar() {
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <span className="font-serif text-base font-semibold tracking-tight text-sidebar-foreground truncate">
+              <span className="font-display text-base font-semibold tracking-tight text-sidebar-foreground truncate">
                 {branding.brand_text}
               </span>
             )}
