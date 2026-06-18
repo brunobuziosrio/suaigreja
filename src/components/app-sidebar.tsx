@@ -33,7 +33,7 @@ const hubSubItems = [
   { tab: "geral", title: "Geral", icon: SettingsIcon },
   { tab: "aparencia", title: "Galeria", icon: ImageIcon },
   { tab: "slides", title: "Slides", icon: LayoutTemplate },
-  { tab: "destaques", title: "Destaques Visuais", icon: Sparkle },
+  { tab: "destaques", title: "Destaques", icon: Sparkle },
   { tab: "mensagem", title: "Mensagem da semana", icon: MessageSquareQuote },
   { tab: "noticias", title: "Notícias", icon: Newspaper },
   { tab: "secoes", title: "Seções visíveis", icon: Eye },

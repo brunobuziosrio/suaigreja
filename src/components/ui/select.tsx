@@ -23,6 +23,7 @@ const SelectTrigger = React.forwardRef<
       "focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
       className,
     )}
+    style={{ backgroundColor: "white", color: "#111827", opacity: 1 }}
     {...props}
   >
     {children}
@@ -40,6 +41,7 @@ const SelectScrollUpButton = React.forwardRef<
   <SelectPrimitive.ScrollUpButton
     ref={ref}
     className={cn("flex items-center justify-center py-1", className)}
+    style={{ backgroundColor: "white", color: "#111827" }}
     {...props}
   >
     <ChevronUp className="h-4 w-4" />
@@ -54,6 +56,7 @@ const SelectScrollDownButton = React.forwardRef<
   <SelectPrimitive.ScrollDownButton
     ref={ref}
     className={cn("flex items-center justify-center py-1", className)}
+    style={{ backgroundColor: "white", color: "#111827" }}
     {...props}
   >
     <ChevronDown className="h-4 w-4" />
@@ -69,7 +72,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border border-outline bg-white text-ink shadow-lg",
+        "relative z-[9999] max-h-96 min-w-[8rem] overflow-hidden rounded-md border border-outline bg-white text-ink shadow-lg",
         "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         "data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
@@ -78,17 +81,23 @@ const SelectContent = React.forwardRef<
         className,
       )}
       position={position}
-      style={{ backgroundColor: "white", color: "#111827" }}
+      style={{ 
+        backgroundColor: "white !important", 
+        background: "white !important",
+        color: "#111827 !important",
+        border: "1px solid #d1d5db !important",
+        zIndex: 9999
+      }}
       {...props}
     >
       <SelectScrollUpButton />
       <SelectPrimitive.Viewport
         className={cn(
-          "rounded-[inherit] bg-white p-1",
+          "rounded-[inherit] p-1",
           position === "popper" &&
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]",
         )}
-        style={{ backgroundColor: "white" }}
+        style={{ backgroundColor: "white", background: "white" }}
       >
         {children}
       </SelectPrimitive.Viewport>
