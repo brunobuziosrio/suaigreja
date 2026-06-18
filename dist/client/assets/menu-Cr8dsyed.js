@@ -1,0 +1,1 @@
+import{c as o}from"./createLucideIcon-BajQtZhx.js";const e=[["path",{d:"M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z",key:"1jg4f8"}]],c=o("facebook",e);const a=[["path",{d:"M4 5h16",key:"1tepv9"}],["path",{d:"M4 12h16",key:"1lakjw"}],["path",{d:"M4 19h16",key:"1djgab"}]],t=o("menu",a);export{c as F,t as M};
