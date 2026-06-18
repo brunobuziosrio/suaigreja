@@ -35,6 +35,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useRef } from "react";
 import { MemberCard } from "@/components/member-card";
+import { uploadHubAsset } from "@/lib/hub.functions";
 
 const DEFAULT_COLOR = "#467da5";
 
@@ -49,6 +50,7 @@ function SettingsPage() {
   const saveSlug = useServerFn(updateCustomSlug);
   const fetchEvents = useServerFn(listEvents);
   const fetchTypes = useServerFn(listTypes);
+  const uploadAsset = useServerFn(uploadHubAsset);
   const qc = useQueryClient();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -605,14 +607,26 @@ function ChurchIdentityCard({
     }
     setBusy(true);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `church-logo/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, [field]: pub.publicUrl }));
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => {
+          const res = reader.result as string;
+          resolve(res.split(",")[1]);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const { url } = await uploadAsset({
+        data: {
+          folder: "product-images",
+          filename: file.name,
+          contentType: file.type,
+          base64,
+        },
+      });
+
+      setForm((f: any) => ({ ...f, [field]: url }));
       toast.success("Logo enviado. Não esqueça de salvar.");
     } catch (e) {
       toast.error((e as Error).message);

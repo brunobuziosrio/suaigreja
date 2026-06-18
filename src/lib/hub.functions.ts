@@ -421,7 +421,7 @@ const ALLOWED_IMAGE_MIME = new Set([
 const ALLOWED_IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "ico"]);
 
 const UploadInput = z.object({
-  folder: z.enum(["hub-cover", "gallery", "slide", "news"]),
+  folder: z.enum(["hub-cover", "gallery", "slide", "news", "product-images"]),
   filename: z.string().min(1).max(120),
   contentType: z.string().min(1).max(100).refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
     message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
@@ -441,17 +441,14 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
     const path = `${userId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
     const bytes = Buffer.from(data.base64, "base64");
     
-    // Fix for "mime type image/x-icon is not supported" in Supabase Storage
-    let contentType = data.contentType.toLowerCase();
-    if (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") {
-      contentType = "image/png";
-    }
+    const contentType = data.contentType.toLowerCase();
+    const bucket = data.folder === "product-images" ? "product-images" : "event-covers";
 
     const { error } = await supabaseAdmin.storage
-      .from("event-covers")
-      .upload(path, bytes, { contentType, upsert: false });
+      .from(bucket)
+      .upload(path, bytes, { contentType: (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") ? "image/png" : contentType, upsert: false });
     if (error) throw new Error(error.message);
-    const { data: pub } = supabaseAdmin.storage.from("event-covers").getPublicUrl(path);
+    const { data: pub } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
     return { url: pub.publicUrl };
   });
 
