@@ -118,7 +118,7 @@ const TAB_META: Record<HubTab, { label: string; Icon: any; desc: string }> = {
   geral: { label: "Geral", Icon: SettingsIcon, desc: "Endereço público, status da página e WhatsApp." },
   aparencia: { label: "Galeria", Icon: ImageIcon, desc: "Fotos da comunidade." },
   slides: { label: "Slides", Icon: LayoutTemplate, desc: "Carrossel grande logo abaixo do menu." },
-  destaques: { label: "Destaques", Icon: Sparkle, desc: "Números da comunidade com contador animado." },
+  destaques: { label: "Destaques da Página", Icon: Sparkle, desc: "Números da comunidade com contador animado." },
   mensagem: { label: "Mensagem da semana", Icon: MessageSquareQuote, desc: "Palavra pastoral e versículo." },
   secoes: { label: "Seções visíveis", Icon: Eye, desc: "Ative ou desative módulos do site público." },
   noticias: { label: "Notícias", Icon: Newspaper, desc: "Postagens com foto, título e matéria." },
@@ -969,7 +969,7 @@ function HubEditor() {
         {tab === "destaques" && (
         <Card className="p-5 space-y-4">
           <div>
-            <h2 className="font-medium">Destaques</h2>
+            <h2 className="font-medium">Destaques da Página</h2>
             <p className="text-xs text-muted-foreground">
               4 cards fixos que aparecem no topo da página pública, com contador animado.
               Preencha apenas o <strong>número</strong> (ex.: <code>35</code>, <code>2000</code>).
