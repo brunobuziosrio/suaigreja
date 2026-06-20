@@ -108,6 +108,9 @@ export const uploadAccountAsset = createServerFn({ method: "POST" })
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${data.folder}/${userId}-${Date.now()}-${rand}.${ext}`;
     const bytes = Buffer.from(data.base64, "base64");
+    if (bytes.length === 0 || bytes.length > 8 * 1024 * 1024) {
+      throw new Error("A imagem deve ter entre 1 byte e 8 MB.");
+    }
     
     // Fix for "mime type image/x-icon is not supported"
     let contentType = data.contentType.toLowerCase();

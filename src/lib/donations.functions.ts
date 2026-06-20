@@ -87,13 +87,13 @@ const slugValidator = (input: { slug: string }) => {
 async function resolveAccountBySlug(slug: string) {
   let { data } = await supabaseAdmin
     .from("accounts")
-    .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled")
+    .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled")
     .eq("custom_slug", slug)
     .maybeSingle();
   if (!data) {
     const fb = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled")
+      .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled")
       .eq("site_id", slug)
       .maybeSingle();
     data = fb.data;

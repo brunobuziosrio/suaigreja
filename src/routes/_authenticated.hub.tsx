@@ -25,6 +25,7 @@ import {
   disconnectInstagram,
 } from "@/lib/instagram.functions";
 import { DonationsManager } from "@/components/donations-manager";
+import { validateImageFile } from "@/lib/file-validation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -424,7 +425,8 @@ function HubEditor() {
   }
 
   async function uploadViaServer(file: File, folder: "hub-cover" | "gallery" | "slide" | "news"): Promise<string> {
-    if (file.size > 20 * 1024 * 1024) throw new Error("Arquivo maior que 20MB");
+    const validationError = validateImageFile(file, 8);
+    if (validationError) throw new Error(validationError);
 
     const base64 = await new Promise<string>((resolve, reject) => {
       const reader = new FileReader();

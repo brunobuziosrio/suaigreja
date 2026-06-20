@@ -1,12 +1,34 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
 import {
-  LayoutDashboard, MapPin, ListChecks, CalendarDays, Code2, Settings, ShieldCheck,
-  WalletCards, Store, Package, Users, CalendarHeart, HandHeart, UserPlus, Globe,
-  Settings as SettingsIcon, Image as ImageIcon, LayoutTemplate, Sparkle,
-  MessageSquareQuote, Newspaper, Share2, HandCoins, Eye, ChevronDown, Radio,
-  IdCard, GraduationCap, FileText, BookOpenCheck, Users2, QrCode, BookOpen, BarChart3,
-  Megaphone, MessageCircle,
+  BarChart3,
+  BookOpen,
+  BookOpenCheck,
+  CalendarDays,
+  CalendarHeart,
+  ChevronDown,
+  CircleDollarSign,
+  Code2,
+  FileText,
+  Globe,
+  GraduationCap,
+  HandHeart,
+  IdCard,
+  LayoutDashboard,
+  ListChecks,
+  MapPin,
+  Megaphone,
+  MessageCircle,
+  Package,
+  QrCode,
+  Radio,
+  Settings,
+  ShieldCheck,
+  Store,
+  UserPlus,
+  Users,
+  Users2,
+  WalletCards,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,54 +51,124 @@ import {
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const hubSubItems = [
-  { tab: "geral", title: "Geral", icon: SettingsIcon },
-  { tab: "aparencia", title: "Galeria", icon: ImageIcon },
-  { tab: "slides", title: "Slides", icon: LayoutTemplate },
-  { tab: "destaques", title: "Destaques", icon: Sparkle },
-  { tab: "mensagem", title: "Mensagem da semana", icon: MessageSquareQuote },
-  { tab: "noticias", title: "Notícias", icon: Newspaper },
-  { tab: "secoes", title: "Seções visíveis", icon: Eye },
-  { tab: "contatos", title: "Contatos & Redes", icon: Share2 },
-  { tab: "doacoes", title: "Doações (Pix)", icon: HandCoins },
-] as const;
+type NavItem = {
+  title: string;
+  url: string;
+  icon: ComponentType<{ className?: string }>;
+};
 
-const agendaItems = [
-  { title: "Agenda", url: "/agenda", icon: CalendarDays },
-  { title: "Eventos", url: "/eventos", icon: CalendarHeart },
-  { title: "Transmissões", url: "/transmissoes", icon: Radio },
-  { title: "Check-in de Cultos", url: "/checkin", icon: QrCode },
-] as const;
+const primaryItems: NavItem[] = [
+  { title: "Visão geral", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
+];
 
-const peopleItems = [
-  { title: "Membros", url: "/membros", icon: IdCard },
-  { title: "Visitantes", url: "/visitantes", icon: UserPlus },
-  { title: "Pequenos Grupos / Células", url: "/celulas", icon: Users2 },
-  { title: "Pedidos de Oração", url: "/oracoes", icon: HandHeart },
-] as const;
+const navGroups: Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] }> = [
+  {
+    label: "Site e comunicação",
+    icon: Globe,
+    items: [
+      { title: "Página da igreja", url: "/hub", icon: Globe },
+      { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
+      { title: "Transmissões", url: "/transmissoes", icon: Radio },
+    ],
+  },
+  {
+    label: "Pessoas e cuidado",
+    icon: Users,
+    items: [
+      { title: "Membros", url: "/membros", icon: IdCard },
+      { title: "Visitantes", url: "/visitantes", icon: UserPlus },
+      { title: "Pequenos grupos", url: "/celulas", icon: Users2 },
+      { title: "Pedidos de oração", url: "/oracoes", icon: HandHeart },
+    ],
+  },
+  {
+    label: "Agenda e operação",
+    icon: CalendarDays,
+    items: [
+      { title: "Agenda", url: "/agenda", icon: CalendarDays },
+      { title: "Eventos", url: "/eventos", icon: CalendarHeart },
+      { title: "Check-in", url: "/checkin", icon: QrCode },
+      { title: "Locais", url: "/locations", icon: MapPin },
+      { title: "Tipos de evento", url: "/types", icon: ListChecks },
+    ],
+  },
+  {
+    label: "Ensino e conteúdo",
+    icon: BookOpenCheck,
+    items: [
+      { title: "Escola bíblica", url: "/ebd", icon: GraduationCap },
+      { title: "Devocionais", url: "/devocional", icon: BookOpen },
+      { title: "Documentos", url: "/documentos", icon: FileText },
+    ],
+  },
+  {
+    label: "Gestão",
+    icon: Settings,
+    items: [
+      { title: "Finanças", url: "/finances", icon: CircleDollarSign },
+      { title: "Configurações", url: "/settings", icon: Settings },
+      { title: "Integrações", url: "/embed", icon: Code2 },
+      { title: "Plugins e extras", url: "/marketplace", icon: Store },
+      { title: "Assinatura", url: "/billing", icon: WalletCards },
+    ],
+  },
+];
 
-const teachingItems = [
-  { title: "EBD / Escola Bíblica", url: "/ebd", icon: GraduationCap },
-  { title: "Devocional Diário", url: "/devocional", icon: BookOpen },
-  { title: "Documentos", url: "/documentos", icon: FileText },
-] as const;
+function NavGroup({
+  label,
+  icon: GroupIcon,
+  items,
+  currentPath,
+}: {
+  label: string;
+  icon: NavItem["icon"];
+  items: NavItem[];
+  currentPath: string;
+}) {
+  const isActive = items.some(
+    (item) => currentPath === item.url || currentPath.startsWith(`${item.url}/`),
+  );
 
-const storeItems = [
-  { title: "Plugins & Extras", url: "/marketplace", icon: Store },
-  { title: "Assinatura", url: "/billing", icon: WalletCards },
-] as const;
-
-const configItems = [
-  { title: "Locais", url: "/locations", icon: MapPin },
-  { title: "Tipos de evento", url: "/types", icon: ListChecks },
-  { title: "Embed & Integrações", url: "/embed", icon: Code2 },
-  { title: "Configurações gerais", url: "/settings", icon: Settings },
-] as const;
+  return (
+    <Collapsible defaultOpen={isActive} className="group/collapse">
+      <SidebarMenuItem>
+        <CollapsibleTrigger asChild>
+          <SidebarMenuButton
+            isActive={isActive}
+            className="h-10 w-full"
+            aria-label={`${isActive ? "Recolher" : "Expandir"} ${label}`}
+          >
+            <GroupIcon className="h-4 w-4" />
+            <span>{label}</span>
+            <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapse:rotate-180" />
+          </SidebarMenuButton>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <SidebarMenuSub>
+            {items.map((item) => (
+              <SidebarMenuSubItem key={item.url}>
+                <SidebarMenuSubButton
+                  asChild
+                  isActive={currentPath === item.url}
+                  className="min-h-9"
+                >
+                  <Link to={item.url} activeOptions={{ exact: true }}>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuSubButton>
+              </SidebarMenuSubItem>
+            ))}
+          </SidebarMenuSub>
+        </CollapsibleContent>
+      </SidebarMenuItem>
+    </Collapsible>
+  );
+}
 
 export function AppSidebar() {
-  const currentPath = useRouterState({ select: (s) => s.location.pathname });
-  const currentSearch = useRouterState({ select: (s) => s.location.search as Record<string, unknown> });
-  const currentHubTab = (currentSearch?.tab as string | undefined) ?? "geral";
+  const currentPath = useRouterState({ select: (state) => state.location.pathname });
   const { user } = useAuth();
   const checkAdmin = useServerFn(getIsAdmin);
   const { data: adminCheck } = useQuery({
@@ -84,25 +176,25 @@ export function AppSidebar() {
     queryFn: () => checkAdmin(),
     enabled: !!user,
   });
-  const isAdmin = !!adminCheck?.isAdmin;
   const { data: brandingData } = useBranding();
   const branding = brandingData ?? BRANDING_DEFAULTS;
-
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  const isInHub = currentPath === "/hub";
-  const isInAgenda = agendaItems.some((i) => currentPath === i.url);
-  const isInPeople = peopleItems.some((i) => currentPath === i.url);
-  const isInTeaching = teachingItems.some((i) => currentPath === i.url);
-  const isInStore = storeItems.some((i) => currentPath === i.url);
-  const isInConfig = configItems.some((i) => currentPath === i.url);
-  const isInAdmin = currentPath.startsWith("/admin");
+  const adminItems: NavItem[] = [
+    { title: "Contas", url: "/admin", icon: Users },
+    { title: "Produtos", url: "/admin/products", icon: Package },
+    { title: "Atualizações", url: "/admin/feedback", icon: Megaphone },
+    { title: "Pagamentos", url: "/admin/payments", icon: WalletCards },
+  ];
 
   return (
-    <Sidebar collapsible="icon">
+    <Sidebar collapsible="icon" aria-label="Navegação principal">
       <SidebarHeader className="border-b border-sidebar-border px-3 py-3 group-data-[collapsible=icon]:px-2">
-        <Link to="/dashboard" className="flex items-center gap-2 min-w-0">
+        <Link
+          to="/dashboard"
+          className="flex min-h-10 min-w-0 items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+        >
           {branding.icon_url && !iconError ? (
             <img
               src={branding.icon_url}
@@ -113,12 +205,12 @@ export function AppSidebar() {
           ) : (
             <span
               aria-hidden
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-sidebar-primary to-sand text-sidebar-primary-foreground font-bold text-sm shadow-sm"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-sidebar-primary to-sand text-sm font-bold text-sidebar-primary-foreground shadow-sm"
             >
               {branding.icon_text}
             </span>
           )}
-          <span className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden min-w-0">
+          <span className="flex min-w-0 flex-col leading-tight group-data-[collapsible=icon]:hidden">
             {branding.logo_url && !logoError ? (
               <img
                 src={branding.logo_url}
@@ -128,7 +220,7 @@ export function AppSidebar() {
                 onError={() => setLogoError(true)}
               />
             ) : (
-              <span className="font-display text-base font-semibold tracking-tight text-sidebar-foreground truncate">
+              <span className="truncate font-display text-base font-semibold tracking-tight text-sidebar-foreground">
                 {branding.brand_text}
               </span>
             )}
@@ -140,312 +232,48 @@ export function AppSidebar() {
           </span>
         </Link>
       </SidebarHeader>
-      <SidebarContent>
-        {/* Visão geral */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Visão geral</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === "/dashboard"}>
-                  <Link to="/dashboard" className="flex items-center gap-2">
-                    <LayoutDashboard className="h-4 w-4" />
-                    <span>Dashboard</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === "/relatorios"}>
-                  <Link to="/relatorios" className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Relatórios</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
 
-        {/* Página da Igreja */}
+      <SidebarContent className="py-2">
         <SidebarGroup>
-          <SidebarGroupLabel>Página da Igreja</SidebarGroupLabel>
+          <SidebarGroupLabel>Início</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <Collapsible defaultOpen={isInHub} className="group/collapse">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInHub} className="w-full">
-                      <Globe className="h-4 w-4" />
-                      <span>Seções do site</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {hubSubItems.map((sub) => (
-                        <SidebarMenuSubItem key={sub.tab}>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={isInHub && currentHubTab === sub.tab}
-                          >
-                            <Link
-                              to="/hub"
-                              search={{ tab: sub.tab === "geral" ? undefined : sub.tab } as any}
-                              className="flex items-center gap-2"
-                            >
-                              <sub.icon className="h-3.5 w-3.5" />
-                              <span>{sub.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
+              {primaryItems.map((item) => (
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={currentPath === item.url} className="h-10">
+                    <Link to={item.url} activeOptions={{ exact: true }}>
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
                 </SidebarMenuItem>
-              </Collapsible>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Agenda & Eventos */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Agenda & Eventos</SidebarGroupLabel>
+        <SidebarGroup className="pt-0">
+          <SidebarGroupLabel>Áreas de trabalho</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <Collapsible defaultOpen={isInAgenda} className="group/collapse">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInAgenda} className="w-full">
-                      <CalendarDays className="h-4 w-4" />
-                      <span>Agenda & Eventos</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {agendaItems.map((sub) => (
-                        <SidebarMenuSubItem key={sub.url}>
-                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
-                            <Link to={sub.url} className="flex items-center gap-2">
-                              <sub.icon className="h-3.5 w-3.5" />
-                              <span>{sub.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
+              {navGroups.map((group) => (
+                <NavGroup key={group.label} {...group} currentPath={currentPath} />
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Pessoas */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Pessoas</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <Collapsible defaultOpen={isInPeople} className="group/collapse">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInPeople} className="w-full">
-                      <Users className="h-4 w-4" />
-                      <span>Pessoas</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {peopleItems.map((sub) => (
-                        <SidebarMenuSubItem key={sub.url}>
-                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
-                            <Link to={sub.url} className="flex items-center gap-2">
-                              <sub.icon className="h-3.5 w-3.5" />
-                              <span>{sub.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Ensino & Discipulado */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Ensino & Discipulado</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <Collapsible defaultOpen={isInTeaching} className="group/collapse">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInTeaching} className="w-full">
-                      <BookOpenCheck className="h-4 w-4" />
-                      <span>Ensino & Discipulado</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {teachingItems.map((sub) => (
-                        <SidebarMenuSubItem key={sub.url}>
-                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
-                            <Link to={sub.url} className="flex items-center gap-2">
-                              <sub.icon className="h-3.5 w-3.5" />
-                              <span>{sub.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Comunicação */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Comunicação</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={currentPath === "/whatsapp"}>
-                  <Link to="/whatsapp" className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4" />
-                    <span>WhatsApp</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Loja & Assinatura */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Loja & Assinatura</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <Collapsible defaultOpen={isInStore} className="group/collapse">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInStore} className="w-full">
-                      <Store className="h-4 w-4" />
-                      <span>Loja & Assinatura</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {storeItems.map((sub) => (
-                        <SidebarMenuSubItem key={sub.url}>
-                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
-                            <Link to={sub.url} className="flex items-center gap-2">
-                              <sub.icon className="h-3.5 w-3.5" />
-                              <span>{sub.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {/* Configurações da Igreja */}
-        <SidebarGroup>
-          <SidebarGroupLabel>Configurações da Igreja</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <Collapsible defaultOpen={isInConfig} className="group/collapse">
-                <SidebarMenuItem>
-                  <CollapsibleTrigger asChild>
-                    <SidebarMenuButton isActive={isInConfig} className="w-full">
-                      <Settings className="h-4 w-4" />
-                      <span>Configurações</span>
-                      <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                    </SidebarMenuButton>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
-                      {configItems.map((sub) => (
-                        <SidebarMenuSubItem key={sub.url}>
-                          <SidebarMenuSubButton asChild isActive={currentPath === sub.url}>
-                            <Link to={sub.url} className="flex items-center gap-2">
-                              <sub.icon className="h-3.5 w-3.5" />
-                              <span>{sub.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  </CollapsibleContent>
-                </SidebarMenuItem>
-              </Collapsible>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        {isAdmin && (
-          <SidebarGroup>
+        {!!adminCheck?.isAdmin && (
+          <SidebarGroup className="pt-0">
             <SidebarGroupLabel>Administração</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                <Collapsible defaultOpen={isInAdmin} className="group/collapse">
-                  <SidebarMenuItem>
-                    <CollapsibleTrigger asChild>
-                      <SidebarMenuButton isActive={isInAdmin} className="w-full">
-                        <ShieldCheck className="h-4 w-4" />
-                        <span>Admin</span>
-                        <ChevronDown className="ml-auto h-4 w-4 transition-transform group-data-[state=open]/collapse:rotate-180" />
-                      </SidebarMenuButton>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <SidebarMenuSub>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={currentPath === "/admin"}>
-                            <Link to="/admin" className="flex items-center gap-2">
-                              <Users className="h-3.5 w-3.5" />
-                              <span>Contas</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={currentPath === "/admin/products"}>
-                            <Link to="/admin/products" className="flex items-center gap-2">
-                              <Package className="h-3.5 w-3.5" />
-                              <span>Produtos</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={currentPath === "/admin/feedback"}>
-                            <Link to="/admin/feedback" className="flex items-center gap-2">
-                              <Megaphone className="h-3.5 w-3.5" />
-                              <span>Atualizações & Sugestões</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild isActive={currentPath === "/admin/payments"}>
-                            <Link to="/admin/payments" className="flex items-center gap-2">
-                              <WalletCards className="h-3.5 w-3.5" />
-                              <span>Pagamentos da plataforma</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      </SidebarMenuSub>
-                    </CollapsibleContent>
-                  </SidebarMenuItem>
-                </Collapsible>
+                <NavGroup
+                  label="Plataforma"
+                  icon={ShieldCheck}
+                  items={adminItems}
+                  currentPath={currentPath}
+                />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

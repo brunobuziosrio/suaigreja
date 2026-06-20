@@ -38,6 +38,7 @@ import { formatCentsBRL } from "@/lib/billing-plans";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
+import { validateImageFile } from "@/lib/file-validation";
 
 export const Route = createFileRoute("/_authenticated/eventos")({
   component: EventosPage,
@@ -78,14 +79,8 @@ function CoverUpload({
   const [cropSrc, setCropSrc] = useState<string | null>(null);
 
   function onPick(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione uma imagem");
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      toast.error("Imagem deve ter no máximo 10MB");
-      return;
-    }
+    const validationError = validateImageFile(file, 10);
+    if (validationError) return toast.error(validationError);
     const r = new FileReader();
     r.onload = () => setCropSrc(r.result as string);
     r.readAsDataURL(file);

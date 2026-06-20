@@ -32,10 +32,14 @@ const upsertSchema = z.object({
   address_number: z.string().max(20).optional().nullable(),
   address_city: z.string().max(100).optional().nullable(),
   address_state: z.string().max(40).optional().nullable(),
+  neighborhood: z.string().max(120).optional().nullable(),
+  ministry: z.string().max(120).optional().nullable(),
+  pastoral: z.string().max(120).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   cpf: z.string().max(20).optional().nullable(),
   congregation: z.string().max(160).optional().nullable(),
   is_tither: z.boolean().optional().default(false),
+  whatsapp_consent: z.boolean().optional().default(false),
 });
 
 export const upsertMember = createServerFn({ method: "POST" })
@@ -58,10 +62,14 @@ export const upsertMember = createServerFn({ method: "POST" })
       address_number: data.address_number?.trim() || null,
       address_city: data.address_city?.trim() || null,
       address_state: data.address_state?.trim() || null,
+      neighborhood: data.neighborhood?.trim() || null,
+      ministry: data.ministry?.trim() || null,
+      pastoral: data.pastoral?.trim() || null,
       notes: data.notes?.trim() || null,
       cpf: data.cpf?.trim() || null,
       congregation: data.congregation?.trim() || null,
       is_tither: data.is_tither ?? false,
+      whatsapp_consent: data.whatsapp_consent ?? false,
     };
     if (data.id) {
       const { error } = await supabase

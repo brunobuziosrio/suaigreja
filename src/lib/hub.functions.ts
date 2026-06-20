@@ -440,7 +440,10 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${userId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
     const bytes = Buffer.from(data.base64, "base64");
-    
+    if (bytes.length === 0 || bytes.length > 8 * 1024 * 1024) {
+      throw new Error("A imagem deve ter entre 1 byte e 8 MB.");
+    }
+
     const contentType = data.contentType.toLowerCase();
     const bucket = data.folder === "product-images" ? "product-images" : "event-covers";
 
@@ -456,7 +459,10 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
 // Avoids sending megabytes of base64 through the server-fn JSON envelope.
 const SignInput = z.object({
   folder: z.enum(["hub-cover", "gallery", "slide", "news"]),
-  filename: z.string().min(1).max(120),
+  filename: z.string().min(1).max(120).refine((name) => {
+    const ext = name.split(".").pop()?.toLowerCase() || "";
+    return ALLOWED_IMAGE_EXT.has(ext);
+  }, "Extensão de imagem não permitida."),
 });
 
 export const createHubUploadUrl = createServerFn({ method: "POST" })
@@ -479,7 +485,7 @@ export const createHubUploadUrl = createServerFn({ method: "POST" })
 // ===================== HUB CHROME (shared header/footer) =====================
 
 const CHROME_COLS =
-  "id, site_id, custom_slug, brand_title, brand_logo_url, brand_logo_height_px, hub_bio, primary_color, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, live_url, pix_key, cta_label, cta_enabled";
+  "id, site_id, custom_slug, brand_title, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_bio, primary_color, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, live_url, pix_key, cta_label, cta_enabled";
 
 export const getHubChrome = createServerFn({ method: "GET" })
   .inputValidator((input: { siteId: string }) => {
@@ -516,13 +522,13 @@ export const getPublicNews = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     let { data: account } = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled")
+      .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
       .eq("custom_slug", data.slug)
       .maybeSingle();
     if (!account) {
       const fb = await supabaseAdmin
         .from("accounts")
-        .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled")
+        .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
         .eq("site_id", data.slug)
         .maybeSingle();
       account = fb.data;
@@ -559,13 +565,13 @@ export const getPublicNewsPost = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     let { data: account } = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled")
+      .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
       .eq("custom_slug", data.slug)
       .maybeSingle();
     if (!account) {
       const fb = await supabaseAdmin
         .from("accounts")
-        .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled")
+        .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
         .eq("site_id", data.slug)
         .maybeSingle();
       account = fb.data;

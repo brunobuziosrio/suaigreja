@@ -16,6 +16,7 @@ import {
   updateAccountSettings,
   checkSlugAvailability,
   updateCustomSlug,
+  uploadAccountAsset,
 } from "@/lib/account.functions";
 import { listEvents } from "@/lib/events.functions";
 import { listTypes } from "@/lib/types.functions";
@@ -35,7 +36,6 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useRef } from "react";
 import { MemberCard } from "@/components/member-card";
-import { uploadHubAsset } from "@/lib/hub.functions";
 
 const DEFAULT_COLOR = "#467da5";
 
@@ -48,12 +48,31 @@ function SettingsPage() {
   const updateSettings = useServerFn(updateAccountSettings);
   const checkSlug = useServerFn(checkSlugAvailability);
   const saveSlug = useServerFn(updateCustomSlug);
+  const uploadAsset = useServerFn(uploadAccountAsset);
   const fetchEvents = useServerFn(listEvents);
   const fetchTypes = useServerFn(listTypes);
-  const uploadAsset = useServerFn(uploadHubAsset);
   const qc = useQueryClient();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+
+  async function saveAccountSettings(nextForm = form) {
+    return updateSettings({
+      data: {
+        ...nextForm,
+        brand_logo_url: nextForm.brand_logo_url || null,
+        brand_logo_height_px: Number(nextForm.brand_logo_height_px) || 32,
+        brand_footer_logo_url: nextForm.brand_footer_logo_url || null,
+        card_logo_url: nextForm.card_logo_url || null,
+        card_logo_height_px: Number(nextForm.card_logo_height_px) || 72,
+        card_accent_color: nextForm.card_accent_color,
+        card_footer_text: nextForm.card_footer_text,
+        card_title_size_px: Number(nextForm.card_title_size_px) || 36,
+        card_footer_size_px: Number(nextForm.card_footer_size_px) || 12,
+        card_field_size_px: Number(nextForm.card_field_size_px) || 15,
+        card_label_size_px: Number(nextForm.card_label_size_px) || 13,
+      },
+    });
+  }
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["my-account"],
@@ -133,23 +152,7 @@ function SettingsPage() {
   }, [account]);
 
   const mut = useMutation({
-    mutationFn: () =>
-      updateSettings({
-        data: {
-          ...form,
-          brand_logo_url: form.brand_logo_url || null,
-          brand_logo_height_px: Number(form.brand_logo_height_px) || 32,
-          brand_footer_logo_url: form.brand_footer_logo_url || null,
-          card_logo_url: form.card_logo_url || null,
-          card_logo_height_px: Number(form.card_logo_height_px) || 72,
-          card_accent_color: form.card_accent_color,
-          card_footer_text: form.card_footer_text,
-          card_title_size_px: Number(form.card_title_size_px) || 36,
-          card_footer_size_px: Number(form.card_footer_size_px) || 12,
-          card_field_size_px: Number(form.card_field_size_px) || 15,
-          card_label_size_px: Number(form.card_label_size_px) || 13,
-        },
-      }),
+    mutationFn: () => saveAccountSettings(),
     onSuccess: () => {
       toast.success("Configurações salvas");
       qc.invalidateQueries({ queryKey: ["my-account"] });
@@ -350,6 +353,8 @@ function SettingsPage() {
           uploading={logoUploading}
           setUploading={setLogoUploading}
           inputRef={logoInputRef}
+          uploadAsset={uploadAsset}
+          saveSettings={saveAccountSettings}
         />
 
         <Card className="p-6 space-y-4">
@@ -580,6 +585,8 @@ function ChurchIdentityCard({
   uploading,
   setUploading,
   inputRef,
+  uploadAsset,
+  saveSettings,
 }: {
   form: {
     brand_title: string;
@@ -592,75 +599,184 @@ function ChurchIdentityCard({
   uploading: boolean;
   setUploading: (b: boolean) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
+  uploadAsset: (input: {
+    data: {
+      folder: "church-logo";
+      filename: string;
+      contentType: string;
+      base64: string;
+    };
+  }) => Promise<{ url: string }>;
+  saveSettings: (nextForm: any) => Promise<any>;
 }) {
   const footerInputRef = useRef<HTMLInputElement | null>(null);
   const [footerUploading, setFooterUploading] = useState(false);
 
   async function uploadLogoFile(file: File, field: "brand_logo_url" | "brand_footer_logo_url", setBusy: (b: boolean) => void) {
-    if (!/\.(png|jpg|jpeg|webp)$/i.test(file.name)) {
-      toast.error("Use PNG (transparente), JPG ou WEBP.");
+    if (!/\.(png|jpg|jpeg|webp|gif|ico)$/i.test(file.name)) {
+      toast.error("Formato: PNG, JPG, WEBP, GIF ou ICO");
       return;
     }
-    if (file.size > 3 * 1024 * 1024) {
-      toast.error("Imagem maior que 3 MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Máx. 5 MB");
       return;
     }
+
     setBusy(true);
     try {
-      const reader = new FileReader();
-      const base64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = () => {
-          const res = reader.result as string;
-          resolve(res.split(",")[1]);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
-
-      const { url } = await uploadAsset({
+      const base64 = await fileToBase64(file);
+      const data = await uploadAsset({
         data: {
-          folder: "product-images",
+          folder: "church-logo",
           filename: file.name,
-          contentType: file.type,
+          contentType: file.type || "image/png",
           base64,
         },
       });
 
-      setForm((f: any) => ({ ...f, [field]: url }));
-      toast.success("Logo enviado. Não esqueça de salvar.");
-    } catch (e) {
-      toast.error((e as Error).message);
+      const nextForm = { ...form, [field]: data.url };
+      setForm(nextForm);
+      await saveSettings(nextForm);
+      toast.success("✓ Enviado e salvo");
+    } catch (err) {
+      toast.error((err as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
+  function fileToBase64(file: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = String(reader.result || "");
+        const comma = result.indexOf(",");
+        resolve(comma >= 0 ? result.slice(comma + 1) : result);
+      };
+      reader.onerror = () => reject(new Error("Falha ao ler o arquivo"));
+      reader.readAsDataURL(file);
+    });
+  }
+
   const [removingBg, setRemovingBg] = useState<null | "brand_logo_url" | "brand_footer_logo_url">(null);
   async function handleRemoveBackground(field: "brand_logo_url" | "brand_footer_logo_url") {
-    const url = form[field];
-    if (!url) return;
+    const primaryUrl = field === "brand_footer_logo_url" ? form.brand_footer_logo_url : form.brand_logo_url;
+    const fallbackUrl = field === "brand_footer_logo_url" ? form.brand_logo_url : null;
+    const url = isValidImageUrl(primaryUrl) ? primaryUrl : fallbackUrl;
+    if (!url) {
+      toast.error(
+        field === "brand_footer_logo_url"
+          ? "Envie ou informe uma URL válida para a logo antes de gerar a versão branca."
+          : "Envie ou informe uma URL válida para a logo antes de remover o fundo.",
+      );
+      return;
+    }
     setRemovingBg(field);
-    const tId = toast.loading("Removendo fundo… isso pode levar alguns segundos.");
+    const tId = toast.loading(
+      field === "brand_footer_logo_url"
+        ? "Gerando logo branca… isso pode levar alguns segundos."
+        : "Removendo fundo… isso pode levar alguns segundos.",
+    );
     try {
       const { removeBackground } = await import("@imgly/background-removal");
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Não foi possível baixar a logo atual.");
+      if (!res.ok) throw new Error("Não foi possível baixar a imagem atual.");
       const inputBlob = await res.blob();
-      const outBlob = await removeBackground(inputBlob, { output: { format: "image/png" } });
-      const file = new File([outBlob], `logo-${Date.now()}.png`, { type: "image/png" });
-      const path = `church-logo/${crypto.randomUUID()}.png`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: "image/png" });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, [field]: pub.publicUrl }));
-      toast.success("Fundo removido! Não esqueça de salvar.", { id: tId });
+      const removedBlob = await removeBackground(inputBlob, { output: { format: "image/png" } });
+      const finalBlob =
+        field === "brand_footer_logo_url"
+          ? await makeWhiteLogo(removedBlob)
+          : removedBlob;
+      const file = new File([finalBlob], `${field}-${Date.now()}.png`, { type: "image/png" });
+      const base64 = await fileToBase64(file);
+      const uploaded = await uploadAsset({
+        data: {
+          folder: "church-logo",
+          filename: file.name,
+          contentType: "image/png",
+          base64,
+        },
+      });
+      const nextForm = { ...form, [field]: uploaded.url };
+      setForm(nextForm);
+      await saveSettings(nextForm);
+      toast.success(
+        field === "brand_footer_logo_url"
+          ? "Logo branca pronta e salva!"
+          : "Fundo removido e salvo!",
+        { id: tId },
+      );
     } catch (e) {
-      toast.error("Falha ao remover fundo: " + (e as Error).message, { id: tId });
+      toast.error(
+        field === "brand_footer_logo_url"
+          ? "Falha ao gerar logo branca: " + (e as Error).message
+          : "Falha ao remover fundo: " + (e as Error).message,
+        { id: tId },
+      );
     } finally {
       setRemovingBg(null);
     }
+  }
+
+  function isValidImageUrl(value: string | null | undefined) {
+    if (!value) return false;
+    try {
+      const parsed = new URL(value);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch {
+      return false;
+    }
+  }
+
+  async function makeWhiteLogo(blob: Blob) {
+    const imageUrl = URL.createObjectURL(blob);
+    try {
+      const img = await loadImage(imageUrl);
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) throw new Error("Falha ao preparar a imagem.");
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixels = data.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const alpha = pixels[i + 3];
+        if (alpha < 24) {
+          pixels[i + 3] = 0;
+          continue;
+        }
+        pixels[i] = 255;
+        pixels[i + 1] = 255;
+        pixels[i + 2] = 255;
+        pixels[i + 3] = alpha;
+      }
+      ctx.putImageData(data, 0, 0);
+      return await canvasToBlob(canvas);
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+    }
+  }
+
+  function loadImage(src: string) {
+    return new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Falha ao ler a imagem processada."));
+      img.src = src;
+    });
+  }
+
+  function canvasToBlob(canvas: HTMLCanvasElement) {
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          reject(new Error("Falha ao exportar a imagem."));
+          return;
+        }
+        resolve(blob);
+      }, "image/png");
+    });
   }
 
   return (
@@ -703,6 +819,8 @@ function ChurchIdentityCard({
           <Input
             value={form.brand_logo_url}
             onChange={(e) => setForm({ ...form, brand_logo_url: e.target.value })}
+            type="url"
+            autoComplete="off"
             placeholder="https://… ou envie um arquivo"
             className="flex-1 min-w-[220px]"
           />
@@ -751,7 +869,7 @@ function ChurchIdentityCard({
             </span>
           </div>
         )}
-        {form.brand_logo_url && (
+        {isValidImageUrl(form.brand_logo_url) && (
           <div className="rounded-md border bg-muted/40 p-3 inline-block">
             <img
               src={form.brand_logo_url}
@@ -798,6 +916,8 @@ function ChurchIdentityCard({
           <Input
             value={form.brand_footer_logo_url}
             onChange={(e) => setForm({ ...form, brand_footer_logo_url: e.target.value })}
+            type="url"
+            autoComplete="off"
             placeholder="https://… ou envie um arquivo"
             className="flex-1 min-w-[220px]"
           />
@@ -841,14 +961,14 @@ function ChurchIdentityCard({
             >
               {removingBg === "brand_footer_logo_url"
                 ? "Processando…"
-                : "✨ Remover fundo da logo (IA)"}
+                : "✨ Deixar logo branca (IA)"}
             </Button>
             <span className="text-xs text-muted-foreground">
-              Gratuito — processa no seu navegador, sem enviar para servidor.
+              Gratuito — processa no seu navegador e gera uma versão branca para o rodapé.
             </span>
           </div>
         )}
-        {form.brand_footer_logo_url && (
+        {isValidImageUrl(form.brand_footer_logo_url) && (
           <div className="rounded-md border bg-stone-900 p-3 inline-block">
             <img
               src={form.brand_footer_logo_url}

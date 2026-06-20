@@ -21,6 +21,7 @@ import {
 import { Plus, Pencil, Trash2, Users, Loader2, QrCode, Search, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
+import { validateImageFile } from "@/lib/file-validation";
 
 export const Route = createFileRoute("/_authenticated/membros")({
   component: MembersPage,
@@ -103,8 +104,8 @@ function MembersPage() {
   });
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) { toast.error("Selecione uma imagem"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("Imagem maior que 5MB"); return; }
+    const validationError = validateImageFile(file);
+    if (validationError) return toast.error(validationError);
     // Open crop dialog with 3x4 aspect instead of uploading directly
     const reader = new FileReader();
     reader.onload = () => setCropSrc(String(reader.result));

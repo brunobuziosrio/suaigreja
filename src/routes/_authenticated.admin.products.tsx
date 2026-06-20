@@ -35,6 +35,7 @@ import { toast } from "sonner";
 import { useRef, useState } from "react";
 import { formatCentsBRL } from "@/lib/billing-plans";
 import { supabase } from "@/integrations/supabase/client";
+import { validateImageFile } from "@/lib/file-validation";
 
 const RECOMMENDED_W = 1200;
 const RECOMMENDED_H = 800;
@@ -66,14 +67,8 @@ function ImageUploadField({
   }
 
   async function handleFile(file: File) {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Imagem maior que 5MB.");
-      return;
-    }
+    const validationError = validateImageFile(file);
+    if (validationError) return toast.error(validationError);
     setUploading(true);
     try {
       const dims = await readDimensions(file).catch(() => null);

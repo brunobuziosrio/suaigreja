@@ -14,6 +14,7 @@ import { useBranding } from "@/hooks/use-branding";
 import { adminUpdateBranding } from "@/lib/branding.functions";
 import { getPlatformPaymentSettings, updatePlatformPaymentSettings } from "@/lib/admin-payment-settings.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { validateImageFile } from "@/lib/file-validation";
 
 export const Route = createFileRoute("/_authenticated/admin/payments")({
   component: AdminPaymentsPage,
@@ -147,14 +148,8 @@ function PlatformBrandingSection() {
   });
 
   async function uploadFile(file: File, kind: "icon" | "logo") {
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Imagem maior que 5MB.");
-      return;
-    }
+    const validationError = validateImageFile(file);
+    if (validationError) return toast.error(validationError);
     setUploading(kind);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";

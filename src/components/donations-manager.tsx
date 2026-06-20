@@ -10,6 +10,7 @@ import {
 } from "@/lib/donations.functions";
 import { getMyAccount, updateAccountSettings, uploadAccountAsset } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { validateImageFile } from "@/lib/file-validation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -219,8 +220,8 @@ function CampaignForm({
   }
 
   async function uploadCampaignImage(file: File) {
-    if (!/\.(png|jpg|jpeg|webp)$/i.test(file.name)) return toast.error("Use PNG, JPG ou WEBP.");
-    if (file.size > 5 * 1024 * 1024) return toast.error("Imagem maior que 5 MB.");
+    const validationError = validateImageFile(file);
+    if (validationError) return toast.error(validationError);
     setUploadingImg(true);
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";
@@ -458,14 +459,8 @@ function FixedImageCard() {
   });
 
   async function uploadFile(file: File) {
-    if (!/\.(png|jpg|jpeg|webp|ico)$/i.test(file.name)) {
-      toast.error("Use PNG, JPG, WEBP ou ICO.");
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("Imagem maior que 5 MB.");
-      return;
-    }
+    const validationError = validateImageFile(file);
+    if (validationError) return toast.error(validationError);
     setUploading(true);
     try {
       const base64 = await fileToBase64(file);

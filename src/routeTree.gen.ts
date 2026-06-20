@@ -39,6 +39,7 @@ import { Route as AuthenticatedLocationsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hub'
 import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
 import { Route as AuthenticatedEventosRouteImport } from './routes/_authenticated.eventos'
+import { Route as AuthenticatedEscalasRouteImport } from './routes/_authenticated.escalas'
 import { Route as AuthenticatedEmbedRouteImport } from './routes/_authenticated.embed'
 import { Route as AuthenticatedEbdRouteImport } from './routes/_authenticated.ebd'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated.documentos'
@@ -213,6 +214,11 @@ const AuthenticatedEventosRoute = AuthenticatedEventosRouteImport.update({
   path: '/eventos',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedEscalasRoute = AuthenticatedEscalasRouteImport.update({
+  id: '/escalas',
+  path: '/escalas',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEmbedRoute = AuthenticatedEmbedRouteImport.update({
   id: '/embed',
   path: '/embed',
@@ -348,6 +354,7 @@ export interface FileRoutesByFullPath {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ebd': typeof AuthenticatedEbdRoute
   '/embed': typeof AuthenticatedEmbedRoute
+  '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
@@ -401,6 +408,7 @@ export interface FileRoutesByTo {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ebd': typeof AuthenticatedEbdRoute
   '/embed': typeof AuthenticatedEmbedRoute
+  '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
@@ -456,6 +464,7 @@ export interface FileRoutesById {
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/ebd': typeof AuthenticatedEbdRoute
   '/_authenticated/embed': typeof AuthenticatedEmbedRoute
+  '/_authenticated/escalas': typeof AuthenticatedEscalasRoute
   '/_authenticated/eventos': typeof AuthenticatedEventosRoute
   '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/hub': typeof AuthenticatedHubRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/ebd'
     | '/embed'
+    | '/escalas'
     | '/eventos'
     | '/finances'
     | '/hub'
@@ -564,6 +574,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/ebd'
     | '/embed'
+    | '/escalas'
     | '/eventos'
     | '/finances'
     | '/hub'
@@ -618,6 +629,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documentos'
     | '/_authenticated/ebd'
     | '/_authenticated/embed'
+    | '/_authenticated/escalas'
     | '/_authenticated/eventos'
     | '/_authenticated/finances'
     | '/_authenticated/hub'
@@ -895,6 +907,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEventosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/escalas': {
+      id: '/_authenticated/escalas'
+      path: '/escalas'
+      fullPath: '/escalas'
+      preLoaderRoute: typeof AuthenticatedEscalasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/embed': {
       id: '/_authenticated/embed'
       path: '/embed'
@@ -1076,6 +1095,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedEbdRoute: typeof AuthenticatedEbdRoute
   AuthenticatedEmbedRoute: typeof AuthenticatedEmbedRoute
+  AuthenticatedEscalasRoute: typeof AuthenticatedEscalasRoute
   AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
   AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
@@ -1107,6 +1127,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedEbdRoute: AuthenticatedEbdRoute,
   AuthenticatedEmbedRoute: AuthenticatedEmbedRoute,
+  AuthenticatedEscalasRoute: AuthenticatedEscalasRoute,
   AuthenticatedEventosRoute: AuthenticatedEventosRoute,
   AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
