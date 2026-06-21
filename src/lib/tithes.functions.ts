@@ -39,7 +39,7 @@ export const getTithesByMember = createServerFn({ method: "GET" })
   });
 
 const upsertSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
   member_id: z.string().uuid(),
   amount_cents: z.number().int().min(0),
   contributed_at: z.string(),

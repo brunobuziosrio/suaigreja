@@ -24,7 +24,7 @@ export const listWhatsappTemplates = createServerFn({ method: "GET" })
   });
 
 const templateSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
   name: z.string().min(1).max(160),
   kind: z.string().min(1).max(50),
   content: z.string().min(10).max(800),
@@ -90,7 +90,7 @@ export const listWhatsappAutomationRules = createServerFn({ method: "GET" })
   });
 
 const automationSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
   name: z.string().min(1).max(160),
   trigger_type: z.string().min(1).max(50),
   template_id: z.string().uuid().nullable().optional(),

@@ -25,7 +25,7 @@ export const listCampaigns = createServerFn({ method: "GET" })
   });
 
 const upsertSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
   name: z.string().min(1).max(160),
   description: z.string().max(1000).optional().nullable(),
   goal_amount_cents: z.number().int().min(0),

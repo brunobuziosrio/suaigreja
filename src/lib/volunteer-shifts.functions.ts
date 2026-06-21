@@ -24,7 +24,7 @@ export const listVolunteerSchedules = createServerFn({ method: "GET" })
   });
 
 const scheduleSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
   name: z.string().min(1).max(160),
   description: z.string().max(1000).optional().nullable(),
   volunteer_type: z.string().min(1).max(100),
@@ -92,7 +92,7 @@ export const listVolunteerShifts = createServerFn({ method: "GET" })
   });
 
 const shiftSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
   schedule_id: z.string().uuid(),
   member_id: z.string().uuid(),
   shift_date: z.string(),

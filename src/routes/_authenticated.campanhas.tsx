@@ -87,6 +87,8 @@ function CampaignsPage() {
   const saveTithe = useServerFn(upsertTithe);
   const removeTithe = useServerFn(deleteTithe);
 
+  const [showTithes, setShowTithes] = useState(false);
+
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns"],
     queryFn: () => fetchCampaigns(),
@@ -102,13 +104,14 @@ function CampaignsPage() {
   const { data: tithes = [], isLoading: loadingTithes } = useQuery({
     queryKey: ["tithes"],
     queryFn: () => fetchTithes(),
+    enabled: showTithes,
     staleTime: 60000,
   });
 
   const { data: tithesReport = null, isLoading: loadingReport } = useQuery({
     queryKey: ["tithes-report"],
     queryFn: () => fetchTithesReport({ data: {} }),
-    enabled: tithes.length > 0,
+    enabled: showTithes && tithes.length > 0,
     staleTime: 60000,
   });
 
