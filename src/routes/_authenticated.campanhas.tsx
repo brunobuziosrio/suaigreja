@@ -88,6 +88,7 @@ function CampaignsPage() {
   const removeTithe = useServerFn(deleteTithe);
 
   const [showTithes, setShowTithes] = useState(false);
+  const [openTitheDialog, setOpenTitheDialog] = useState(false);
 
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns"],
@@ -98,6 +99,7 @@ function CampaignsPage() {
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
+    enabled: openTitheDialog || showTithes,
     staleTime: 300000,
   });
 
@@ -116,7 +118,6 @@ function CampaignsPage() {
   });
 
   const [openCampaignDialog, setOpenCampaignDialog] = useState(false);
-  const [openTitheDialog, setOpenTitheDialog] = useState(false);
   const [campaignForm, setCampaignForm] = useState({
     id: "",
     name: "",
@@ -307,46 +308,48 @@ function CampaignsPage() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Total Arrecadado</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalDonated)}</div>
-              <p className="text-xs text-gray-600 mt-1">{tithesReport?.count || 0} transações</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Meta Total</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(totalGoal)}</div>
-              <p className="text-xs text-gray-600 mt-1">{campaigns.length} campanhas ativas</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">% Atingido</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{percentReached}%</div>
-              <Progress value={percentReached} className="mt-2" />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-gray-600">Média por Doação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {formatCurrency(tithesReport?.averageAmount || 0)}
-              </div>
-              <p className="text-xs text-gray-600 mt-1">por registro</p>
-            </CardContent>
-          </Card>
-        </div>
+        {showTithes && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600">Total Arrecadado</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalDonated)}</div>
+                <p className="text-xs text-gray-600 mt-1">{tithesReport?.count || 0} transações</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600">Meta Total</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(totalGoal)}</div>
+                <p className="text-xs text-gray-600 mt-1">{campaigns.length} campanhas ativas</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600">% Atingido</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{percentReached}%</div>
+                <Progress value={percentReached} className="mt-2" />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-gray-600">Média por Doação</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(tithesReport?.averageAmount || 0)}
+                </div>
+                <p className="text-xs text-gray-600 mt-1">por registro</p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         <Tabs defaultValue="campaigns">
           <TabsList>

@@ -110,6 +110,7 @@ function VolunteerSchedulesPage() {
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
+    enabled: openScheduleDialog || openShiftDialog,
     staleTime: 300000,
   });
 
