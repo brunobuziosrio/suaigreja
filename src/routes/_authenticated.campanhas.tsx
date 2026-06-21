@@ -109,6 +109,7 @@ function CampaignsPage() {
     queryFn: () => fetchTithes(),
     enabled: showTithes,
     staleTime: 60000,
+    gcTime: Infinity,
   });
 
   const { data: tithesReport = null, isLoading: loadingReport } = useQuery({
@@ -116,6 +117,7 @@ function CampaignsPage() {
     queryFn: () => fetchTithesReport({ data: {} }),
     enabled: showTithes && tithes.length > 0,
     staleTime: 60000,
+    gcTime: Infinity,
   });
 
   const [openCampaignDialog, setOpenCampaignDialog] = useState(false);
