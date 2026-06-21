@@ -25,6 +25,8 @@ import {
   Settings,
   ShieldCheck,
   Store,
+  TrendingUp,
+  UserCheck,
   UserPlus,
   Users,
   Users2,
@@ -107,6 +109,8 @@ const navGroups: Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] 
     icon: Settings,
     items: [
       { title: "Finanças", url: "/finances", icon: CircleDollarSign },
+      { title: "Campanhas & Dízimos", url: "/campanhas", icon: TrendingUp },
+      { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },
       { title: "Configurações", url: "/settings", icon: Settings },
       { title: "Integrações", url: "/embed", icon: Code2 },
       { title: "Plugins e extras", url: "/marketplace", icon: Store },

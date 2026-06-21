@@ -83,6 +83,8 @@ const sectionLabels: Record<string, string> = {
   devocional: "Devocionais",
   documentos: "Documentos",
   finances: "Finanças",
+  campanhas: "Campanhas & Dízimos",
+  escalas: "Escalas de Voluntários",
   settings: "Configurações",
   embed: "Integrações",
   marketplace: "Plugins e extras",
