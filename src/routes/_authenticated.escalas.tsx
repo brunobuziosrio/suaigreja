@@ -104,11 +104,13 @@ function VolunteerSchedulesPage() {
   const { data: schedules = [], isLoading: loadingSchedules } = useQuery({
     queryKey: ["volunteer-schedules"],
     queryFn: () => fetchSchedules(),
+    staleTime: 60000,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
+    staleTime: 300000,
   });
 
   const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
@@ -131,11 +133,12 @@ function VolunteerSchedulesPage() {
     notes: "",
   });
 
-  const { data: shifts = [] } = useQuery({
+  const { data: shifts = [], isLoading: loadingShifts } = useQuery({
     queryKey: ["volunteer-shifts", selectedScheduleId],
     queryFn: () =>
       selectedScheduleId ? fetchShifts({ data: { scheduleId: selectedScheduleId } }) : [],
     enabled: !!selectedScheduleId,
+    staleTime: 30000,
   });
 
   const schedulesMut = useMutation({

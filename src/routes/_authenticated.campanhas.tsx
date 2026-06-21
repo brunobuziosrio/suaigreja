@@ -90,21 +90,26 @@ function CampaignsPage() {
   const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery({
     queryKey: ["campaigns"],
     queryFn: () => fetchCampaigns(),
+    staleTime: 60000,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
+    staleTime: 300000,
   });
 
-  const { data: tithes = [] } = useQuery({
+  const { data: tithes = [], isLoading: loadingTithes } = useQuery({
     queryKey: ["tithes"],
     queryFn: () => fetchTithes(),
+    staleTime: 60000,
   });
 
-  const { data: tithesReport = null } = useQuery({
+  const { data: tithesReport = null, isLoading: loadingReport } = useQuery({
     queryKey: ["tithes-report"],
     queryFn: () => fetchTithesReport({ data: {} }),
+    enabled: tithes.length > 0,
+    staleTime: 60000,
   });
 
   const [openCampaignDialog, setOpenCampaignDialog] = useState(false);
