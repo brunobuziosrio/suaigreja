@@ -94,13 +94,14 @@ function CampaignsPage() {
     queryKey: ["campaigns"],
     queryFn: () => fetchCampaigns(),
     staleTime: 60000,
+    gcTime: Infinity,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
-    enabled: openTitheDialog || showTithes,
-    staleTime: 300000,
+    staleTime: 3600000,
+    gcTime: Infinity,
   });
 
   const { data: tithes = [], isLoading: loadingTithes } = useQuery({

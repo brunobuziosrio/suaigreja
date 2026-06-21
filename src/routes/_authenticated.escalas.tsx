@@ -101,22 +101,23 @@ function VolunteerSchedulesPage() {
   const removeShift = useServerFn(deleteVolunteerShift);
   const confirmShift = useServerFn(confirmVolunteerShift);
 
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
+  const [openScheduleDialog, setOpenScheduleDialog] = useState(false);
+  const [openShiftDialog, setOpenShiftDialog] = useState(false);
+
   const { data: schedules = [], isLoading: loadingSchedules } = useQuery({
     queryKey: ["volunteer-schedules"],
     queryFn: () => fetchSchedules(),
     staleTime: 60000,
+    gcTime: Infinity,
   });
 
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
-    enabled: openScheduleDialog || openShiftDialog,
-    staleTime: 300000,
+    staleTime: 3600000,
+    gcTime: Infinity,
   });
-
-  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
-  const [openScheduleDialog, setOpenScheduleDialog] = useState(false);
-  const [openShiftDialog, setOpenShiftDialog] = useState(false);
   const [scheduleForm, setScheduleForm] = useState({
     id: "",
     name: "",
