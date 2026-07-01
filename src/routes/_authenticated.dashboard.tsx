@@ -5,7 +5,8 @@ import { CalendarDays, MapPin, ListChecks, Users, Cake, GraduationCap, HandCoins
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
-import { getProfile } from "@/lib/religion-profiles";
+import { canAccessPath, resolvePlanTier } from "@/lib/plan-access";
+import { getProfile, getReligionTerms } from "@/lib/religion-profiles";
 import { listLocations } from "@/lib/locations.functions";
 import { listTypes } from "@/lib/types.functions";
 import { listEvents } from "@/lib/events.functions";
@@ -32,9 +33,16 @@ function DashboardPage() {
   const fetchMembers = useServerFn(listMembers);
   const fetchCampaigns = useServerFn(listMyDonationCampaigns);
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
+  const planTier = resolvePlanTier(account);
+  const canUseMembers = !!account && canAccessPath(planTier, "/membros");
+  const canUseEbd = !!account && canAccessPath(planTier, "/ebd");
   const { data: locations = [] } = useQuery({ queryKey: ["locations"], queryFn: () => fetchLocations() });
   const { data: types = [] } = useQuery({ queryKey: ["types"], queryFn: () => fetchTypes() });
-  const { data: members = [] } = useQuery({ queryKey: ["members"], queryFn: () => fetchMembers() });
+  const { data: members = [] } = useQuery({
+    queryKey: ["members"],
+    queryFn: () => fetchMembers(),
+    enabled: canUseMembers,
+  });
   const { data: campaigns = [] } = useQuery({ queryKey: ["my-donations"], queryFn: () => fetchCampaigns() });
   const range = useMemo(() => {
     const d = new Date();
@@ -49,6 +57,7 @@ function DashboardPage() {
     queryFn: () => fetchEvents({ data: range }),
   });
   const profile = account ? getProfile(account.religion_profile) : null;
+  const terms = getReligionTerms(account?.religion_profile);
 
   const fetchUpdates = useServerFn(listSystemUpdates);
   const { data: updates = [] } = useQuery({ queryKey: ["system-updates"], queryFn: () => fetchUpdates() });
@@ -58,7 +67,7 @@ function DashboardPage() {
     if (!m.birth_date) return false;
     return new Date(m.birth_date + "T00:00:00").getMonth() + 1 === currentMonth;
   });
-  const activeMembers = (members as any[]).filter((m) => m.status === "ativo").length;
+  const activeMembers = canUseMembers ? (members as any[]).filter((m) => m.status === "ativo").length : "Pro";
   const activeCampaigns = (campaigns as any[]).filter((c) => c.active).length;
 
   const trialDays = account?.trial_ends_at
@@ -121,18 +130,18 @@ function DashboardPage() {
         </div>
 
         <div className="grid md:grid-cols-4 gap-4 mt-4">
-          <Link to="/membros">
+          <Link to={canUseMembers ? "/membros" : "/billing"}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-md bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Membros ativos</p>
+                <p className="text-sm text-muted-foreground">{terms.people} ativos</p>
                   <p className="text-2xl font-semibold">{activeMembers}</p>
                 </div>
               </div>
             </Card>
           </Link>
-          <Link to="/membros">
+          <Link to={canUseMembers ? "/membros" : "/billing"}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-md bg-pink-500/10 text-pink-600"><Cake className="h-5 w-5" /></div>
@@ -143,13 +152,13 @@ function DashboardPage() {
               </div>
             </Card>
           </Link>
-          <Link to="/ebd">
+          <Link to={canUseEbd ? "/ebd" : "/billing"}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-md bg-emerald-500/10 text-emerald-700"><GraduationCap className="h-5 w-5" /></div>
                 <div>
                   <p className="text-sm text-muted-foreground">Escola Bíblica</p>
-                  <p className="text-2xl font-semibold">Frequência</p>
+                  <p className="text-2xl font-semibold">{canUseEbd ? "Frequência" : "Premium"}</p>
                 </div>
               </div>
             </Card>

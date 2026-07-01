@@ -24,6 +24,7 @@ import {
   getIsAdmin,
   listAllAccounts,
   updateAccountSubscription,
+  adminUpdateAccountPlanTier,
   adminUpdateAccountName,
 } from "@/lib/admin.functions";
 import { useMemo, useState } from "react";
@@ -47,6 +48,7 @@ function AdminPage() {
   const checkAdmin = useServerFn(getIsAdmin);
   const listAccounts = useServerFn(listAllAccounts);
   const updateStatus = useServerFn(updateAccountSubscription);
+  const updatePlanTier = useServerFn(adminUpdateAccountPlanTier);
   const updateName = useServerFn(adminUpdateAccountName);
   const qc = useQueryClient();
 
@@ -83,6 +85,19 @@ function AdminPage() {
     onSuccess: () => {
       toast.success("Status atualizado");
       qc.invalidateQueries({ queryKey: ["admin-accounts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const planMut = useMutation({
+    mutationFn: (vars: {
+      account_id: string;
+      plan_tier: "essential" | "pro" | "premium";
+    }) => updatePlanTier({ data: vars }),
+    onSuccess: () => {
+      toast.success("Nível do plano atualizado");
+      qc.invalidateQueries({ queryKey: ["admin-accounts"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -172,6 +187,7 @@ function AdminPage() {
                 <TableHead>E-mail</TableHead>
                 <TableHead>Agenda</TableHead>
                 <TableHead>Perfil</TableHead>
+                <TableHead className="w-[150px]">Plano</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Eventos</TableHead>
                 <TableHead>Trial até</TableHead>
@@ -181,14 +197,14 @@ function AdminPage() {
             <TableBody>
               {isLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
                     Carregando…
                   </TableCell>
                 </TableRow>
               )}
               {!isLoading && filtered.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">
+                  <TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">
                     Nenhuma conta encontrada.
                   </TableCell>
                 </TableRow>
@@ -256,6 +272,26 @@ function AdminPage() {
                       )}
                     </TableCell>
                     <TableCell className="capitalize text-sm">{a.religion_profile}</TableCell>
+                    <TableCell>
+                      <Select
+                        value={a.plan_tier ?? "premium"}
+                        onValueChange={(value) =>
+                          planMut.mutate({
+                            account_id: a.id,
+                            plan_tier: value as "essential" | "pro" | "premium",
+                          })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs" aria-label={`Plano de ${a.brand_title ?? a.email}`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="essential">Essencial</SelectItem>
+                          <SelectItem value="pro">Pro</SelectItem>
+                          <SelectItem value="premium">Premium</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
                     <TableCell>
                       <Badge variant={st.variant}>{st.label}</Badge>
                     </TableCell>

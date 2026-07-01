@@ -23,7 +23,17 @@ import { listTypes } from "@/lib/types.functions";
 import { PublicAgendaView } from "@/components/public-agenda-view";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Check, X, Loader2, Copy } from "lucide-react";
+import {
+  Building2,
+  CalendarCog,
+  Check,
+  Copy,
+  Eye,
+  IdCard,
+  Landmark,
+  Loader2,
+  X,
+} from "lucide-react";
 import { useBranding } from "@/hooks/use-branding";
 import { adminUpdateBranding } from "@/lib/branding.functions";
 import { getIsAdmin } from "@/lib/admin.functions";
@@ -38,6 +48,16 @@ import { useRef } from "react";
 import { MemberCard } from "@/components/member-card";
 
 const DEFAULT_COLOR = "#467da5";
+
+const SETTINGS_SECTIONS = [
+  { id: "institution", label: "Instituição", description: "Endereço, identidade e tradição", icon: Building2 },
+  { id: "agenda", label: "Agenda pública", description: "Campos, textos e aparência", icon: CalendarCog },
+  { id: "donations", label: "Doações", description: "Contas e recebimentos", icon: Landmark },
+  { id: "member-card", label: "Carteirinha", description: "Identidade do membro", icon: IdCard },
+  { id: "preview", label: "Prévia", description: "Resultado publicado", icon: Eye },
+] as const;
+
+type SettingsSection = (typeof SETTINGS_SECTIONS)[number]["id"];
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -54,6 +74,7 @@ function SettingsPage() {
   const qc = useQueryClient();
   const logoInputRef = useRef<HTMLInputElement | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
+  const [activeSection, setActiveSection] = useState<SettingsSection>("institution");
 
   async function saveAccountSettings(nextForm = form) {
     return updateSettings({
@@ -230,11 +251,47 @@ function SettingsPage() {
 
   return (
     <AppShell>
-      <div className="p-6 max-w-4xl space-y-6">
+      <div className="w-full max-w-6xl space-y-6">
         <h1 className="text-2xl font-semibold tracking-tight">Configurações</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Perfil, campos do formulário, textos e aparência da sua agenda pública.
+          Organize a identidade, a agenda pública e as integrações da instituição.
         </p>
+
+        <div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+          <nav
+            aria-label="Áreas das configurações"
+            className="flex gap-2 overflow-x-auto pb-2 lg:sticky lg:top-24 lg:block lg:self-start lg:space-y-1 lg:overflow-visible lg:pb-0"
+          >
+            {SETTINGS_SECTIONS.map((section) => {
+              const Icon = section.icon;
+              const selected = activeSection === section.id;
+              return (
+                <button
+                  key={section.id}
+                  type="button"
+                  aria-current={selected ? "page" : undefined}
+                  onClick={() => setActiveSection(section.id)}
+                  className={cn(
+                    "flex min-h-12 min-w-[190px] items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-full lg:min-w-0",
+                    selected
+                      ? "border-primary/30 bg-primary/10 text-foreground"
+                      : "border-transparent text-muted-foreground hover:border-border hover:bg-background hover:text-foreground",
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium">{section.label}</span>
+                    <span className="hidden truncate text-xs text-muted-foreground lg:block">
+                      {section.description}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <section aria-live="polite" className="min-w-0 space-y-6">
+        {activeSection === "institution" && <>
 
         <Card className="p-6 space-y-5">
           <div>
@@ -384,6 +441,17 @@ function SettingsPage() {
           </div>
         </Card>
 
+        <Card className="p-4">
+          <div className="flex justify-end">
+            <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
+              {mut.isPending ? "Salvando..." : "Salvar instituição"}
+            </Button>
+          </div>
+        </Card>
+        </>}
+
+        {activeSection === "agenda" && <>
+
         <Card className="p-6 space-y-4">
           <div>
             <h2 className="text-base font-semibold">Campos do formulário</h2>
@@ -516,23 +584,29 @@ function SettingsPage() {
         <Card className="p-6">
           <div className="flex justify-end">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
-              {mut.isPending ? "Salvando..." : "Salvar alterações"}
+              {mut.isPending ? "Salvando..." : "Salvar agenda pública"}
             </Button>
           </div>
         </Card>
+        </>}
 
+        {activeSection === "donations" && <>
         <MercadoPagoSection />
+        </>}
 
+        {activeSection === "member-card" && <>
         <MemberCardSettingsCard form={form} setForm={setForm} />
 
         <Card className="p-6">
           <div className="flex justify-end">
             <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
-              {mut.isPending ? "Salvando..." : "Salvar alterações"}
+              {mut.isPending ? "Salvando..." : "Salvar carteirinha"}
             </Button>
           </div>
         </Card>
+        </>}
 
+        {activeSection === "preview" && <>
         <Card className="p-6">
           <h2 className="text-base font-semibold">Prévia do site</h2>
           <p className="text-xs text-muted-foreground mt-1">
@@ -573,6 +647,9 @@ function SettingsPage() {
             />
           </div>
         </Card>
+        </>}
+          </section>
+        </div>
       </div>
     </AppShell>
   );

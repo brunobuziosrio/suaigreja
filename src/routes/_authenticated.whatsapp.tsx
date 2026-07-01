@@ -15,6 +15,7 @@ import {
   upsertWhatsappSettings,
   deleteQueuedWhatsappMessage,
   enqueueWhatsappMessage,
+  createWhatsappCreditPixPayment,
 } from "@/lib/whatsapp.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,6 +41,8 @@ import {
   Bell,
   Building2,
   Filter,
+  Copy,
+  QrCode,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/whatsapp")({
@@ -56,6 +59,14 @@ const STATUS_COLORS: Record<string, string> = {
   sent: "bg-emerald-100 text-emerald-800",
   failed: "bg-red-100 text-red-800",
   skipped: "bg-zinc-200 text-zinc-700",
+};
+
+const DELIVERY_LABELS: Record<string, string> = {
+  sent: "enviada",
+  delivered: "entregue",
+  read: "lida",
+  failed: "falhou no provedor",
+  unknown: "status recebido",
 };
 
 const KIND_LABELS: Record<string, string> = {
@@ -146,6 +157,7 @@ function WhatsappPage() {
   const saveSettings = useServerFn(upsertWhatsappSettings);
   const deleteMsg = useServerFn(deleteQueuedWhatsappMessage);
   const enqueue = useServerFn(enqueueWhatsappMessage);
+  const createCreditPix = useServerFn(createWhatsappCreditPixPayment);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["whatsapp-data"],
@@ -189,6 +201,21 @@ function WhatsappPage() {
 
   const credits = data?.settings?.credits_balance ?? 0;
   const totals = (data?.totals ?? {}) as Record<string, number>;
+  const analytics = (data?.analytics ?? {
+    total: 0,
+    reservedCredits: 0,
+    netCredits: 0,
+    byStatus: {},
+    byKind: {},
+    byDelivery: {},
+  }) as {
+    total: number;
+    reservedCredits: number;
+    netCredits: number;
+    byStatus: Record<string, number>;
+    byKind: Record<string, number>;
+    byDelivery: Record<string, number>;
+  };
   const recent = (data?.recent ?? []) as any[];
   const filtered =
     histKind === "all" ? recent : recent.filter((m: any) => m.kind === histKind);
@@ -207,10 +234,12 @@ function WhatsappPage() {
         </div>
 
         {/* KPIs */}
-        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+        <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 xl:grid-cols-6">
           <StatCard icon={<Wallet className="h-4 w-4" />} label="Créditos" value={credits} />
           <StatCard label="Enviadas" value={totals.sent ?? 0} />
           <StatCard label="Na fila" value={totals.queued ?? 0} />
+          <StatCard label="Entregues 30d" value={analytics.byDelivery.delivered ?? 0} />
+          <StatCard label="Lidas 30d" value={analytics.byDelivery.read ?? 0} />
           <StatCard label="Total" value={totals.total ?? 0} />
         </div>
 
@@ -234,6 +263,9 @@ function WhatsappPage() {
             </TabsTrigger>
             <TabsTrigger value="manual" className="flex items-center gap-1">
               <Send className="h-3.5 w-3.5" /> Envio manual
+            </TabsTrigger>
+            <TabsTrigger value="creditos" className="flex items-center gap-1">
+              <Wallet className="h-3.5 w-3.5" /> Créditos
             </TabsTrigger>
             <TabsTrigger value="historico" className="flex items-center gap-1">
               <Filter className="h-3.5 w-3.5" /> Histórico
@@ -395,8 +427,36 @@ function WhatsappPage() {
             <ManualSendForm enqueue={enqueue} refetch={refetch} globalEnabled={cfg.enabled} />
           </TabsContent>
 
+          <TabsContent value="creditos" className="mt-4">
+            <CreditPackages
+              data={data}
+              createCreditPix={createCreditPix}
+              refetch={refetch}
+            />
+          </TabsContent>
+
           {/* ===== ABA: HISTÓRICO ===== */}
           <TabsContent value="historico" className="mt-4">
+            <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Resumo dos últimos 30 dias</CardTitle>
+                <CardDescription>Consumo e desempenho recente das mensagens.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <MiniMetric label="Mensagens" value={analytics.total} />
+                <MiniMetric label="Créditos consumidos" value={analytics.netCredits} />
+                <MiniMetric label="Falhas" value={analytics.byStatus.failed ?? 0} />
+                <MiniMetric label="Puladas" value={analytics.byStatus.skipped ?? 0} />
+              </CardContent>
+              <CardContent className="border-t pt-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Breakdown title="Por tipo" values={analytics.byKind} labels={KIND_LABELS} />
+                  <Breakdown title="Entrega do provedor" values={analytics.byDelivery} labels={DELIVERY_LABELS} />
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -450,6 +510,15 @@ function WhatsappPage() {
                           {m.error_message && (
                             <div className="text-xs text-red-600 mt-1">{m.error_message}</div>
                           )}
+                          {m.provider_delivery_status && (
+                            <div className="text-xs text-emerald-700 mt-1">
+                              Provedor:{" "}
+                              {DELIVERY_LABELS[m.provider_delivery_status] ?? m.provider_delivery_status}
+                              {m.provider_status_at
+                                ? ` em ${new Date(m.provider_status_at).toLocaleString("pt-BR")}`
+                                : ""}
+                            </div>
+                          )}
                           <div className="text-xs text-muted-foreground mt-1">
                             {new Date(m.created_at).toLocaleString("pt-BR")}
                           </div>
@@ -470,6 +539,7 @@ function WhatsappPage() {
                 )}
               </CardContent>
             </Card>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
@@ -496,6 +566,44 @@ function StatCard({
         <p className="text-2xl font-bold">{value}</p>
       </CardContent>
     </Card>
+  );
+}
+
+function MiniMetric({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
+    </div>
+  );
+}
+
+function Breakdown({
+  title,
+  values,
+  labels,
+}: {
+  title: string;
+  values: Record<string, number>;
+  labels: Record<string, string>;
+}) {
+  const entries = Object.entries(values).sort((a, b) => b[1] - a[1]).slice(0, 6);
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-medium">{title}</h3>
+      {entries.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Sem dados no período.</p>
+      ) : (
+        <div className="space-y-2">
+          {entries.map(([key, value]) => (
+            <div key={key} className="flex items-center justify-between gap-3 text-sm">
+              <span className="min-w-0 truncate text-muted-foreground">{labels[key] ?? key}</span>
+              <span className="font-medium tabular-nums">{value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -560,6 +668,163 @@ function MsgTypeCard({
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+function CreditPackages({
+  data,
+  createCreditPix,
+  refetch,
+}: {
+  data: any;
+  createCreditPix: ReturnType<typeof useServerFn<typeof createWhatsappCreditPixPayment>>;
+  refetch: () => void;
+}) {
+  const [payment, setPayment] = useState<any>(null);
+  const [creating, setCreating] = useState<string | null>(null);
+  const packages = (data?.packages ?? []) as Array<{
+    id: string;
+    name: string;
+    description: string;
+    message_count: number;
+    price_cents: number;
+  }>;
+  const purchases = (data?.purchases ?? []) as Array<{
+    id: string;
+    message_count: number;
+    amount_cents: number;
+    status: string;
+    paid_at: string | null;
+    created_at: string;
+  }>;
+
+  async function buy(packageId: string) {
+    setCreating(packageId);
+    try {
+      const result = await createCreditPix({ data: { package_id: packageId } });
+      setPayment(result);
+      toast.success("PIX de créditos gerado");
+      refetch();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao gerar PIX");
+    } finally {
+      setCreating(null);
+    }
+  }
+
+  function copyPix() {
+    if (!payment?.copy_paste) return;
+    navigator.clipboard.writeText(payment.copy_paste);
+    toast.success("Código PIX copiado");
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {packages.map((pack) => (
+          <Card key={pack.id}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">{pack.name}</CardTitle>
+              <CardDescription>{pack.description}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <div className="text-2xl font-bold">
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                    maximumFractionDigits: 0,
+                  }).format(pack.price_cents / 100)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {pack.message_count.toLocaleString("pt-BR")} mensagens
+                </p>
+              </div>
+              <Button
+                className="w-full"
+                onClick={() => buy(pack.id)}
+                disabled={creating === pack.id}
+              >
+                {creating === pack.id ? "Gerando..." : "Comprar com PIX"}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {payment && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <QrCode className="h-5 w-5" /> PIX aguardando pagamento
+            </CardTitle>
+            <CardDescription>
+              {payment.package_name} · {payment.message_count?.toLocaleString("pt-BR")} mensagens
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-[220px_1fr]">
+            <div className="flex min-h-[220px] items-center justify-center rounded-md border bg-background">
+              {payment.qr_code ? (
+                <img src={payment.qr_code} alt="QR Code PIX" className="h-52 w-52" />
+              ) : (
+                <QrCode className="h-20 w-20 text-muted-foreground" />
+              )}
+            </div>
+            <div className="space-y-3 min-w-0">
+              <div className="flex gap-2">
+                <Input readOnly value={payment.copy_paste ?? ""} className="font-mono text-xs" />
+                <Button variant="outline" onClick={copyPix}>
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Após o pagamento, o webhook da AtivoPay credita automaticamente o saldo no ledger
+                da igreja.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Histórico de créditos</CardTitle>
+          <CardDescription>Últimas compras e concessões de créditos WhatsApp.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {purchases.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma compra de créditos ainda.</p>
+          ) : (
+            purchases.map((purchase) => (
+              <div
+                key={purchase.id}
+                className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm"
+              >
+                <div>
+                  <div className="font-medium">
+                    {purchase.message_count.toLocaleString("pt-BR")} créditos
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {new Date(purchase.created_at).toLocaleString("pt-BR")}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">
+                    {new Intl.NumberFormat("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    }).format(purchase.amount_cents / 100)}
+                  </span>
+                  <Badge variant={purchase.status === "paid" ? "default" : "secondary"}>
+                    {purchase.status === "paid" ? "Pago" : purchase.status}
+                  </Badge>
+                </div>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 

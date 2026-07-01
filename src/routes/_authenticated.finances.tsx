@@ -20,7 +20,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabase } from "@/integrations/supabase/client";
+import { requirePlanTier } from "@/lib/plan-access";
 import { useMemo, useState } from "react";
 import {
   TrendingUp,
@@ -40,6 +40,8 @@ const getDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("donations")
       .select("*")
@@ -55,6 +57,8 @@ const getMembersWithDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("members")
       .select("*")
@@ -69,6 +73,8 @@ function FinancesPage() {
   const getDonationsData = createServerFn({ method: "GET" })
     .middleware([requireSupabaseAuth])
     .handler(async ({ context }) => {
+      await requirePlanTier(context, "premium");
+      const { supabase } = context;
       const { data, error } = await supabase
         .from("donations")
         .select("*")

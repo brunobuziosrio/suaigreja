@@ -36,7 +36,16 @@ function isPaidStatus(status: string) {
 
 async function activateSubscription(accountId: string, plan: BillingPlanId, paidAt?: string | null) {
   const planInfo = BILLING_PLANS[plan];
-  const base = paidAt ? new Date(paidAt) : new Date();
+  const paidDate = paidAt ? new Date(paidAt) : new Date();
+  const { data: account, error: accountError } = await supabaseAdmin
+    .from("accounts")
+    .select("subscription_ends_at")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (accountError) throw new Error(accountError.message);
+
+  const currentEnd = account?.subscription_ends_at ? new Date(account.subscription_ends_at) : null;
+  const base = currentEnd && currentEnd.getTime() > paidDate.getTime() ? currentEnd : paidDate;
   const endsAt = new Date(base);
   endsAt.setDate(endsAt.getDate() + planInfo.durationDays);
 
@@ -44,6 +53,7 @@ async function activateSubscription(accountId: string, plan: BillingPlanId, paid
     .from("accounts")
     .update({
       current_plan: plan,
+      plan_tier: planInfo.tier,
       subscription_status: "active",
       subscription_ends_at: endsAt.toISOString(),
     })
@@ -71,7 +81,7 @@ export const getBillingSetup = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("accounts")
-      .select("current_plan, subscription_status, subscription_ends_at, trial_ends_at")
+      .select("current_plan, plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -80,11 +90,38 @@ export const getBillingSetup = createServerFn({ method: "GET" })
 
 export const createPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ plan: z.enum(["monthly", "annual"]) }).parse(input))
+  .inputValidator((input) =>
+    z.object({ plan: z.enum([
+      "essential_monthly",
+      "essential_annual",
+      "pro_monthly",
+      "pro_annual",
+      "premium_monthly",
+      "premium_annual",
+    ]) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { userId, claims } = context;
     const plan = data.plan as BillingPlanId;
     const planInfo = BILLING_PLANS[plan];
+
+    const { data: existingPending, error: pendingError } = await supabaseAdmin
+      .from("payment_transactions")
+      .select("id, plan, amount_cents, status, copy_paste, pay_url, qr_code, expires_at, paid_at, created_at")
+      .eq("account_id", userId)
+      .eq("plan", plan)
+      .in("status", ["pending", "waiting_payment"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (pendingError) throw new Error(pendingError.message);
+    if (
+      existingPending &&
+      (!existingPending.expires_at || new Date(existingPending.expires_at).getTime() > Date.now())
+    ) {
+      return existingPending;
+    }
+
     const host = getRequestHost();
     const protocol = host?.includes("localhost") ? "http" : "https";
     const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;

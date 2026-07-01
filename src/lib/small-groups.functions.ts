@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listSmallGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("small_groups")
@@ -34,6 +36,7 @@ export const upsertSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const payload = { ...data, account_id: userId, updated_at: new Date().toISOString() };
     if (data.id) {
@@ -50,6 +53,7 @@ export const deleteSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const { error } = await supabase.from("small_groups").delete().eq("id", data.id).eq("account_id", userId);
     if (error) throw new Error(error.message);

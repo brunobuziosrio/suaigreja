@@ -21,6 +21,15 @@ export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocsPage,
 });
 
+function escapeHtml(value: unknown) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function DocsPage() {
   const qc = useQueryClient();
   const fetchTpl = useServerFn(listDocumentTemplates);
@@ -76,14 +85,18 @@ function DocsPage() {
   function printDoc(d: any) {
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
-    w.document.write(`<!doctype html><html><head><title>${d.title}</title>
+    const safeTitle = escapeHtml(d.title);
+    const safeChurch = escapeHtml(account?.brand_title ?? "Igreja");
+    const safeDate = escapeHtml(new Date(d.issued_at).toLocaleDateString("pt-BR"));
+    const safeBody = escapeHtml(d.body);
+    w.document.write(`<!doctype html><html><head><title>${safeTitle}</title>
       <style>body{font-family:Georgia,serif;max-width:680px;margin:60px auto;padding:0 40px;color:#222;line-height:1.7}
       h1{font-size:22px;text-align:center;margin-bottom:8px} .meta{text-align:center;color:#777;font-size:13px;margin-bottom:40px}
       .body{white-space:pre-wrap;font-size:15px} .sig{margin-top:80px;text-align:center;border-top:1px solid #333;padding-top:8px;width:60%;margin-left:auto;margin-right:auto;font-size:13px}
       @media print{body{margin:20px}}</style></head><body>
-      <h1>${d.title}</h1>
-      <div class="meta">${account?.brand_title ?? "Igreja"} · ${new Date(d.issued_at).toLocaleDateString("pt-BR")}</div>
-      <div class="body">${d.body.replace(/</g, "&lt;")}</div>
+      <h1>${safeTitle}</h1>
+      <div class="meta">${safeChurch} · ${safeDate}</div>
+      <div class="body">${safeBody}</div>
       <div class="sig">Assinatura e carimbo</div>
       <script>window.print()</script></body></html>`);
     w.document.close();

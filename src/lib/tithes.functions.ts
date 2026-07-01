@@ -8,12 +8,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabase } from "@/integrations/supabase/client";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listTithes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("tithes")
       .select("*, members(full_name, email, phone)")
@@ -27,7 +28,8 @@ export const getTithesByMember = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ memberId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     const { data: tithes, error } = await supabase
       .from("tithes")
       .select("*")
@@ -51,6 +53,7 @@ export const upsertTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase: client, userId } = context;
     const payload = {
       member_id: data.member_id,
@@ -81,6 +84,7 @@ export const deleteTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase: client, userId } = context;
     const { error } = await client
       .from("tithes")
@@ -102,7 +106,8 @@ export const getTithesReport = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     let query = supabase
       .from("tithes")
       .select("*, members(full_name, email)")

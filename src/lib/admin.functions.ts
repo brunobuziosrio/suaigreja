@@ -33,7 +33,7 @@ export const listAllAccounts = createServerFn({ method: "GET" })
     const { data, error } = await supabaseAdmin
       .from("accounts")
       .select(
-        "id, site_id, brand_title, religion_profile, subscription_status, trial_ends_at, stripe_customer_id, created_at"
+        "id, site_id, brand_title, religion_profile, plan_tier, subscription_status, trial_ends_at, stripe_customer_id, created_at",
       )
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -84,6 +84,154 @@ export const updateAccountSubscription = createServerFn({ method: "POST" })
       .eq("id", data.account_id);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+const planTierSchema = z.object({
+  account_id: z.string().uuid(),
+  plan_tier: z.enum(["essential", "pro", "premium"]),
+});
+
+export const adminUpdateAccountPlanTier = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => planTierSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("accounts")
+      .update({ plan_tier: data.plan_tier })
+      .eq("id", data.account_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listWhatsappAdminOverview = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+
+    const [
+      { data: accounts, error: accountsError },
+      { data: settings, error: settingsError },
+      { data: providers, error: providersError },
+      { data: messages, error: messagesError },
+    ] = await Promise.all([
+      supabaseAdmin
+        .from("accounts")
+        .select("id, site_id, brand_title, plan_tier, subscription_status, created_at")
+        .order("created_at", { ascending: false }),
+      supabaseAdmin.from("whatsapp_settings").select("account_id, enabled, credits_balance"),
+      supabaseAdmin
+        .from("whatsapp_provider_connections")
+        .select("account_id, provider, active, sender_phone, phone_number_id, instance_id, api_base_url, last_error, last_checked_at"),
+      supabaseAdmin.from("whatsapp_messages").select("account_id, status"),
+    ]);
+
+    if (accountsError) throw new Error(accountsError.message);
+    if (settingsError) throw new Error(settingsError.message);
+    if (providersError) throw new Error(providersError.message);
+    if (messagesError) throw new Error(messagesError.message);
+
+    const settingsByAccount = new Map((settings ?? []).map((row: any) => [row.account_id, row]));
+    const providerByAccount = new Map((providers ?? []).map((row: any) => [row.account_id, row]));
+    const countsByAccount = new Map<string, Record<string, number>>();
+    for (const row of messages ?? []) {
+      const accountId = (row as any).account_id as string;
+      const status = (row as any).status as string;
+      const counts = countsByAccount.get(accountId) ?? { total: 0 };
+      counts.total += 1;
+      counts[status] = (counts[status] ?? 0) + 1;
+      countsByAccount.set(accountId, counts);
+    }
+
+    return (accounts ?? []).map((account: any) => ({
+      ...account,
+      whatsapp: settingsByAccount.get(account.id) ?? {
+        account_id: account.id,
+        enabled: false,
+        credits_balance: 0,
+      },
+      provider: providerByAccount.get(account.id) ?? null,
+      message_counts: countsByAccount.get(account.id) ?? { total: 0 },
+    }));
+  });
+
+const whatsappProviderSchema = z.object({
+  account_id: z.string().uuid(),
+  provider: z.enum(["meta_cloud", "uazapi"]),
+  active: z.boolean(),
+  sender_phone: z.string().max(40).optional().nullable(),
+  phone_number_id: z.string().max(120).optional().nullable(),
+  business_account_id: z.string().max(120).optional().nullable(),
+  instance_id: z.string().max(160).optional().nullable(),
+  api_base_url: z.string().url().max(300).optional().nullable(),
+  access_token_secret_name: z
+    .string()
+    .trim()
+    .min(3)
+    .max(120)
+    .regex(/^[A-Z0-9_]+$/, "Use apenas letras maiúsculas, números e underline."),
+});
+
+export const adminUpsertWhatsappProviderConnection = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => whatsappProviderSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+
+    if (data.provider === "meta_cloud" && !data.phone_number_id) {
+      throw new Error("Meta Cloud exige Phone Number ID.");
+    }
+    if (data.provider === "uazapi" && (!data.instance_id || !data.api_base_url)) {
+      throw new Error("UAZAPI exige Instance ID e URL base.");
+    }
+
+    const payload = {
+      account_id: data.account_id,
+      provider: data.provider,
+      active: data.active,
+      sender_phone: data.sender_phone?.trim() || null,
+      phone_number_id: data.provider === "meta_cloud" ? data.phone_number_id?.trim() || null : null,
+      business_account_id:
+        data.provider === "meta_cloud" ? data.business_account_id?.trim() || null : null,
+      instance_id: data.provider === "uazapi" ? data.instance_id?.trim() || null : null,
+      api_base_url: data.provider === "uazapi" ? data.api_base_url?.replace(/\/+$/, "") || null : null,
+      access_token_secret_name: data.access_token_secret_name.trim(),
+      last_error: null,
+      last_checked_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabaseAdmin
+      .from("whatsapp_provider_connections")
+      .upsert(payload as any, { onConflict: "account_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const whatsappCreditGrantSchema = z.object({
+  account_id: z.string().uuid(),
+  credits: z.number().int().min(1).max(100000),
+  amount_cents: z.number().int().min(0).max(100000000).default(0),
+  note: z.string().max(300).optional().nullable(),
+});
+
+export const adminGrantWhatsappCredits = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => whatsappCreditGrantSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { data: result, error } = await supabaseAdmin.rpc("admin_grant_whatsapp_credits", {
+      p_account_id: data.account_id,
+      p_credits: data.credits,
+      p_amount_cents: data.amount_cents,
+      p_metadata: {
+        source: "admin_panel",
+        admin_user_id: context.userId,
+        note: data.note?.trim() || null,
+      },
+    });
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(result) ? result[0] : result;
+    return { ok: true, ...(row ?? {}) };
   });
 
 const nameSchema = z.object({

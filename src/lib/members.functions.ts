@@ -2,10 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("members")
@@ -46,6 +48,7 @@ export const upsertMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const payload = {
       full_name: data.full_name.trim(),
@@ -93,6 +96,7 @@ export const deleteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { error } = await supabase
       .from("members")

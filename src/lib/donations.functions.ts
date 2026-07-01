@@ -5,6 +5,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { z } from "zod";
 import QRCode from "qrcode";
 import { buildPixBrCode } from "./pix-brcode";
+import { requirePlanTier } from "@/lib/plan-access";
 
 const MERCADOPAGO_BASE_URL = "https://api.mercadopago.com";
 
@@ -329,6 +330,7 @@ export const getDonationsMonthlyReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { year: number }) => z.object({ year: z.number().int().min(2020).max(2100) }).parse(input))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const start = `${data.year}-01-01T00:00:00.000Z`;
     const end = `${data.year + 1}-01-01T00:00:00.000Z`;

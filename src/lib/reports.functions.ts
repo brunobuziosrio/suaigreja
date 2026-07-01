@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requirePlanTier } from "@/lib/plan-access";
 
 const monthSchema = z.object({
   year: z.number().int().min(2000).max(2100),
@@ -20,9 +21,14 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { from, to } = monthBounds(data.year, data.month);
-    const [{ data: rows }, { data: classes }, { data: members }] = await Promise.all([
+    const [
+      { data: rows, error: rowsError },
+      { data: classes, error: classesError },
+      { data: members, error: membersError },
+    ] = await Promise.all([
       supabase
         .from("ebd_attendance")
         .select("class_id, member_id, attendance_date, present")
@@ -32,6 +38,9 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
       supabase.from("ebd_classes").select("id, name").eq("account_id", userId),
       supabase.from("members").select("id, full_name").eq("account_id", userId),
     ]);
+    if (rowsError) throw new Error(rowsError.message);
+    if (classesError) throw new Error(classesError.message);
+    if (membersError) throw new Error(membersError.message);
     const memberMap = new Map((members ?? []).map((m: any) => [m.id, m.full_name]));
     const classMap = new Map((classes ?? []).map((c: any) => [c.id, c.name]));
     const byClass = new Map<string, { present: number; total: number; dates: Set<string>; members: Map<string, { present: number; total: number; name: string }> }>();
@@ -74,23 +83,26 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { from, to } = monthBounds(data.year, data.month);
-    const { data: sessions } = await supabase
+    const { data: sessions, error: sessionsError } = await supabase
       .from("checkin_sessions")
       .select("id, title, session_date, start_time")
       .eq("account_id", userId)
       .gte("session_date", from)
       .lte("session_date", to)
       .order("session_date", { ascending: true });
+    if (sessionsError) throw new Error(sessionsError.message);
     const sessionIds = (sessions ?? []).map((s: any) => s.id);
     let entries: any[] = [];
     if (sessionIds.length) {
-      const { data: e } = await supabase
+      const { data: e, error: entriesError } = await supabase
         .from("checkin_entries")
         .select("session_id, member_id, visitor_name, checked_in_at")
         .eq("account_id", userId)
         .in("session_id", sessionIds);
+      if (entriesError) throw new Error(entriesError.message);
       entries = e ?? [];
     }
     const counts = new Map<string, { total: number; members: number; visitors: number }>();
@@ -120,8 +132,12 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
 export const getSmallGroupsReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
-    const [{ data: groups }, { data: memberships }] = await Promise.all([
+    const [
+      { data: groups, error: groupsError },
+      { data: memberships, error: membershipsError },
+    ] = await Promise.all([
       supabase
         .from("small_groups")
         .select("id, name, leader_name, leader_phone, neighborhood, weekday, start_time, capacity, active")
@@ -131,6 +147,8 @@ export const getSmallGroupsReport = createServerFn({ method: "GET" })
         .select("group_id, member_id, role")
         .eq("account_id", userId),
     ]);
+    if (groupsError) throw new Error(groupsError.message);
+    if (membershipsError) throw new Error(membershipsError.message);
     const countByGroup = new Map<string, number>();
     for (const m of memberships ?? []) {
       const k = m.group_id as string;

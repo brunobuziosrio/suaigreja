@@ -35,6 +35,7 @@ export type Database = {
           cta_enabled: boolean
           cta_label: string
           current_plan: string | null
+          plan_tier: string
           custom_slug: string | null
           donations_fixed_image_url: string | null
           force_show_type: boolean
@@ -102,6 +103,7 @@ export type Database = {
           cta_enabled?: boolean
           cta_label?: string
           current_plan?: string | null
+          plan_tier?: string
           custom_slug?: string | null
           donations_fixed_image_url?: string | null
           force_show_type?: boolean
@@ -169,6 +171,7 @@ export type Database = {
           cta_enabled?: boolean
           cta_label?: string
           current_plan?: string | null
+          plan_tier?: string
           custom_slug?: string | null
           donations_fixed_image_url?: string | null
           force_show_type?: boolean

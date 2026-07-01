@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
 import { Loader2 } from "lucide-react";
+import { canAccessAccountPath } from "@/lib/plan-access";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -40,6 +41,14 @@ function AuthenticatedLayout() {
     }
     if (account?.onboarded && pathname === "/onboarding") {
       navigate({ to: "/dashboard" });
+      return;
+    }
+    if (
+      account?.onboarded &&
+      !pathname.startsWith("/admin") &&
+      !canAccessAccountPath(account, pathname)
+    ) {
+      navigate({ to: "/billing" });
     }
   }, [user, loading, account, accountLoading, pathname, navigate]);
 

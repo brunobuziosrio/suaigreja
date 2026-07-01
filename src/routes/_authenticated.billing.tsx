@@ -7,7 +7,13 @@ import { Input } from "@/components/ui/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { createPixPayment, getBillingSetup, listMyPayments } from "@/lib/billing.functions";
-import { BILLING_PLANS, formatCentsBRL, type BillingPlanId } from "@/lib/billing-plans";
+import {
+  BILLING_PLANS,
+  PLAN_FEATURES,
+  PURCHASABLE_PLAN_IDS,
+  formatCentsBRL,
+  type BillingPlanId,
+} from "@/lib/billing-plans";
 import { Check, Copy, Loader2, QrCode, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,6 +30,34 @@ const STATUS_LABELS: Record<string, string> = {
   canceled: "Cancelado",
   refused: "Recusado",
 };
+
+const ACCOUNT_STATUS_LABELS: Record<string, string> = {
+  trial: "Trial",
+  active: "Ativo",
+  past_due: "Em atraso",
+  canceled: "Cancelado",
+};
+
+function formatAccountValidity(account: {
+  subscription_status?: string | null;
+  subscription_ends_at?: string | null;
+  trial_ends_at?: string | null;
+} | null | undefined) {
+  if (!account) return "Carregando...";
+  if (account.subscription_status === "active") {
+    if (!account.subscription_ends_at) return "Assinatura ativa sem data de término definida";
+    const end = new Date(account.subscription_ends_at);
+    const expired = end.getTime() <= Date.now();
+    return `${expired ? "Assinatura venceu em" : "Assinatura válida até"} ${end.toLocaleDateString("pt-BR")}`;
+  }
+  if (account.subscription_status === "trial") {
+    if (!account.trial_ends_at) return "Trial sem data de término definida";
+    const end = new Date(account.trial_ends_at);
+    const expired = end.getTime() <= Date.now();
+    return `${expired ? "Trial venceu em" : "Trial válido até"} ${end.toLocaleDateString("pt-BR")}`;
+  }
+  return "Regularize a assinatura para liberar os módulos do plano.";
+}
 
 function BillingPage() {
   const getSetup = useServerFn(getBillingSetup);
@@ -79,13 +113,17 @@ function BillingPage() {
           ) : (
             <div>
               <div className="flex items-center gap-2">
-                <Badge>{account?.subscription_status === "active" ? "Ativo" : "Trial"}</Badge>
-                {account?.current_plan && <span className="text-sm text-muted-foreground">Plano {BILLING_PLANS[account.current_plan as BillingPlanId]?.label}</span>}
+                <Badge variant={account?.subscription_status === "active" ? "default" : "secondary"}>
+                  {ACCOUNT_STATUS_LABELS[account?.subscription_status ?? "trial"] ?? account?.subscription_status ?? "Trial"}
+                </Badge>
+                {account?.current_plan && (
+                  <span className="text-sm text-muted-foreground">
+                    Plano {BILLING_PLANS[account.current_plan as BillingPlanId]?.label ?? account.current_plan}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                {account?.subscription_ends_at
-                  ? `Assinatura válida até ${new Date(account.subscription_ends_at).toLocaleDateString("pt-BR")}`
-                  : `Trial válido até ${account?.trial_ends_at ? new Date(account.trial_ends_at).toLocaleDateString("pt-BR") : "—"}`}
+                {formatAccountValidity(account)}
               </p>
             </div>
           )}
@@ -103,24 +141,38 @@ function BillingPage() {
           </Card>
         )}
 
-        <div className="grid md:grid-cols-2 gap-5">
-          {(Object.keys(BILLING_PLANS) as BillingPlanId[]).map((planId) => {
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {PURCHASABLE_PLAN_IDS.map((planId) => {
             const plan = BILLING_PLANS[planId];
             return (
-              <Card key={plan.id} className="p-6 space-y-5">
+              <Card
+                key={plan.id}
+                className={plan.tier === "pro" ? "space-y-5 border-primary/40 p-6 shadow-sm" : "space-y-5 p-6"}
+              >
                 <div>
                   <div className="flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Plano {plan.label}</h2>
-                    {planId === "annual" && <Badge variant="secondary">2 meses grátis</Badge>}
+                    <h2 className="text-lg font-semibold">Plano {plan.tierLabel}</h2>
+                    {plan.cycle === "annual" && <Badge variant="secondary">2 meses grátis</Badge>}
                   </div>
+                  <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Ciclo {plan.cycleLabel.toLowerCase()}
+                  </p>
                   <div className="text-3xl font-semibold mt-3">{plan.priceLabel}</div>
                 </div>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-primary" /> Agenda e embed ilimitados</li>
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-primary" /> Pagamento por PIX via AtivoPay</li>
-                  <li className="flex gap-2"><Check className="h-4 w-4 text-primary" /> Ativação automática pelo webhook</li>
+                  {PLAN_FEATURES[plan.tier].map((feature) => (
+                    <li key={feature} className="flex gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{feature}</span>
+                    </li>
+                  ))}
                 </ul>
-                <Button className="w-full" disabled={!setup?.hasAtivoPayKey || mut.isPending} onClick={() => mut.mutate(planId)}>
+                <Button
+                  className="w-full"
+                  variant={plan.tier === "pro" ? "default" : "outline"}
+                  disabled={!setup?.hasAtivoPayKey || mut.isPending}
+                  onClick={() => mut.mutate(planId)}
+                >
                   {mut.isPending ? "Gerando…" : "Gerar PIX"}
                 </Button>
               </Card>

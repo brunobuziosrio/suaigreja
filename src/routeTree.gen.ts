@@ -30,6 +30,7 @@ import { Route as AuthenticatedVisitantesRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTypesRouteImport } from './routes/_authenticated.types'
 import { Route as AuthenticatedTransmissoesRouteImport } from './routes/_authenticated.transmissoes'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedSecretariaRouteImport } from './routes/_authenticated.secretaria'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated.relatorios'
 import { Route as AuthenticatedOracoesRouteImport } from './routes/_authenticated.oracoes'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
@@ -52,14 +53,18 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as NSlugPostIdRouteImport } from './routes/n.$slug.$postId'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api.public.whatsapp-webhook'
+import { Route as ApiPublicWhatsappOptOutRouteImport } from './routes/api.public.whatsapp-opt-out'
 import { Route as ApiPublicMercadopagoWebhookRouteImport } from './routes/api.public.mercadopago-webhook'
 import { Route as ApiPublicAtivopayWebhookRouteImport } from './routes/api.public.ativopay-webhook'
 import { Route as AuthenticatedMarketplaceSlugRouteImport } from './routes/_authenticated.marketplace.$slug'
+import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated.admin.whatsapp'
 import { Route as AuthenticatedAdminTestDataRouteImport } from './routes/_authenticated.admin.test-data'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated.admin.products'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated.admin.payments'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated.admin.feedback'
 import { Route as ApiPublicInstagramCallbackRouteImport } from './routes/api.public.instagram.callback'
+import { Route as ApiPublicCronWhatsappDispatchRouteImport } from './routes/api.public.cron.whatsapp-dispatch'
 import { Route as ApiPublicCronWhatsappBirthdaysRouteImport } from './routes/api.public.cron.whatsapp-birthdays'
 import { Route as ApiPublicCronTitheReminderRouteImport } from './routes/api.public.cron.tithe-reminder'
 import { Route as ApiPublicAgendaSiteIdRouteImport } from './routes/api.public.agenda.$siteId'
@@ -167,6 +172,11 @@ const AuthenticatedTransmissoesRoute =
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSecretariaRoute = AuthenticatedSecretariaRouteImport.update({
+  id: '/secretaria',
+  path: '/secretaria',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
@@ -280,6 +290,17 @@ const NSlugPostIdRoute = NSlugPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => NSlugRoute,
 } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp-webhook',
+    path: '/api/public/whatsapp-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicWhatsappOptOutRoute = ApiPublicWhatsappOptOutRouteImport.update({
+  id: '/api/public/whatsapp-opt-out',
+  path: '/api/public/whatsapp-opt-out',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicMercadopagoWebhookRoute =
   ApiPublicMercadopagoWebhookRouteImport.update({
     id: '/api/public/mercadopago-webhook',
@@ -297,6 +318,12 @@ const AuthenticatedMarketplaceSlugRoute =
     id: '/$slug',
     path: '/$slug',
     getParentRoute: () => AuthenticatedMarketplaceRoute,
+  } as any)
+const AuthenticatedAdminWhatsappRoute =
+  AuthenticatedAdminWhatsappRouteImport.update({
+    id: '/admin/whatsapp',
+    path: '/admin/whatsapp',
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedAdminTestDataRoute =
   AuthenticatedAdminTestDataRouteImport.update({
@@ -326,6 +353,12 @@ const ApiPublicInstagramCallbackRoute =
   ApiPublicInstagramCallbackRouteImport.update({
     id: '/api/public/instagram/callback',
     path: '/api/public/instagram/callback',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicCronWhatsappDispatchRoute =
+  ApiPublicCronWhatsappDispatchRouteImport.update({
+    id: '/api/public/cron/whatsapp-dispatch',
+    path: '/api/public/cron/whatsapp-dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicCronWhatsappBirthdaysRoute =
@@ -371,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/secretaria': typeof AuthenticatedSecretariaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/transmissoes': typeof AuthenticatedTransmissoesRoute
   '/types': typeof AuthenticatedTypesRoute
@@ -391,14 +425,18 @@ export interface FileRoutesByFullPath {
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
+  '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
+  '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
   '/api/public/cron/tithe-reminder': typeof ApiPublicCronTitheReminderRoute
   '/api/public/cron/whatsapp-birthdays': typeof ApiPublicCronWhatsappBirthdaysRoute
+  '/api/public/cron/whatsapp-dispatch': typeof ApiPublicCronWhatsappDispatchRoute
   '/api/public/instagram/callback': typeof ApiPublicInstagramCallbackRoute
 }
 export interface FileRoutesByTo {
@@ -426,6 +464,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/secretaria': typeof AuthenticatedSecretariaRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/transmissoes': typeof AuthenticatedTransmissoesRoute
   '/types': typeof AuthenticatedTypesRoute
@@ -446,14 +485,18 @@ export interface FileRoutesByTo {
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
+  '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
+  '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
   '/api/public/cron/tithe-reminder': typeof ApiPublicCronTitheReminderRoute
   '/api/public/cron/whatsapp-birthdays': typeof ApiPublicCronWhatsappBirthdaysRoute
+  '/api/public/cron/whatsapp-dispatch': typeof ApiPublicCronWhatsappDispatchRoute
   '/api/public/instagram/callback': typeof ApiPublicInstagramCallbackRoute
 }
 export interface FileRoutesById {
@@ -483,6 +526,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/oracoes': typeof AuthenticatedOracoesRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
+  '/_authenticated/secretaria': typeof AuthenticatedSecretariaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/transmissoes': typeof AuthenticatedTransmissoesRoute
   '/_authenticated/types': typeof AuthenticatedTypesRoute
@@ -503,14 +547,18 @@ export interface FileRoutesById {
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/test-data': typeof AuthenticatedAdminTestDataRoute
+  '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/_authenticated/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
   '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
+  '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
   '/api/public/cron/tithe-reminder': typeof ApiPublicCronTitheReminderRoute
   '/api/public/cron/whatsapp-birthdays': typeof ApiPublicCronWhatsappBirthdaysRoute
+  '/api/public/cron/whatsapp-dispatch': typeof ApiPublicCronWhatsappDispatchRoute
   '/api/public/instagram/callback': typeof ApiPublicInstagramCallbackRoute
 }
 export interface FileRouteTypes {
@@ -540,6 +588,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/oracoes'
     | '/relatorios'
+    | '/secretaria'
     | '/settings'
     | '/transmissoes'
     | '/types'
@@ -560,14 +609,18 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/products'
     | '/admin/test-data'
+    | '/admin/whatsapp'
     | '/marketplace/$slug'
     | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
+    | '/api/public/whatsapp-opt-out'
+    | '/api/public/whatsapp-webhook'
     | '/n/$slug/$postId'
     | '/admin/'
     | '/api/public/agenda/$siteId'
     | '/api/public/cron/tithe-reminder'
     | '/api/public/cron/whatsapp-birthdays'
+    | '/api/public/cron/whatsapp-dispatch'
     | '/api/public/instagram/callback'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -595,6 +648,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/oracoes'
     | '/relatorios'
+    | '/secretaria'
     | '/settings'
     | '/transmissoes'
     | '/types'
@@ -615,14 +669,18 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/products'
     | '/admin/test-data'
+    | '/admin/whatsapp'
     | '/marketplace/$slug'
     | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
+    | '/api/public/whatsapp-opt-out'
+    | '/api/public/whatsapp-webhook'
     | '/n/$slug/$postId'
     | '/admin'
     | '/api/public/agenda/$siteId'
     | '/api/public/cron/tithe-reminder'
     | '/api/public/cron/whatsapp-birthdays'
+    | '/api/public/cron/whatsapp-dispatch'
     | '/api/public/instagram/callback'
   id:
     | '__root__'
@@ -651,6 +709,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/oracoes'
     | '/_authenticated/relatorios'
+    | '/_authenticated/secretaria'
     | '/_authenticated/settings'
     | '/_authenticated/transmissoes'
     | '/_authenticated/types'
@@ -671,14 +730,18 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/payments'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/test-data'
+    | '/_authenticated/admin/whatsapp'
     | '/_authenticated/marketplace/$slug'
     | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
+    | '/api/public/whatsapp-opt-out'
+    | '/api/public/whatsapp-webhook'
     | '/n/$slug/$postId'
     | '/_authenticated/admin/'
     | '/api/public/agenda/$siteId'
     | '/api/public/cron/tithe-reminder'
     | '/api/public/cron/whatsapp-birthdays'
+    | '/api/public/cron/whatsapp-dispatch'
     | '/api/public/instagram/callback'
   fileRoutesById: FileRoutesById
 }
@@ -701,9 +764,12 @@ export interface RootRouteChildren {
   VSiteIdRoute: typeof VSiteIdRoute
   ApiPublicAtivopayWebhookRoute: typeof ApiPublicAtivopayWebhookRoute
   ApiPublicMercadopagoWebhookRoute: typeof ApiPublicMercadopagoWebhookRoute
+  ApiPublicWhatsappOptOutRoute: typeof ApiPublicWhatsappOptOutRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
   ApiPublicAgendaSiteIdRoute: typeof ApiPublicAgendaSiteIdRoute
   ApiPublicCronTitheReminderRoute: typeof ApiPublicCronTitheReminderRoute
   ApiPublicCronWhatsappBirthdaysRoute: typeof ApiPublicCronWhatsappBirthdaysRoute
+  ApiPublicCronWhatsappDispatchRoute: typeof ApiPublicCronWhatsappDispatchRoute
   ApiPublicInstagramCallbackRoute: typeof ApiPublicInstagramCallbackRoute
 }
 
@@ -854,6 +920,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/secretaria': {
+      id: '/_authenticated/secretaria'
+      path: '/secretaria'
+      fullPath: '/secretaria'
+      preLoaderRoute: typeof AuthenticatedSecretariaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/relatorios': {
@@ -1010,6 +1083,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NSlugPostIdRouteImport
       parentRoute: typeof NSlugRoute
     }
+    '/api/public/whatsapp-webhook': {
+      id: '/api/public/whatsapp-webhook'
+      path: '/api/public/whatsapp-webhook'
+      fullPath: '/api/public/whatsapp-webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/whatsapp-opt-out': {
+      id: '/api/public/whatsapp-opt-out'
+      path: '/api/public/whatsapp-opt-out'
+      fullPath: '/api/public/whatsapp-opt-out'
+      preLoaderRoute: typeof ApiPublicWhatsappOptOutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mercadopago-webhook': {
       id: '/api/public/mercadopago-webhook'
       path: '/api/public/mercadopago-webhook'
@@ -1030,6 +1117,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/marketplace/$slug'
       preLoaderRoute: typeof AuthenticatedMarketplaceSlugRouteImport
       parentRoute: typeof AuthenticatedMarketplaceRoute
+    }
+    '/_authenticated/admin/whatsapp': {
+      id: '/_authenticated/admin/whatsapp'
+      path: '/admin/whatsapp'
+      fullPath: '/admin/whatsapp'
+      preLoaderRoute: typeof AuthenticatedAdminWhatsappRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/admin/test-data': {
       id: '/_authenticated/admin/test-data'
@@ -1064,6 +1158,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/instagram/callback'
       fullPath: '/api/public/instagram/callback'
       preLoaderRoute: typeof ApiPublicInstagramCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/cron/whatsapp-dispatch': {
+      id: '/api/public/cron/whatsapp-dispatch'
+      path: '/api/public/cron/whatsapp-dispatch'
+      fullPath: '/api/public/cron/whatsapp-dispatch'
+      preLoaderRoute: typeof ApiPublicCronWhatsappDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/cron/whatsapp-birthdays': {
@@ -1125,6 +1226,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedOracoesRoute: typeof AuthenticatedOracoesRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
+  AuthenticatedSecretariaRoute: typeof AuthenticatedSecretariaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTransmissoesRoute: typeof AuthenticatedTransmissoesRoute
   AuthenticatedTypesRoute: typeof AuthenticatedTypesRoute
@@ -1134,6 +1236,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminTestDataRoute: typeof AuthenticatedAdminTestDataRoute
+  AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -1158,6 +1261,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedOracoesRoute: AuthenticatedOracoesRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
+  AuthenticatedSecretariaRoute: AuthenticatedSecretariaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTransmissoesRoute: AuthenticatedTransmissoesRoute,
   AuthenticatedTypesRoute: AuthenticatedTypesRoute,
@@ -1167,6 +1271,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminTestDataRoute: AuthenticatedAdminTestDataRoute,
+  AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
@@ -1203,9 +1308,12 @@ const rootRouteChildren: RootRouteChildren = {
   VSiteIdRoute: VSiteIdRoute,
   ApiPublicAtivopayWebhookRoute: ApiPublicAtivopayWebhookRoute,
   ApiPublicMercadopagoWebhookRoute: ApiPublicMercadopagoWebhookRoute,
+  ApiPublicWhatsappOptOutRoute: ApiPublicWhatsappOptOutRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
   ApiPublicAgendaSiteIdRoute: ApiPublicAgendaSiteIdRoute,
   ApiPublicCronTitheReminderRoute: ApiPublicCronTitheReminderRoute,
   ApiPublicCronWhatsappBirthdaysRoute: ApiPublicCronWhatsappBirthdaysRoute,
+  ApiPublicCronWhatsappDispatchRoute: ApiPublicCronWhatsappDispatchRoute,
   ApiPublicInstagramCallbackRoute: ApiPublicInstagramCallbackRoute,
 }
 export const routeTree = rootRouteImport

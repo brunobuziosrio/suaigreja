@@ -49,7 +49,7 @@ export const MARKETING_TIERS: MarketingTier[] = [
       "Domínio próprio (paroquiasaojose.com.br)",
       "Landing page personalizada",
       "Suporte prioritário",
-      "Acesso antecipado aos novos módulos",
+      "Convite para módulos beta quando fizer sentido",
     ],
   },
 ];

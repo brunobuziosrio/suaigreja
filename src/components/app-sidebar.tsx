@@ -7,6 +7,7 @@ import {
   CalendarDays,
   CalendarHeart,
   ChevronDown,
+  ClipboardList,
   CircleDollarSign,
   Code2,
   FileText,
@@ -35,6 +36,9 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getIsAdmin } from "@/lib/admin.functions";
+import { getMyAccount } from "@/lib/account.functions";
+import { canAccessAccountPath } from "@/lib/plan-access";
+import { getReligionTerms } from "@/lib/religion-profiles";
 import { useAuth } from "@/hooks/use-auth";
 import { useBranding, BRANDING_DEFAULTS } from "@/hooks/use-branding";
 import {
@@ -64,24 +68,26 @@ const primaryItems: NavItem[] = [
   { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
 ];
 
-const navGroups: Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] }> = [
+function getNavGroups(terms: ReturnType<typeof getReligionTerms>): Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] }> {
+  return [
   {
     label: "Site e comunicação",
     icon: Globe,
     items: [
-      { title: "Página da igreja", url: "/hub", icon: Globe },
+      { title: terms.publicPage, url: "/hub", icon: Globe },
       { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
       { title: "Transmissões", url: "/transmissoes", icon: Radio },
     ],
   },
   {
-    label: "Pessoas e cuidado",
+    label: "Comunidade",
     icon: Users,
     items: [
-      { title: "Membros", url: "/membros", icon: IdCard },
+      { title: terms.people, url: "/membros", icon: IdCard },
       { title: "Visitantes", url: "/visitantes", icon: UserPlus },
-      { title: "Pequenos grupos", url: "/celulas", icon: Users2 },
+      { title: terms.smallGroups, url: "/celulas", icon: Users2 },
       { title: "Pedidos de oração", url: "/oracoes", icon: HandHeart },
+      { title: terms.secretaryPortal, url: "/secretaria", icon: ClipboardList },
     ],
   },
   {
@@ -91,6 +97,7 @@ const navGroups: Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] 
       { title: "Agenda", url: "/agenda", icon: CalendarDays },
       { title: "Eventos", url: "/eventos", icon: CalendarHeart },
       { title: "Check-in", url: "/checkin", icon: QrCode },
+      { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },
       { title: "Locais", url: "/locations", icon: MapPin },
       { title: "Tipos de evento", url: "/types", icon: ListChecks },
     ],
@@ -105,19 +112,25 @@ const navGroups: Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] 
     ],
   },
   {
-    label: "Gestão",
-    icon: Settings,
+    label: "Financeiro",
+    icon: CircleDollarSign,
     items: [
       { title: "Finanças", url: "/finances", icon: CircleDollarSign },
-      { title: "Campanhas & Dízimos", url: "/campanhas", icon: TrendingUp },
-      { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },
+      { title: terms.contributionCampaigns, url: "/campanhas", icon: TrendingUp },
+    ],
+  },
+  {
+    label: "Sistema e conta",
+    icon: Settings,
+    items: [
       { title: "Configurações", url: "/settings", icon: Settings },
       { title: "Integrações", url: "/embed", icon: Code2 },
       { title: "Plugins e extras", url: "/marketplace", icon: Store },
       { title: "Assinatura", url: "/billing", icon: WalletCards },
     ],
   },
-];
+  ];
+}
 
 function NavGroup({
   label,
@@ -175,13 +188,22 @@ export function AppSidebar() {
   const currentPath = useRouterState({ select: (state) => state.location.pathname });
   const { user } = useAuth();
   const checkAdmin = useServerFn(getIsAdmin);
+  const fetchAccount = useServerFn(getMyAccount);
   const { data: adminCheck } = useQuery({
     queryKey: ["is-admin"],
     queryFn: () => checkAdmin(),
     enabled: !!user,
   });
+  const { data: account } = useQuery({
+    queryKey: ["account", user?.id],
+    queryFn: () => fetchAccount(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
   const { data: brandingData } = useBranding();
   const branding = brandingData ?? BRANDING_DEFAULTS;
+  const terms = getReligionTerms(account?.religion_profile);
+  const navGroups = getNavGroups(terms);
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
@@ -190,6 +212,7 @@ export function AppSidebar() {
     { title: "Produtos", url: "/admin/products", icon: Package },
     { title: "Atualizações", url: "/admin/feedback", icon: Megaphone },
     { title: "Pagamentos", url: "/admin/payments", icon: WalletCards },
+    { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageCircle },
   ];
 
   return (
@@ -260,9 +283,18 @@ export function AppSidebar() {
           <SidebarGroupLabel>Áreas de trabalho</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navGroups.map((group) => (
-                <NavGroup key={group.label} {...group} currentPath={currentPath} />
-              ))}
+              {navGroups.map((group) => {
+                const items = group.items.filter((item) => canAccessAccountPath(account, item.url));
+                if (items.length === 0) return null;
+                return (
+                  <NavGroup
+                    key={group.label}
+                    {...group}
+                    items={items}
+                    currentPath={currentPath}
+                  />
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

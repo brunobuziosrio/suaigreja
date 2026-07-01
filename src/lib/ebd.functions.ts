@@ -1,10 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listEbdClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("ebd_classes")
@@ -31,6 +33,7 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => classSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const payload = {
       name: data.name.trim(),
@@ -63,6 +66,7 @@ export const deleteEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const { error } = await supabase
       .from("ebd_classes")
@@ -77,6 +81,7 @@ export const listEnrollments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ class_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const { data: rows, error } = await supabase
       .from("ebd_enrollments")
@@ -97,6 +102,7 @@ export const setEnrollment = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     if (data.enroll) {
       const { error } = await supabase.from("ebd_enrollments").insert({
@@ -130,6 +136,7 @@ export const recordAttendance = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     // upsert each entry
     for (const e of data.entries) {
@@ -153,6 +160,7 @@ export const recordAttendance = createServerFn({ method: "POST" })
 export const getAttendanceStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const since = new Date();
     since.setDate(since.getDate() - 60);
@@ -179,6 +187,7 @@ export const getAttendanceForDate = createServerFn({ method: "GET" })
     attendance_date: z.string(),
   }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "premium");
     const { supabase, userId } = context;
     const { data: rows, error } = await supabase
       .from("ebd_attendance")

@@ -2,10 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listVisitors = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("visitors")
@@ -24,6 +26,7 @@ export const updateVisitorStatus = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").update({ status: data.status }).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -34,6 +37,7 @@ export const updateVisitorNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid(), notes: z.string().max(2000) }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").update({ notes: data.notes }).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -44,6 +48,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -53,6 +58,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
 export const getVisitorSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { data } = await supabase
       .from("accounts")
@@ -71,6 +77,7 @@ export const saveVisitorSettings = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { error } = await supabase
       .from("accounts")

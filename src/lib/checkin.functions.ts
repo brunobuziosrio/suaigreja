@@ -2,10 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listCheckinSessions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("checkin_sessions")
@@ -20,6 +22,7 @@ export const listCheckinEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { session_id: string }) => z.object({ session_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { data: rows, error } = await supabase
       .from("checkin_entries")
@@ -44,6 +47,7 @@ export const upsertCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const payload = { ...data, account_id: userId, updated_at: new Date().toISOString() };
     if (data.id) {
@@ -60,6 +64,7 @@ export const deleteCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { error } = await supabase.from("checkin_sessions").delete().eq("id", data.id).eq("account_id", userId);
     if (error) throw new Error(error.message);

@@ -90,7 +90,12 @@ function CampaignsPage() {
   const [showTithes, setShowTithes] = useState(false);
   const [openTitheDialog, setOpenTitheDialog] = useState(false);
 
-  const { data: campaigns = [], isLoading: loadingCampaigns } = useQuery({
+  const {
+    data: campaigns = [],
+    isLoading: loadingCampaigns,
+    isError: campaignsError,
+    refetch: refetchCampaigns,
+  } = useQuery({
     queryKey: ["campaigns"],
     queryFn: () => fetchCampaigns(),
     staleTime: 60000,
@@ -100,6 +105,7 @@ function CampaignsPage() {
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
+    enabled: openTitheDialog,
     staleTime: 3600000,
     gcTime: Infinity,
   });
@@ -220,7 +226,26 @@ function CampaignsPage() {
   if (loadingCampaigns)
     return (
       <AppShell>
-        <div className="p-6">Carregando...</div>
+        <div className="space-y-6 p-6" aria-busy="true" aria-label="Carregando campanhas">
+          <div className="h-10 w-72 animate-pulse rounded-md bg-muted" />
+          <div className="h-28 animate-pulse rounded-xl border bg-card" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="h-48 animate-pulse rounded-xl border bg-card" />
+            <div className="h-48 animate-pulse rounded-xl border bg-card" />
+          </div>
+        </div>
+      </AppShell>
+    );
+
+  if (campaignsError)
+    return (
+      <AppShell>
+        <Card className="m-6 p-6 text-center">
+          <p className="font-medium">Não foi possível carregar as campanhas.</p>
+          <Button className="mt-4" variant="outline" onClick={() => refetchCampaigns()}>
+            Tentar novamente
+          </Button>
+        </Card>
       </AppShell>
     );
 

@@ -133,8 +133,10 @@ Seus dados não serão compartilhados com terceiros sem seu consentimento explí
 Para exercer seus direitos LGPD, entre em contato através do WhatsApp ou email da nossa comunidade.',
   CURRENT_DATE,
   true
+FROM public.accounts a
+WHERE NOT EXISTS (
+  SELECT 1 FROM public.privacy_policies p WHERE p.account_id = a.id
 )
-WHERE NOT EXISTS (SELECT 1 FROM public.privacy_policies WHERE account_id = id)
 ON CONFLICT DO NOTHING;
 
 -- Data subject rights form template

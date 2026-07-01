@@ -8,15 +8,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabase } from "@/integrations/supabase/client";
+import { requirePlanTier } from "@/lib/plan-access";
 
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("campaigns")
-      .select("*")
+      .select(
+        "id, name, description, goal_amount_cents, current_amount_cents, start_date, end_date, is_active, pix_key, sort_order, created_at, updated_at",
+      )
       .eq("account_id", userId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
@@ -40,6 +43,7 @@ export const upsertCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase: client, userId } = context;
     const payload = {
       name: data.name.trim(),
@@ -73,6 +77,7 @@ export const deleteCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase: client, userId } = context;
     const { error } = await client
       .from("campaigns")
@@ -87,7 +92,8 @@ export const getCampaignStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ campaignId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     const { data: campaign, error: cErr } = await supabase
       .from("campaigns")
       .select("*")

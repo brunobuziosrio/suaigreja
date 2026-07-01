@@ -3,6 +3,7 @@ import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import { requirePlanTier } from "@/lib/plan-access";
 import QRCode from "qrcode";
 import { z } from "zod";
 
@@ -40,6 +41,7 @@ const EventPageInput = z.object({
 export const listEventPages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("event_pages")
@@ -70,6 +72,7 @@ export const saveEventPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => EventPageInput.parse(input))
   .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
     const { supabase, userId } = context;
 
     let slug = data.slug && data.slug.length > 2 ? slugify(data.slug) : slugify(data.title);
@@ -116,7 +119,11 @@ export const saveEventPage = createServerFn({ method: "POST" })
     };
 
     if (data.id) {
-      const { error } = await supabase.from("event_pages").update(payload).eq("id", data.id);
+      const { error } = await supabase
+        .from("event_pages")
+        .update(payload)
+        .eq("id", data.id)
+        .eq("account_id", userId);
       if (error) throw new Error(error.message);
       return { id: data.id, slug };
     }
@@ -133,8 +140,13 @@ export const deleteEventPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
-    const { error } = await supabase.from("event_pages").delete().eq("id", data.id);
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
+    const { error } = await supabase
+      .from("event_pages")
+      .delete()
+      .eq("id", data.id)
+      .eq("account_id", userId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -143,11 +155,13 @@ export const listEventRegistrations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ eventPageId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     const { data: regs, error } = await supabase
       .from("event_registrations")
       .select("id, name, email, phone, amount_cents, status, paid_at, notes, created_at, transaction_id")
       .eq("event_page_id", data.eventPageId)
+      .eq("account_id", userId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return regs ?? [];
@@ -157,11 +171,13 @@ export const getRegistrationPayment = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ registrationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase } = context;
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
     const { data: reg } = await supabase
       .from("event_registrations")
       .select("id, transaction_id, amount_cents, status")
       .eq("id", data.registrationId)
+      .eq("account_id", userId)
       .maybeSingle();
     if (!reg) throw new Error("Inscrição não encontrada.");
     if (!reg.transaction_id) return { copyPaste: null, qrCodeImage: null, payUrl: null, status: reg.status };

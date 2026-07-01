@@ -105,7 +105,12 @@ function VolunteerSchedulesPage() {
   const [openScheduleDialog, setOpenScheduleDialog] = useState(false);
   const [openShiftDialog, setOpenShiftDialog] = useState(false);
 
-  const { data: schedules = [], isLoading: loadingSchedules } = useQuery({
+  const {
+    data: schedules = [],
+    isLoading: loadingSchedules,
+    isError: schedulesError,
+    refetch: refetchSchedules,
+  } = useQuery({
     queryKey: ["volunteer-schedules"],
     queryFn: () => fetchSchedules(),
     staleTime: 60000,
@@ -115,6 +120,7 @@ function VolunteerSchedulesPage() {
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
+    enabled: openShiftDialog,
     staleTime: 3600000,
     gcTime: Infinity,
   });
@@ -135,11 +141,13 @@ function VolunteerSchedulesPage() {
     notes: "",
   });
 
+  const activeScheduleId = selectedScheduleId ?? schedules[0]?.id ?? null;
+
   const { data: shifts = [], isLoading: loadingShifts } = useQuery({
-    queryKey: ["volunteer-shifts", selectedScheduleId],
+    queryKey: ["volunteer-shifts", activeScheduleId],
     queryFn: () =>
-      selectedScheduleId ? fetchShifts({ data: { scheduleId: selectedScheduleId } }) : [],
-    enabled: !!selectedScheduleId,
+      activeScheduleId ? fetchShifts({ data: { scheduleId: activeScheduleId } }) : [],
+    enabled: !!activeScheduleId,
     staleTime: 30000,
   });
 
@@ -223,7 +231,28 @@ function VolunteerSchedulesPage() {
     setOpenShiftDialog(true);
   };
 
-  if (loadingSchedules) return <AppShell><div className="p-6">Carregando...</div></AppShell>;
+  if (loadingSchedules)
+    return (
+      <AppShell>
+        <div className="space-y-6 p-6" aria-busy="true" aria-label="Carregando escalas">
+          <div className="h-10 w-72 animate-pulse rounded-md bg-muted" />
+          <div className="h-12 animate-pulse rounded-lg bg-muted" />
+          <div className="h-64 animate-pulse rounded-xl border bg-card" />
+        </div>
+      </AppShell>
+    );
+
+  if (schedulesError)
+    return (
+      <AppShell>
+        <Card className="m-6 p-6 text-center">
+          <p className="font-medium">Não foi possível carregar as escalas.</p>
+          <Button className="mt-4" variant="outline" onClick={() => refetchSchedules()}>
+            Tentar novamente
+          </Button>
+        </Card>
+      </AppShell>
+    );
 
   return (
     <AppShell>
@@ -292,7 +321,7 @@ function VolunteerSchedulesPage() {
             </CardContent>
           </Card>
         ) : (
-          <Tabs value={selectedScheduleId || schedules[0].id} onValueChange={setSelectedScheduleId}>
+          <Tabs value={activeScheduleId ?? undefined} onValueChange={setSelectedScheduleId}>
             <TabsList>
               {schedules.map((s) => (
                 <TabsTrigger key={s.id} value={s.id}>
@@ -395,7 +424,9 @@ function VolunteerSchedulesPage() {
                         </Dialog>
                       </div>
 
-                      {shifts.length === 0 ? (
+                      {loadingShifts ? (
+                        <div className="h-24 animate-pulse rounded-lg bg-muted" aria-label="Carregando turnos" />
+                      ) : shifts.length === 0 ? (
                         <p className="text-gray-600 text-sm">Nenhum turno atribuído.</p>
                       ) : (
                         <div className="overflow-x-auto">

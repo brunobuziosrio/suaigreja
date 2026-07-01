@@ -1,5 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { verifyCronRequest } from "@/lib/cron-auth.server";
+import { appendWhatsappOptOutNotice, hasWhatsappOptedOut } from "@/lib/whatsapp-consent.server";
+import {
+  createWhatsappMessageId,
+  refundWhatsappMessageCredits,
+  reserveWhatsappCredits,
+} from "@/lib/whatsapp-credits.server";
 
 /**
  * Cron diário — enfileira mensagens de aniversário do dia (BRT).
@@ -17,7 +24,11 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const unauthorized = verifyCronRequest(request);
+        if (unauthorized) return unauthorized;
+
+        const db = supabaseAdmin as any;
         const now = new Date();
         // BRT = UTC-3 (Brasil não tem mais DST desde 2019)
         const brt = new Date(now.getTime() - 3 * 60 * 60 * 1000);
@@ -25,9 +36,9 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
         const day = brt.getUTCDate();
         const brtDate = brt.toISOString().slice(0, 10);
 
-        const { data: settingsRows, error: settingsErr } = await supabaseAdmin
+        const { data: settingsRows, error: settingsErr } = await db
           .from("whatsapp_settings")
-          .select("account_id, birthday_enabled, birthday_template, credits_balance, sender_name")
+          .select("account_id, birthday_enabled, birthday_template, sender_name")
           .eq("enabled", true)
           .eq("birthday_enabled", true);
 
@@ -38,11 +49,12 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
         let enqueued = 0;
         let skippedNoPhone = 0;
         let skippedNoCredit = 0;
+        let skippedOptOut = 0;
         const processedAccounts = settingsRows?.length ?? 0;
 
         for (const s of settingsRows ?? []) {
           // Busca o nome da igreja (template usa {igreja})
-          const { data: accRow } = await supabaseAdmin
+          const { data: accRow } = await db
             .from("accounts")
             .select("brand_title")
             .eq("id", s.account_id)
@@ -50,11 +62,12 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
           const churchName = accRow?.brand_title ?? "nossa igreja";
 
           // Aniversariantes do dia (compara mês/dia ignorando ano)
-          const { data: members } = await supabaseAdmin
+          const { data: members } = await db
             .from("members")
             .select("id, full_name, phone, birth_date")
             .eq("account_id", s.account_id)
             .eq("status", "ativo")
+            .eq("whatsapp_consent", true)
             .not("birth_date", "is", null);
 
           const birthdayMembers = (members ?? []).filter((m: any) => {
@@ -63,15 +76,13 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
             return d.getUTCMonth() + 1 === month && d.getUTCDate() === day;
           });
 
-          let availableCredits = s.credits_balance ?? 0;
-
           for (const m of birthdayMembers) {
             if (!m.phone || m.phone.trim().length < 8) {
               skippedNoPhone++;
               continue;
             }
-            if (availableCredits <= 0) {
-              skippedNoCredit++;
+            if (await hasWhatsappOptedOut({ supabase: db, accountId: s.account_id, phone: m.phone })) {
+              skippedOptOut++;
               continue;
             }
 
@@ -81,23 +92,47 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
               .replaceAll("{nome_completo}", m.full_name ?? firstName)
               .replaceAll("{igreja}", churchName);
 
+            const messageId = createWhatsappMessageId();
+            const reservation = await reserveWhatsappCredits({
+              supabase: db,
+              accountId: s.account_id,
+              messageId,
+              costCredits: 1,
+              idempotencyKey: `reserve:birthday:${s.account_id}:${m.id}:${brtDate}`,
+              metadata: { kind: "birthday", source: "birthday_cron", scheduled_date: brtDate },
+            });
+
+            if (!reservation.ok) {
+              if (reservation.reason === "insufficient_credits") skippedNoCredit++;
+              continue;
+            }
+
             // ON CONFLICT no índice único — silencia duplicatas no mesmo dia
-            const { error: insErr } = await supabaseAdmin.from("whatsapp_messages").insert({
+            const { error: insErr } = await db.from("whatsapp_messages").insert({
+              id: messageId,
               account_id: s.account_id,
               member_id: m.id,
               kind: "birthday",
               phone: m.phone,
               recipient_name: m.full_name,
-              content,
+              content: appendWhatsappOptOutNotice(content),
               status: "queued",
               scheduled_for: now.toISOString(),
               scheduled_date: brtDate,
               cost_credits: 1,
+              credit_reserved_at: now.toISOString(),
             });
 
             if (!insErr) {
               enqueued++;
-              availableCredits--;
+            } else if (reservation.reason !== "idempotent") {
+              await refundWhatsappMessageCredits({
+                supabase: db,
+                accountId: s.account_id,
+                messageId,
+                idempotencyKey: `refund:birthday_insert_failed:${messageId}`,
+                metadata: { error: insErr.message, source: "birthday_cron" },
+              });
             }
           }
         }
@@ -109,6 +144,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-birthdays")({
           enqueued,
           skippedNoPhone,
           skippedNoCredit,
+          skippedOptOut,
         });
       },
     },

@@ -44,7 +44,16 @@ function readMetadata(value: unknown) {
 }
 
 async function activateSubscription(accountId: string, plan: BillingPlanId, paidAt?: string | null) {
-  const base = paidAt ? new Date(paidAt) : new Date();
+  const paidDate = paidAt ? new Date(paidAt) : new Date();
+  const { data: account, error: accountError } = await supabaseAdmin
+    .from("accounts")
+    .select("subscription_ends_at")
+    .eq("id", accountId)
+    .maybeSingle();
+  if (accountError) throw new Error(accountError.message);
+
+  const currentEnd = account?.subscription_ends_at ? new Date(account.subscription_ends_at) : null;
+  const base = currentEnd && currentEnd.getTime() > paidDate.getTime() ? currentEnd : paidDate;
   const endsAt = new Date(base);
   endsAt.setDate(endsAt.getDate() + BILLING_PLANS[plan].durationDays);
 
@@ -52,6 +61,7 @@ async function activateSubscription(accountId: string, plan: BillingPlanId, paid
     .from("accounts")
     .update({
       current_plan: plan,
+      plan_tier: BILLING_PLANS[plan].tier,
       subscription_status: "active",
       subscription_ends_at: endsAt.toISOString(),
     })
@@ -72,6 +82,23 @@ async function markEventRegistrationPaid(transactionDbId: string, paidAt: string
     .from("event_registrations")
     .update({ status: "paid", paid_at: paidAt ?? new Date().toISOString() })
     .eq("transaction_id", transactionDbId);
+  if (error) throw new Error(error.message);
+}
+
+async function markWhatsappCreditPurchasePaid(transactionDbId: string, paidAt: string | null) {
+  const { data: purchase, error: purchaseError } = await supabaseAdmin
+    .from("whatsapp_credit_purchases")
+    .update({ status: "paid", paid_at: paidAt ?? new Date().toISOString() })
+    .eq("transaction_id", transactionDbId)
+    .select("id")
+    .maybeSingle();
+  if (purchaseError) throw new Error(purchaseError.message);
+  if (!purchase?.id) throw new Error("Compra de créditos WhatsApp não encontrada.");
+
+  const { error } = await supabaseAdmin.rpc("complete_whatsapp_credit_purchase", {
+    p_purchase_id: purchase.id,
+    p_metadata: { source: "ativopay_webhook", transaction_id: transactionDbId },
+  });
   if (error) throw new Error(error.message);
 }
 
@@ -96,17 +123,22 @@ export const Route = createFileRoute("/api/public/ativopay-webhook")({
         const paidAt = typeof data.paidAt === "string" ? data.paidAt : null;
         const metadata = readMetadata(data.metadata);
         const metadataAccountId = typeof metadata?.accountId === "string" ? metadata.accountId : null;
-        const metadataPlan = metadata?.plan === "annual" || metadata?.plan === "monthly" ? metadata.plan : null;
+        const metadataPlan =
+          typeof metadata?.plan === "string" && metadata.plan in BILLING_PLANS
+            ? (metadata.plan as BillingPlanId)
+            : null;
         const metadataKind =
           metadata?.kind === "product"
             ? "product"
             : metadata?.kind === "event_registration"
             ? "event_registration"
+            : metadata?.kind === "whatsapp_credits"
+            ? "whatsapp_credits"
             : "subscription";
 
         const { data: tx, error: txError } = await supabaseAdmin
           .from("payment_transactions")
-          .select("id, account_id, plan, kind, product_id")
+          .select("id, account_id, plan, kind, product_id, amount_cents, status")
           .eq("ativopay_transaction_id", transactionId)
           .maybeSingle();
         if (txError) throw new Error(txError.message);
@@ -129,9 +161,19 @@ export const Route = createFileRoute("/api/public/ativopay-webhook")({
             await markProductPurchasePaid(tx.id, paidAt);
           } else if (kind === "event_registration" && tx?.id) {
             await markEventRegistrationPaid(tx.id, paidAt);
+          } else if (kind === "whatsapp_credits" && tx?.id) {
+            await markWhatsappCreditPurchasePaid(tx.id, paidAt);
           } else {
             const plan = (tx?.plan ?? metadataPlan) as BillingPlanId | null;
-            if (plan) await activateSubscription(accountId, plan, paidAt);
+            if (plan) {
+              const expected = BILLING_PLANS[plan]?.amountCents;
+              if (!expected || tx.amount_cents !== expected) {
+                return json({ error: "transaction amount does not match plan" }, 409);
+              }
+              if (!isPaidStatus(tx.status ?? "")) {
+                await activateSubscription(accountId, plan, paidAt);
+              }
+            }
           }
         }
 

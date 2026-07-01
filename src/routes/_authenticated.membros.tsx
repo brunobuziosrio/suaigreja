@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listMembers, upsertMember, deleteMember } from "@/lib/members.functions";
+import { getMyAccount } from "@/lib/account.functions";
+import { getReligionTerms } from "@/lib/religion-profiles";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -57,12 +59,19 @@ const empty: Form = {
 const ROLES = ["membro", "visitante", "lider", "diacono", "obreiro", "pastor"];
 const STATUS = ["ativo", "inativo", "transferido", "falecido"];
 
+function capitalize(value: string) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
 function MembersPage() {
   const qc = useQueryClient();
   const fetchList = useServerFn(listMembers);
+  const fetchAccount = useServerFn(getMyAccount);
   const save = useServerFn(upsertMember);
   const remove = useServerFn(deleteMember);
   const { data: items = [], isLoading } = useQuery({ queryKey: ["members"], queryFn: () => fetchList() });
+  const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
+  const terms = getReligionTerms(account?.religion_profile);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(empty);
@@ -91,7 +100,7 @@ function MembersPage() {
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
-      toast.success("Membro salvo");
+      toast.success(`${capitalize(terms.person)} salvo`);
       setOpen(false); setForm(empty);
     },
     onError: (e: Error) => toast.error(e.message),
@@ -134,18 +143,18 @@ function MembersPage() {
       <div className="w-full">
         <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Membros</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">{terms.people}</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Cadastro de membros, líderes e visitantes. Base para carteirinhas, documentos e EBD.
+              {terms.peopleDescription}
             </p>
           </div>
           <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" />Novo membro</Button>
+              <Button><Plus className="h-4 w-4 mr-2" />Novo {terms.person}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
-                <DialogTitle>{form.id ? "Editar membro" : "Novo membro"}</DialogTitle>
+                <DialogTitle>{form.id ? `Editar ${terms.person}` : `Novo ${terms.person}`}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
                 <div className="flex items-start gap-4">
@@ -188,7 +197,7 @@ function MembersPage() {
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>{STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                     </Select></div>
-                  <div className="space-y-2"><Label>Membro desde</Label>
+                  <div className="space-y-2"><Label>{capitalize(terms.person)} desde</Label>
                     <Input type="date" value={form.member_since} onChange={(e) => setForm({ ...form, member_since: e.target.value })} /></div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
@@ -209,13 +218,13 @@ function MembersPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2"><Label>CPF</Label>
                     <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
-                  <div className="space-y-2"><Label>Igreja / Congregação</Label>
+                  <div className="space-y-2"><Label>{capitalize(terms.institution)} / congregação</Label>
                     <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" /></div>
                 </div>
                 <div className="flex items-center justify-between rounded-md border p-3">
                   <div>
-                    <Label>Dizimista</Label>
-                    <p className="text-xs text-muted-foreground">Recebe lembrete mensal de contribuição via WhatsApp</p>
+                    <Label>{terms.contribution === "dízimo" ? "Dizimista" : "Contribuinte"}</Label>
+                    <p className="text-xs text-muted-foreground">Recebe lembrete mensal de {terms.contribution} via WhatsApp</p>
                   </div>
                   <Switch checked={form.is_tither} onCheckedChange={(v) => setForm({ ...form, is_tither: v })} />
                 </div>
@@ -248,8 +257,8 @@ function MembersPage() {
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-            <h3 className="font-semibold">Nenhum membro ainda</h3>
-            <p className="text-sm text-muted-foreground mt-1">Cadastre seu primeiro membro pra começar.</p>
+            <h3 className="font-semibold">Nenhum {terms.person} ainda</h3>
+            <p className="text-sm text-muted-foreground mt-1">Cadastre seu primeiro {terms.person} para começar.</p>
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
