@@ -1,1 +1,0 @@
-const a={monthly:{id:"monthly",label:"Mensal",priceLabel:"R$ 29/mês",amountCents:2900,durationDays:30},annual:{id:"annual",label:"Anual",priceLabel:"R$ 290/ano",amountCents:29e3,durationDays:365}};function t(n){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(n/100)}export{a as B,t as f};

@@ -556,6 +556,9 @@ Arquivos principais:
 - A remoção do pedido limpa os dados cadastrais e volta o status para `not_requested`.
 - O fluxo ainda é assistido: coleta e status ficam no SaaS, enquanto registro,
   cobrança final e automação com registrador/Registro.br seguem como próxima fase.
+- `npm run build`: aprovado em 2026-07-01 após este incremento (verificado ao retomar
+  o trabalho não commitado da sessão anterior; feature coerente nas três camadas
+  — migration, funções de servidor e UI de Configurações).
 
 ## Próximas etapas priorizadas
 

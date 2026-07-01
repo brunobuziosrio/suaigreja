@@ -482,7 +482,7 @@ function MembersPage() {
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{m.full_name}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="secondary" className="text-[10px] capitalize">{m.role}</Badge>
+                        <Badge variant="neutral" className="text-[10px] capitalize">{m.role}</Badge>
                         {m.status !== "ativo" && <Badge variant="outline" className="text-[10px] capitalize">{m.status}</Badge>}
                       </div>
                       {m.phone && <p className="text-xs text-muted-foreground mt-1 truncate">{m.phone}</p>}
