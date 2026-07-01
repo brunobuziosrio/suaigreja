@@ -29,7 +29,7 @@ import {
 } from "@/lib/admin.functions";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ShieldCheck, Users, Pencil, Check as CheckIcon, X as XIcon, BarChart3 } from "lucide-react";
+import { ShieldCheck, Users, Pencil, Check as CheckIcon, X as XIcon, BarChart3, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 
@@ -37,10 +37,10 @@ export const Route = createFileRoute("/_authenticated/admin/")({
   component: AdminPage,
 });
 
-const STATUS_LABELS: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  trial: { label: "Trial", variant: "secondary" },
-  active: { label: "Ativo", variant: "default" },
-  past_due: { label: "Em atraso", variant: "destructive" },
+const STATUS_LABELS: Record<string, { label: string; variant: "default" | "success" | "error" | "neutral" | "outline" }> = {
+  trial: { label: "Trial", variant: "neutral" },
+  active: { label: "Ativo", variant: "success" },
+  past_due: { label: "Em atraso", variant: "error" },
   canceled: { label: "Cancelado", variant: "outline" },
 };
 
@@ -156,12 +156,20 @@ function AdminPage() {
               Gerencie todas as contas do SaaS.
             </p>
           </div>
-          <Link to="/admin/test-data">
-            <Button variant="outline" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Dados de Teste
-            </Button>
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/admin/domains">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Globe className="h-4 w-4" />
+                Domínios
+              </Button>
+            </Link>
+            <Link to="/admin/test-data">
+              <Button variant="outline" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Dados de Teste
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

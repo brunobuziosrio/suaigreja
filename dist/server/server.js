@@ -148,7 +148,7 @@ async function rewriteCustomDomainRequest(request) {
 }
 async function getServerEntry() {
   if (!serverEntryPromise) {
-    serverEntryPromise = import("./assets/server-BpDsOwP4.js").then((n) => n.i).then(
+    serverEntryPromise = import("./assets/server-pwcALVyy.js").then((n) => n.i).then(
       (m) => m.default ?? m
     );
   }

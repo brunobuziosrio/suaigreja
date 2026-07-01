@@ -252,6 +252,72 @@ export const adminUpdateAccountName = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const MANAGED_DOMAIN_STATUSES = [
+  "not_requested",
+  "requested",
+  "in_progress",
+  "registered",
+  "configured",
+  "blocked",
+] as const;
+
+export const listManagedDomainRequests = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("accounts")
+      .select(
+        "id, site_id, brand_title, plan_tier, subscription_status, custom_domain, custom_domain_status, managed_domain_requested_name, managed_domain_status, managed_domain_holder_name, managed_domain_holder_document, managed_domain_holder_email, managed_domain_holder_phone, managed_domain_holder_address, managed_domain_notes, managed_domain_requested_at, managed_domain_updated_at",
+      )
+      .neq("managed_domain_status", "not_requested")
+      .order("managed_domain_requested_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const rows = data ?? [];
+    const emailMap = new Map<string, string>();
+    if (rows.length) {
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+      for (const u of usersData?.users ?? []) {
+        if (u.email) emailMap.set(u.id, u.email);
+      }
+    }
+
+    return rows.map((account: any) => ({
+      ...account,
+      email: emailMap.get(account.id) ?? null,
+    }));
+  });
+
+const managedDomainStatusSchema = z.object({
+  account_id: z.string().uuid(),
+  managed_domain_status: z.enum(MANAGED_DOMAIN_STATUSES),
+  managed_domain_notes: z.string().max(1000).nullable().optional(),
+});
+
+export const adminUpdateManagedDomainStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => managedDomainStatusSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const update: Record<string, unknown> = {
+      managed_domain_status: data.managed_domain_status,
+      managed_domain_updated_at: new Date().toISOString(),
+    };
+    if (data.managed_domain_notes !== undefined) {
+      update.managed_domain_notes = data.managed_domain_notes?.trim() || null;
+    }
+    const { error } = await supabaseAdmin
+      .from("accounts")
+      .update(update as any)
+      .eq("id", data.account_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 const generateTestDataSchema = z.object({
   account_id: z.string().uuid(),
 });

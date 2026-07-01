@@ -64,6 +64,7 @@ import { Route as AuthenticatedAdminTestDataRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated.admin.products'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated.admin.payments'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated.admin.feedback'
+import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated.admin.domains'
 import { Route as ApiPublicInstagramCallbackRouteImport } from './routes/api.public.instagram.callback'
 import { Route as ApiPublicCronWhatsappDispatchRouteImport } from './routes/api.public.cron.whatsapp-dispatch'
 import { Route as ApiPublicCronWhatsappBirthdaysRouteImport } from './routes/api.public.cron.whatsapp-birthdays'
@@ -355,6 +356,12 @@ const AuthenticatedAdminFeedbackRoute =
     path: '/admin/feedback',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminDomainsRoute =
+  AuthenticatedAdminDomainsRouteImport.update({
+    id: '/admin/domains',
+    path: '/admin/domains',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const ApiPublicInstagramCallbackRoute =
   ApiPublicInstagramCallbackRouteImport.update({
     id: '/api/public/instagram/callback',
@@ -427,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/o/$siteId': typeof OSiteIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
+  '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -488,6 +496,7 @@ export interface FileRoutesByTo {
   '/o/$siteId': typeof OSiteIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
+  '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -551,6 +560,7 @@ export interface FileRoutesById {
   '/o/$siteId': typeof OSiteIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
+  '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
@@ -614,6 +624,7 @@ export interface FileRouteTypes {
     | '/o/$siteId'
     | '/recibo/$donationId'
     | '/v/$siteId'
+    | '/admin/domains'
     | '/admin/feedback'
     | '/admin/payments'
     | '/admin/products'
@@ -675,6 +686,7 @@ export interface FileRouteTypes {
     | '/o/$siteId'
     | '/recibo/$donationId'
     | '/v/$siteId'
+    | '/admin/domains'
     | '/admin/feedback'
     | '/admin/payments'
     | '/admin/products'
@@ -737,6 +749,7 @@ export interface FileRouteTypes {
     | '/o/$siteId'
     | '/recibo/$donationId'
     | '/v/$siteId'
+    | '/_authenticated/admin/domains'
     | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/payments'
     | '/_authenticated/admin/products'
@@ -1173,6 +1186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminFeedbackRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/domains': {
+      id: '/_authenticated/admin/domains'
+      path: '/admin/domains'
+      fullPath: '/admin/domains'
+      preLoaderRoute: typeof AuthenticatedAdminDomainsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/public/instagram/callback': {
       id: '/api/public/instagram/callback'
       path: '/api/public/instagram/callback'
@@ -1252,6 +1272,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedTypesRoute: typeof AuthenticatedTypesRoute
   AuthenticatedVisitantesRoute: typeof AuthenticatedVisitantesRoute
   AuthenticatedWhatsappRoute: typeof AuthenticatedWhatsappRoute
+  AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
@@ -1287,6 +1308,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedTypesRoute: AuthenticatedTypesRoute,
   AuthenticatedVisitantesRoute: AuthenticatedVisitantesRoute,
   AuthenticatedWhatsappRoute: AuthenticatedWhatsappRoute,
+  AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
