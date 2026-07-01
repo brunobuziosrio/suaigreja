@@ -1,7 +1,21 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
-import { CalendarDays, MapPin, ListChecks, Users, Cake, GraduationCap, HandCoins, Megaphone, Lightbulb, Loader2 } from "lucide-react";
+import {
+  CalendarDays,
+  MapPin,
+  ListChecks,
+  Users,
+  Cake,
+  GraduationCap,
+  HandCoins,
+  Megaphone,
+  Lightbulb,
+  Loader2,
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+} from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
@@ -69,6 +83,44 @@ function DashboardPage() {
   });
   const activeMembers = canUseMembers ? (members as any[]).filter((m) => m.status === "ativo").length : "Pro";
   const activeCampaigns = (campaigns as any[]).filter((c) => c.active).length;
+  const setupTasks = useMemo(
+    () => [
+      {
+        label: `Cadastrar o primeiro ${terms.person}`,
+        description: "Base para carteirinha, aniversarios, relatorios e comunicacao.",
+        done: canUseMembers && (members as any[]).length > 0,
+        href: canUseMembers ? "/membros" : "/billing",
+      },
+      {
+        label: `Cadastrar um local da ${terms.institution}`,
+        description: "Ajuda no site publico, agenda, eventos e organizacao por unidade.",
+        done: locations.length > 0,
+        href: "/locations",
+      },
+      {
+        label: "Criar um tipo de evento",
+        description: "Padroniza cultos, reunioes, cursos, encontros e atividades.",
+        done: types.length > 0,
+        href: "/types",
+      },
+      {
+        label: "Publicar o primeiro evento",
+        description: "A agenda mostra movimento e facilita inscricoes e divulgacao.",
+        done: (events as any[]).length > 0,
+        href: "/agenda",
+      },
+      {
+        label: "Ativar uma campanha Pix",
+        description: "Libera arrecadacao por campanha e melhora a leitura financeira.",
+        done: activeCampaigns > 0,
+        href: "/hub",
+        search: { tab: "doacoes" },
+      },
+    ],
+    [activeCampaigns, canUseMembers, events, locations.length, members, terms.institution, terms.person, types.length],
+  );
+  const completedSetupTasks = setupTasks.filter((task) => task.done).length;
+  const setupProgress = Math.round((completedSetupTasks / setupTasks.length) * 100);
 
   const trialDays = account?.trial_ends_at
     ? Math.max(
@@ -86,6 +138,45 @@ function DashboardPage() {
             Perfil: {profile?.label} - Plano trial ({trialDays} dias restantes)
           </p>
         </div>
+
+        <Card className="mb-6 overflow-hidden border-primary/20">
+          <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <ListChecks className="h-5 w-5 text-primary" />
+                <h2 className="font-semibold">Configure sua {terms.institution}</h2>
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {setupProgress}% concluido - {setupTasks.length - completedSetupTasks} passo(s) restante(s)
+              </p>
+            </div>
+            <div className="min-w-32 rounded-md bg-primary/10 px-3 py-2 text-right">
+              <p className="text-xs font-medium text-primary">Implantacao</p>
+              <p className="text-2xl font-semibold">{setupProgress}%</p>
+            </div>
+          </div>
+          <div className="h-2 bg-muted">
+            <div className="h-full bg-primary transition-all" style={{ width: `${setupProgress}%` }} />
+          </div>
+          <div className="grid gap-2 p-5 pt-4 md:grid-cols-2">
+            {setupTasks.map((task) => (
+              <Link key={task.label} to={task.href as any} search={(task.search ?? {}) as any}>
+                <div className="group flex h-full items-start gap-3 rounded-md border bg-card p-3 transition-colors hover:border-primary/60 hover:bg-muted/30">
+                  {task.done ? (
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                  ) : (
+                    <Circle className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium leading-5">{task.label}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{task.description}</p>
+                  </div>
+                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </Card>
 
         <div className="grid md:grid-cols-3 gap-4">
           <Link to="/locations">

@@ -100,6 +100,18 @@ export const Route = createFileRoute("/$slug")({
         ? [{ property: "og:image", content: loaderData.account.hub_cover_url }]
         : []),
     ],
+    links: loaderData?.account
+      ? [
+          {
+            rel: "manifest",
+            href: `/manifest/${loaderData.account.custom_slug || loaderData.account.site_id}/json`,
+          },
+          {
+            rel: "apple-touch-icon",
+            href: loaderData.account.brand_logo_url || "/icon-512.png",
+          },
+        ]
+      : [],
   }),
 });
 

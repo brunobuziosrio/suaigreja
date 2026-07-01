@@ -1,11 +1,165 @@
 # Ideias de implementacao e inspiracao de produto
 
-Atualizado em: 2026-06-26
+Atualizado em: 2026-07-01
 
 Este documento guarda ideias para evoluir o SaaS de gestao religiosa. Ele serve
 como referencia de pesquisa, priorizacao e inspiracao futura. Nem tudo aqui deve
 ser implementado de uma vez; a regra e validar valor comercial, simplicidade para
 o publico brasileiro e impacto real na rotina de igrejas, paroquias e comunidades.
+
+## Pesquisa de referencia - Exemplo Sistemas - 2026-07-01
+
+Analise feita a partir dos prints em `C:\Users\Bruno\Desktop\Exemplo Sistemas`.
+As ideias abaixo devem ser tratadas como inspiracao de produto, nao como copia
+visual. Priorizar apenas o que aumenta clareza operacional, conversao no cadastro
+ou valor percebido pelos modulos ja planejados.
+
+### Onboarding, cadastro e conversao
+
+- Cadastro de nova igreja em fluxo guiado de 3 etapas: dados da igreja,
+  responsavel principal e checkout/assinatura.
+- Escolha de plano dentro do cadastro inicial, com cards que mostram preco,
+  periodo, limites e chips dos modulos incluidos.
+- Resumo fixo da igreja e do plano escolhido ao passar para o cadastro do
+  responsavel.
+- Bloco de LGPD no cadastro com aceite dos termos, autorizacao de tratamento de
+  dados e explicacao curta de confidencialidade.
+- E-mail de validacao com identidade visual do produto, botao principal e link
+  alternativo para copiar/colar.
+- Tela pos-cadastro para reenviar link de verificacao, trocar conta e orientar o
+  usuario antes do primeiro acesso.
+- Banner de ativacao do trial dentro do painel, com dias restantes e chamadas
+  para concluir configuracoes essenciais.
+- Pagina de upgrade contextual quando um modulo estiver bloqueado, explicando o
+  modulo, beneficios liberados, comparativo de planos e botao de upgrade.
+
+### Primeiro uso e painel geral
+
+- Checklist de implantacao da igreja com percentual de conclusao e tarefas
+  acionaveis, por exemplo: cadastrar primeiro membro, cadastrar congregacao,
+  configurar turma, registrar primeira entrada financeira e criar grupo/celula.
+- Barra de busca global com atalho `Ctrl+/`, breadcrumbs e acoes rapidas por
+  tela.
+- Widgets de rotina no painel: aniversariantes de hoje/semana/mes, bodas,
+  pedidos urgentes, proximos eventos e ultimos lancamentos.
+- Blocos de "sem dados" com acao recomendada quando ainda nao existe conteudo,
+  em vez de apenas tabelas vazias.
+- Indicador de idioma/localizacao e botoes de tema, notificacoes e menu rapido
+  no topo.
+- Prompt de permissao para notificacoes do navegador com opcoes "aceitar",
+  "lembrar depois" e "recusar", sem travar o uso do sistema.
+
+### Membros e familias
+
+- Indicador de completude do cadastro do membro, com percentual e lista dos
+  campos faltantes mais importantes para carteirinha, relatorios e cuidado
+  pastoral.
+- Cadastro de membro dividido em abas curtas: dados pessoais, endereco, dados
+  eclesiasticos e especial.
+- Alerta de responsabilidade LGPD antes de salvar dados sensiveis de membros.
+- Atalhos de grupos especiais da membresia: kids, congregados, discipulado,
+  visitantes e falecidos.
+- Link publico de autocadastro/pre-cadastro para visitantes ou membros
+  preencherem dados iniciais, entrando depois em revisao pela secretaria.
+- Painel de vinculo familiar com casais vinculados, casados sem vinculo e acao
+  recomendada para corrigir pendencias.
+- Campo de observacao da condicao do cadastro, com exemplos praticos como mudou
+  de igreja, mudou de bairro, esta sem congregar ou encontra-se afastado.
+- Faixa etaria calculada automaticamente pela data de nascimento.
+
+### Secretaria digital e documentos
+
+- "Botoes de expediente" como painel de atalho para as tarefas mais comuns da
+  secretaria: novo membro, nova carta, oficio, termo de posse, ata, certificado,
+  circular, agenda, aniversariantes, cartao de membro, lote de cartoes e cargos
+  eclesiasticos.
+- Biblioteca de materiais institucionais com modelos visuais prontos para
+  carteirinha, aniversarios, papel timbrado, certificados e documentos.
+- Acao "usar este modelo" para criar documento/material a partir de um template
+  sem exigir configuracao avancada.
+- Possibilidade de copiar um modelo base para personalizar, mantendo modelos
+  padrao protegidos contra exclusao.
+- Configurador de papel timbrado com upload de cabecalho e rodape, ajuste de
+  margens em milimetros, preview A4 ao vivo e PDF de teste.
+- Margens especificas por tipo de documento quando necessario, por exemplo
+  balancete com espacamento diferente de cartas e certificados.
+- Cadastro simples de cargos eclesiasticos dentro do expediente, para alimentar
+  formularios e documentos.
+- Historico de cartas/documentos recentes com acoes de imprimir, editar,
+  duplicar e excluir.
+
+### Financeiro, Pix e tesouraria
+
+- Painel financeiro com "entradas rapidas" para dizimos, dizimos
+  congregacionais, dizimo convencional, missoes, ofertas, santa ceia, campanhas,
+  despesas e lancamentos gerais.
+- Mes de referencia financeiro visivel com troca rapida de periodo.
+- Resumo por periodo e por mes de referencia, separando entradas, saidas, saldo
+  e quantidade de lancamentos.
+- Importacao de lancamentos em lote por planilha, com modelo CSV para baixar.
+- Filtros financeiros por tipo, subtipo, categoria interna, membro/contribuinte,
+  periodo e texto livre.
+- Totalizadores sempre visiveis no resultado filtrado: total de registros,
+  receitas, despesas e saldo do filtro.
+- Livro caixa, fornecedores, balancete, fechamento de caixa e DRE como atalhos
+  de alto valor dentro da contabilidade.
+- Cadastro de contas bancarias/PIX com nome de exibicao, chave Pix, dados
+  bancarios opcionais, instrucoes para membros, conta ativa, visivel para
+  membros e conta principal.
+- Controle de repasses por congregacao, incluindo base de calculo, percentual
+  para sede, convencao e fundo de missoes.
+
+### WhatsApp, notificacoes e comunicacao
+
+- Painel do WhatsApp com metricas de enviadas hoje, enviadas no mes, taxa de
+  entrega e membros com contato cadastrado.
+- Conexao do numero oficial com status, instancia, ultimo ping e alerta de uso
+  responsavel.
+- Geracao de QR Code para conectar numero dedicado da igreja.
+- Envio manual de aviso para segmentos, com mensagem e destinatarios.
+- Configuracao de janela de envio, limite diario e delay minimo/maximo entre
+  mensagens para reduzir risco de bloqueio.
+- Toggles por automacao: aniversariantes, eventos da agenda, comunicados,
+  lembretes de dizimo, bodas, pedidos de oracao e pedidos de visita pastoral.
+- Templates editaveis por automacao com variaveis exibidas perto do campo, como
+  `{member_name}`, `{member_first_name}`, `{church_name}`, `{event_title}` e
+  `{event_date}`.
+- Historico de envios acessivel a partir das configuracoes.
+
+### Igrejas, congregacoes e multiunidade
+
+- Dashboard de igrejas com indicadores de congregacoes ativas, membros,
+  liderancas cadastradas e unidades atendidas.
+- Grafico de membros por congregacao e lista de top congregacoes.
+- Visao financeira por unidade, com receita, despesa, repasse pendente e fluxo
+  financeiro por congregacao.
+- Cadastro de congregacao com CNPJ, area de supervisao, regiao/setor, endereco
+  com coordenadas GPS, contatos, lideranca, capacidade do templo, status e foto
+  da fachada.
+- Busca de coordenadas pelo endereco no cadastro da congregacao.
+- Liderancas vinculadas por papeis, como pastor, co-pastor, secretario e
+  tesoureiro, buscando pessoas ja cadastradas como membros.
+
+### Permissoes e seguranca operacional
+
+- Matriz visual de permissoes por modulo e perfil, com checkboxes editaveis em
+  tabela.
+- Perfis praticos para operacao religiosa: administrador da igreja, membro,
+  pastor congregacional, pastor presidente, recepcao, secretario congregacional,
+  secretario geral, tesoureiro congregacional, tesoureiro geral e visitante.
+- Permissoes granulares por verbo, como ver, criar, editar, excluir, lancar,
+  relatorio, gerenciar e acessar.
+- Atualizacao imediata das permissoes sem recarregar a tela, com aviso claro de
+  impacto por perfil.
+
+### Biblioteca comercial e checkout
+
+- Checkout com resumo lateral do pedido, cupom de desconto, taxa de servico e
+  comparacao clara entre Pix, cartao de credito e Pix automatico.
+- Explicacao curta do motivo de pedir CPF/CNPJ e celular no checkout.
+- Opcao de salvar dados para proximas compras, sempre com aviso de seguranca.
+- Banner de venda focado em dor operacional: menos planilhas, menos confusao e
+  mais tempo para cuidar de pessoas.
 
 ## Diretriz principal de linguagem
 

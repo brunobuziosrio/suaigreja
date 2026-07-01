@@ -35,6 +35,22 @@ export type Database = {
           cta_enabled: boolean
           cta_label: string
           current_plan: string | null
+          custom_domain: string | null
+          custom_domain_error: string | null
+          custom_domain_last_checked_at: string | null
+          custom_domain_status: string
+          custom_domain_verification_token: string | null
+          custom_domain_verified_at: string | null
+          managed_domain_holder_address: string | null
+          managed_domain_holder_document: string | null
+          managed_domain_holder_email: string | null
+          managed_domain_holder_name: string | null
+          managed_domain_holder_phone: string | null
+          managed_domain_notes: string | null
+          managed_domain_requested_at: string | null
+          managed_domain_requested_name: string | null
+          managed_domain_status: string
+          managed_domain_updated_at: string | null
           plan_tier: string
           custom_slug: string | null
           donations_fixed_image_url: string | null
@@ -103,6 +119,22 @@ export type Database = {
           cta_enabled?: boolean
           cta_label?: string
           current_plan?: string | null
+          custom_domain?: string | null
+          custom_domain_error?: string | null
+          custom_domain_last_checked_at?: string | null
+          custom_domain_status?: string
+          custom_domain_verification_token?: string | null
+          custom_domain_verified_at?: string | null
+          managed_domain_holder_address?: string | null
+          managed_domain_holder_document?: string | null
+          managed_domain_holder_email?: string | null
+          managed_domain_holder_name?: string | null
+          managed_domain_holder_phone?: string | null
+          managed_domain_notes?: string | null
+          managed_domain_requested_at?: string | null
+          managed_domain_requested_name?: string | null
+          managed_domain_status?: string
+          managed_domain_updated_at?: string | null
           plan_tier?: string
           custom_slug?: string | null
           donations_fixed_image_url?: string | null
@@ -171,6 +203,22 @@ export type Database = {
           cta_enabled?: boolean
           cta_label?: string
           current_plan?: string | null
+          custom_domain?: string | null
+          custom_domain_error?: string | null
+          custom_domain_last_checked_at?: string | null
+          custom_domain_status?: string
+          custom_domain_verification_token?: string | null
+          custom_domain_verified_at?: string | null
+          managed_domain_holder_address?: string | null
+          managed_domain_holder_document?: string | null
+          managed_domain_holder_email?: string | null
+          managed_domain_holder_name?: string | null
+          managed_domain_holder_phone?: string | null
+          managed_domain_notes?: string | null
+          managed_domain_requested_at?: string | null
+          managed_domain_requested_name?: string | null
+          managed_domain_status?: string
+          managed_domain_updated_at?: string | null
           plan_tier?: string
           custom_slug?: string | null
           donations_fixed_image_url?: string | null

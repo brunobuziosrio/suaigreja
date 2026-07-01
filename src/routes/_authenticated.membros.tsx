@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listMembers, upsertMember, deleteMember } from "@/lib/members.functions";
@@ -14,13 +14,27 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Users, Loader2, QrCode, Search, Upload } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Users,
+  Loader2,
+  QrCode,
+  Search,
+  Upload,
+  ClipboardCheck,
+  UserCheck,
+  Cake,
+  AlertCircle,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
 import { validateImageFile } from "@/lib/file-validation";
@@ -47,13 +61,14 @@ type Form = {
   cpf: string;
   congregation: string;
   is_tither: boolean;
+  whatsapp_consent: boolean;
 };
 
 const empty: Form = {
   full_name: "", photo_url: "", email: "", phone: "", birth_date: "",
   gender: "", marital_status: "", role: "membro", member_since: "",
   status: "ativo", address_city: "", address_state: "", notes: "",
-  cpf: "", congregation: "", is_tither: false,
+  cpf: "", congregation: "", is_tither: false, whatsapp_consent: false,
 };
 
 const ROLES = ["membro", "visitante", "lider", "diacono", "obreiro", "pastor"];
@@ -61,6 +76,31 @@ const STATUS = ["ativo", "inativo", "transferido", "falecido"];
 
 function capitalize(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+}
+
+const MEMBER_COMPLETENESS_FIELDS = [
+  { key: "full_name", label: "nome" },
+  { key: "phone", label: "telefone" },
+  { key: "birth_date", label: "nascimento" },
+  { key: "cpf", label: "CPF" },
+  { key: "photo_url", label: "foto" },
+  { key: "address_city", label: "cidade" },
+  { key: "address_state", label: "UF" },
+  { key: "member_since", label: "data de entrada" },
+  { key: "congregation", label: "congregacao" },
+  { key: "role", label: "funcao" },
+] as const;
+
+function getMemberCompleteness(member: Record<string, unknown>) {
+  const missing = MEMBER_COMPLETENESS_FIELDS.filter((field) => {
+    const value = member[field.key];
+    return typeof value !== "string" || value.trim().length === 0;
+  }).map((field) => field.label);
+  const complete = MEMBER_COMPLETENESS_FIELDS.length - missing.length;
+  return {
+    percent: Math.round((complete / MEMBER_COMPLETENESS_FIELDS.length) * 100),
+    missing,
+  };
 }
 
 function MembersPage() {
@@ -76,6 +116,8 @@ function MembersPage() {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(empty);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const [completenessFilter, setCompletenessFilter] = useState("todos");
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
@@ -96,6 +138,7 @@ function MembersPage() {
         cpf: input.cpf.trim() || null,
         congregation: input.congregation.trim() || null,
         is_tither: input.is_tither,
+        whatsapp_consent: input.whatsapp_consent,
       },
     }),
     onSuccess: () => {
@@ -134,9 +177,34 @@ function MembersPage() {
     finally { setUploading(false); }
   }
 
-  const filtered = items.filter((m) =>
-    !search.trim() || m.full_name.toLowerCase().includes(search.toLowerCase())
-  );
+  const memberStats = useMemo(() => {
+    const currentMonth = new Date().getMonth() + 1;
+    const active = items.filter((m) => m.status === "ativo").length;
+    const birthdays = items.filter((m) => {
+      if (!m.birth_date) return false;
+      return new Date(`${m.birth_date}T00:00:00`).getMonth() + 1 === currentMonth;
+    }).length;
+    const incomplete = items.filter((m) => getMemberCompleteness(m as Record<string, unknown>).percent < 80).length;
+    return { total: items.length, active, birthdays, incomplete };
+  }, [items]);
+
+  const filtered = useMemo(() => {
+    const normalizedSearch = search.trim().toLowerCase();
+    return items.filter((m) => {
+      const completeness = getMemberCompleteness(m as Record<string, unknown>);
+      const searchable = [m.full_name, m.phone, (m as any).cpf, m.email, (m as any).congregation]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch = !normalizedSearch || searchable.includes(normalizedSearch);
+      const matchesStatus = statusFilter === "todos" || m.status === statusFilter;
+      const matchesCompleteness =
+        completenessFilter === "todos" ||
+        (completenessFilter === "incompletos" && completeness.percent < 80) ||
+        (completenessFilter === "completos" && completeness.percent >= 80);
+      return matchesSearch && matchesStatus && matchesCompleteness;
+    });
+  }, [completenessFilter, items, search, statusFilter]);
 
   return (
     <AppShell>
@@ -156,7 +224,7 @@ function MembersPage() {
               <DialogHeader>
                 <DialogTitle>{form.id ? `Editar ${terms.person}` : `Novo ${terms.person}`}</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="max-h-[70vh] overflow-y-auto pr-1">
                 <div className="flex items-start gap-4">
                   <div className="shrink-0">
                     {form.photo_url ? (
@@ -186,56 +254,104 @@ function MembersPage() {
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2"><Label>Função</Label>
-                    <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                    </Select></div>
-                  <div className="space-y-2"><Label>Status</Label>
-                    <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>{STATUS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                    </Select></div>
-                  <div className="space-y-2"><Label>{capitalize(terms.person)} desde</Label>
-                    <Input type="date" value={form.member_since} onChange={(e) => setForm({ ...form, member_since: e.target.value })} /></div>
-                </div>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="space-y-2"><Label>Nascimento</Label>
-                    <Input type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>Sexo</Label>
-                    <Select value={form.gender || "_"} onValueChange={(v) => setForm({ ...form, gender: v === "_" ? "" : v })}>
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_">—</SelectItem>
-                        <SelectItem value="masculino">Masculino</SelectItem>
-                        <SelectItem value="feminino">Feminino</SelectItem>
-                      </SelectContent>
-                    </Select></div>
-                  <div className="space-y-2"><Label>Estado civil</Label>
-                    <Input value={form.marital_status} onChange={(e) => setForm({ ...form, marital_status: e.target.value })} placeholder="Solteiro(a), Casado(a)…" /></div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>CPF</Label>
-                    <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" /></div>
-                  <div className="space-y-2"><Label>{capitalize(terms.institution)} / congregação</Label>
-                    <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" /></div>
-                </div>
-                <div className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <Label>{terms.contribution === "dízimo" ? "Dizimista" : "Contribuinte"}</Label>
-                    <p className="text-xs text-muted-foreground">Recebe lembrete mensal de {terms.contribution} via WhatsApp</p>
-                  </div>
-                  <Switch checked={form.is_tither} onCheckedChange={(v) => setForm({ ...form, is_tither: v })} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>Cidade</Label>
-                    <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} /></div>
-                  <div className="space-y-2"><Label>Estado</Label>
-                    <Input value={form.address_state} onChange={(e) => setForm({ ...form, address_state: e.target.value })} maxLength={2} placeholder="RJ" /></div>
-                </div>
-                <div className="space-y-2"><Label>Observações</Label>
-                  <Textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
+
+                <Tabs defaultValue="pessoal" className="mt-5">
+                  <TabsList className="grid h-auto w-full grid-cols-3">
+                    <TabsTrigger value="pessoal">Dados pessoais</TabsTrigger>
+                    <TabsTrigger value="igreja">{capitalize(terms.institution)}</TabsTrigger>
+                    <TabsTrigger value="contato">Contato e notas</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="pessoal" className="space-y-4 pt-3">
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label>Nascimento</Label>
+                        <Input type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sexo</Label>
+                        <Select value={form.gender || "_"} onValueChange={(v) => setForm({ ...form, gender: v === "_" ? "" : v })}>
+                          <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="_">—</SelectItem>
+                            <SelectItem value="masculino">Masculino</SelectItem>
+                            <SelectItem value="feminino">Feminino</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Estado civil</Label>
+                        <Input value={form.marital_status} onChange={(e) => setForm({ ...form, marital_status: e.target.value })} placeholder="Solteiro(a), Casado(a)..." />
+                      </div>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>CPF</Label>
+                        <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{capitalize(terms.person)} desde</Label>
+                        <Input type="date" value={form.member_since} onChange={(e) => setForm({ ...form, member_since: e.target.value })} />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="igreja" className="space-y-4 pt-3">
+                    <div className="grid gap-3 md:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label>Funcao</Label>
+                        <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{capitalize(r)}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>{STATUS.map((s) => <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{capitalize(terms.institution)} / congregacao</Label>
+                        <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <Label>{terms.contribution === "dízimo" ? "Dizimista" : "Contribuinte"}</Label>
+                        <p className="text-xs text-muted-foreground">Recebe lembrete mensal de {terms.contribution} via WhatsApp</p>
+                      </div>
+                      <Switch checked={form.is_tither} onCheckedChange={(v) => setForm({ ...form, is_tither: v })} />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="contato" className="space-y-4 pt-3">
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Cidade</Label>
+                        <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Estado</Label>
+                        <Input value={form.address_state} onChange={(e) => setForm({ ...form, address_state: e.target.value })} maxLength={2} placeholder="RJ" />
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <Label>Consentimento para WhatsApp</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Autoriza comunicados, lembretes e mensagens pastorais conforme LGPD.
+                        </p>
+                      </div>
+                      <Switch checked={form.whatsapp_consent} onCheckedChange={(v) => setForm({ ...form, whatsapp_consent: v })} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Observacoes</Label>
+                      <Textarea rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -247,10 +363,99 @@ function MembersPage() {
           </Dialog>
         </div>
 
-        <div className="relative mb-4">
-          <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Buscar por nome…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md bg-primary/10 p-2 text-primary">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Total cadastrado</p>
+                <p className="text-2xl font-semibold">{memberStats.total}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md bg-emerald-500/10 p-2 text-emerald-700">
+                <UserCheck className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Ativos</p>
+                <p className="text-2xl font-semibold">{memberStats.active}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md bg-pink-500/10 p-2 text-pink-600">
+                <Cake className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Aniversarios no mes</p>
+                <p className="text-2xl font-semibold">{memberStats.birthdays}</p>
+              </div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="rounded-md bg-amber-500/10 p-2 text-amber-700">
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Fichas abaixo de 80%</p>
+                <p className="text-2xl font-semibold">{memberStats.incomplete}</p>
+              </div>
+            </div>
+          </Card>
         </div>
+
+        <Card className="mb-4 p-4">
+          <div className="grid gap-3 lg:grid-cols-[1fr_180px_200px]">
+            <div className="relative">
+              <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por nome, telefone, CPF, e-mail ou congregacao"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os status</SelectItem>
+                {STATUS.map((s) => <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={completenessFilter} onValueChange={setCompletenessFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as fichas</SelectItem>
+                <SelectItem value="incompletos">Abaixo de 80%</SelectItem>
+                <SelectItem value="completos">80% ou mais</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(search || statusFilter !== "todos" || completenessFilter !== "todos") && (
+            <div className="mt-3 flex items-center justify-between gap-3 border-t pt-3">
+              <p className="text-xs text-muted-foreground">
+                {filtered.length} resultado(s) encontrado(s)
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearch("");
+                  setStatusFilter("todos");
+                  setCompletenessFilter("todos");
+                }}
+              >
+                Limpar filtros
+              </Button>
+            </div>
+          )}
+        </Card>
 
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
@@ -262,51 +467,75 @@ function MembersPage() {
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {filtered.map((m) => (
-              <Card key={m.id} className="p-4">
-                <div className="flex items-start gap-3">
-                  {m.photo_url ? (
-                    <img src={m.photo_url} alt="" className="h-14 w-14 rounded-full object-cover shrink-0" />
-                  ) : (
-                    <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <Users className="h-5 w-5 text-muted-foreground" />
+            {filtered.map((m) => {
+              const completeness = getMemberCompleteness(m as Record<string, unknown>);
+              return (
+                <Card key={m.id} className="p-4">
+                  <div className="flex items-start gap-3">
+                    {m.photo_url ? (
+                      <img src={m.photo_url} alt="" className="h-14 w-14 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center shrink-0">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{m.full_name}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <Badge variant="secondary" className="text-[10px] capitalize">{m.role}</Badge>
+                        {m.status !== "ativo" && <Badge variant="outline" className="text-[10px] capitalize">{m.status}</Badge>}
+                      </div>
+                      {m.phone && <p className="text-xs text-muted-foreground mt-1 truncate">{m.phone}</p>}
                     </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{m.full_name}</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <Badge variant="secondary" className="text-[10px] capitalize">{m.role}</Badge>
-                      {m.status !== "ativo" && <Badge variant="outline" className="text-[10px] capitalize">{m.status}</Badge>}
-                    </div>
-                    {m.phone && <p className="text-xs text-muted-foreground mt-1 truncate">{m.phone}</p>}
                   </div>
-                </div>
-                <div className="flex gap-1 mt-3 pt-3 border-t">
-                  <Button asChild variant="ghost" size="sm" className="flex-1">
-                    <a href={`/c/${m.id}`} target="_blank" rel="noopener noreferrer">
-                      <QrCode className="h-3.5 w-3.5 mr-1" />Carteirinha
-                    </a>
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    setForm({
-                      id: m.id, full_name: m.full_name, photo_url: m.photo_url ?? "",
-                      email: m.email ?? "", phone: m.phone ?? "",
-                      birth_date: m.birth_date ?? "", gender: m.gender ?? "",
-                      marital_status: m.marital_status ?? "", role: m.role,
-                      member_since: m.member_since ?? "", status: m.status,
-                      address_city: m.address_city ?? "", address_state: m.address_state ?? "",
-                      notes: m.notes ?? "",
+                  <div className="mt-3 rounded-md border bg-muted/20 p-3">
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 text-xs font-medium">
+                        <ClipboardCheck className="h-3.5 w-3.5 text-primary" />
+                        Ficha
+                      </div>
+                      <span className="text-xs font-semibold">{completeness.percent}%</span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                      <div
+                        className="h-full rounded-full bg-primary transition-all"
+                        style={{ width: `${completeness.percent}%` }}
+                      />
+                    </div>
+                    <p className="mt-2 min-h-8 text-xs leading-4 text-muted-foreground">
+                      {completeness.missing.length === 0
+                        ? "Cadastro pronto para carteirinha, relatorios e comunicacao."
+                        : `Faltam: ${completeness.missing.slice(0, 4).join(", ")}${completeness.missing.length > 4 ? "..." : ""}.`}
+                    </p>
+                  </div>
+                  <div className="flex gap-1 mt-3 pt-3 border-t">
+                    <Button asChild variant="ghost" size="sm" className="flex-1">
+                      <a href={`/c/${m.id}`} target="_blank" rel="noopener noreferrer">
+                        <QrCode className="h-3.5 w-3.5 mr-1" />Carteirinha
+                      </a>
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                      setForm({
+                        id: m.id, full_name: m.full_name, photo_url: m.photo_url ?? "",
+                        email: m.email ?? "", phone: m.phone ?? "",
+                        birth_date: m.birth_date ?? "", gender: m.gender ?? "",
+                        marital_status: m.marital_status ?? "", role: m.role,
+                        member_since: m.member_since ?? "", status: m.status,
+                        address_city: m.address_city ?? "", address_state: m.address_state ?? "",
+                        notes: m.notes ?? "",
                       cpf: (m as any).cpf ?? "", congregation: (m as any).congregation ?? "",
                       is_tither: (m as any).is_tither ?? false,
+                      whatsapp_consent: (m as any).whatsapp_consent ?? false,
                     });
-                    setOpen(true);
-                  }}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => {
-                    if (confirm(`Remover ${m.full_name}?`)) deleteMut.mutate(m.id);
-                  }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                </div>
-              </Card>
-            ))}
+                      setOpen(true);
+                    }}><Pencil className="h-4 w-4" /></Button>
+                    <Button variant="ghost" size="icon" onClick={() => {
+                      if (confirm(`Remover ${m.full_name}?`)) deleteMut.mutate(m.id);
+                    }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

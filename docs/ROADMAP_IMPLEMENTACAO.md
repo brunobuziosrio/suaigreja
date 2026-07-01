@@ -438,6 +438,125 @@ Arquivos principais:
   histórico de auditoria separado.
 - `npm run build`: aprovado em 2026-07-01 após este incremento.
 
+### Painel Geral - checklist de implantação
+
+Arquivo principal:
+
+- `src/routes/_authenticated.dashboard.tsx`
+
+- Adicionado checklist de configuração inicial no Painel Geral, inspirado na
+  pesquisa de referência de 2026-07-01.
+- O checklist calcula progresso automaticamente a partir de dados já carregados:
+  primeiro membro, local cadastrado, tipo de evento, evento publicado e campanha
+  Pix ativa.
+- Cada tarefa tem descrição curta e link direto para a tela de ação, respeitando
+  bloqueio de plano para Membros.
+- `npm run build`: aprovado em 2026-07-01 após este incremento.
+
+### Membros - completude da ficha
+
+Arquivo principal:
+
+- `src/routes/_authenticated.membros.tsx`
+
+- Cards de membros agora exibem indicador de completude da ficha, com percentual,
+  barra visual e lista resumida de campos faltantes.
+- A regra usa campos já existentes: nome, telefone, nascimento, CPF, foto,
+  cidade, UF, data de entrada, congregação e função.
+- O objetivo é orientar a secretaria sobre cadastros incompletos para carteirinha,
+  relatórios e comunicação, sem criar migration nesta etapa.
+- `npm run build`: aprovado em 2026-07-01 após este incremento.
+
+### Membros - visão operacional e consentimento WhatsApp
+
+Arquivo principal:
+
+- `src/routes/_authenticated.membros.tsx`
+
+- A lista de membros ganhou cards-resumo com total cadastrado, ativos,
+  aniversariantes do mês e fichas abaixo de 80%.
+- Busca agora considera nome, telefone, CPF, e-mail e congregação.
+- Adicionados filtros por status e por completude da ficha.
+- Corrigido o fluxo de edição de membro para carregar e reenviar
+  `whatsapp_consent`; antes, editar um membro podia salvar o consentimento como
+  falso por ausência do campo no formulário.
+- O formulário agora exibe controle explícito de consentimento para WhatsApp com
+  texto de orientação LGPD.
+- `npm run build`: aprovado em 2026-07-01 após este incremento.
+
+### PWA por tenant - manifesto dinâmico
+
+Arquivos principais:
+
+- `src/routes/manifest.$siteId.json.ts`
+- `src/routes/$slug.tsx`
+- `src/routes/a.$siteId.tsx`
+
+- Criada rota pública `/manifest/{siteId}/json` para gerar manifesto PWA por
+  igreja a partir de `brand_title`, `brand_subtitle`, `primary_color`,
+  `brand_logo_url`, `card_logo_url`, `custom_slug` e `site_id`.
+- A página pública principal e a agenda pública passam a apontar para o manifesto
+  do tenant, preservando fallback para `/manifest.json` no root global.
+- O manifesto dinâmico define `start_url` para o slug/site da igreja, cor do tema
+  da conta e ícone da marca quando existir.
+- `npm run build`: aprovado em 2026-07-01 após este incremento.
+
+### Domínio próprio - estado de verificação
+
+Arquivos principais:
+
+- `supabase/migrations/20260701170000_custom_domain_pwa.sql`
+- `src/lib/account.functions.ts`
+- `src/routes/_authenticated.settings.tsx`
+- `src/integrations/supabase/types.ts`
+
+- Criados campos em `accounts` para domínio próprio, status, token TXT,
+  data de verificação, última checagem e erro de DNS.
+- Configurações ganhou a seção “Domínio e PWA”, disponível para Premium ativo,
+  com instruções de TXT e CNAME/ALIAS.
+- Criadas funções de servidor para salvar/remover domínio e verificar posse via
+  registro TXT no DNS.
+- A ativação de roteamento por domínio ainda não foi feita; este incremento só
+  prepara e valida a posse do domínio sem quebrar tenants que usam `suaigreja.top`.
+- `npm run build`: aprovado em 2026-07-01 após este incremento.
+
+### Domínio próprio - roteamento por host
+
+Arquivo principal:
+
+- `src/server.ts`
+
+- O servidor agora resolve o `Host` de entrada contra `accounts.custom_domain`
+  com status `verified`.
+- Para domínios verificados, a raiz `/` passa a servir o site público do tenant
+  (`/{custom_slug|site_id}`) sem alterar os tenants que usam `suaigreja.top`.
+- Atalhos públicos simples no domínio próprio também são resolvidos:
+  `/agenda`, `/eventos`, `/noticias`, `/oracao`, `/visitantes` e `/doacoes`.
+- Assets, APIs, favicon e manifesto global não são reescritos.
+- Próximo incremento comercial: domínio gerenciado pela plataforma, com plano mais
+  caro que inclui registro/renovação do domínio, coleta de dados cadastrais no
+  formato necessário para registro, status operacional e ativação assistida ou
+  automática quando houver integração viável com registrador/Registro.br.
+
+### Domínio gerenciado - pedido assistido
+
+Arquivos principais:
+
+- `supabase/migrations/20260701183000_managed_domain_requests.sql`
+- `src/lib/account.functions.ts`
+- `src/routes/_authenticated.settings.tsx`
+- `src/integrations/supabase/types.ts`
+
+- Criados campos em `accounts` para pedido de domínio gerenciado: domínio desejado,
+  dados do titular, documento, contato, endereço, observações, status e datas.
+- Configurações > Domínio e PWA ganhou um bloco “Domínio gerenciado pela plataforma”
+  para o cliente Premium solicitar domínio incluso no plano.
+- A função de servidor valida Premium ativo, normaliza domínio, exige dados mínimos
+  do titular e grava o pedido com status `requested`.
+- A remoção do pedido limpa os dados cadastrais e volta o status para `not_requested`.
+- O fluxo ainda é assistido: coleta e status ficam no SaaS, enquanto registro,
+  cobrança final e automação com registrador/Registro.br seguem como próxima fase.
+
 ## Próximas etapas priorizadas
 
 ### P0 - concluir antes de produção
@@ -509,6 +628,9 @@ preço por categoria/país e decisão se o número é da plataforma ou de cada i
 ### P2 - domínio próprio e PWA
 
 - Domínio próprio apenas no Premium, com verificação DNS, SSL e estado de ativação.
+- Avaliar oferta de domínio gerenciado: o cliente informa o domínio desejado e os
+  dados de titularidade, a plataforma cobra um plano com domínio incluso e executa
+  registro/renovação/configuração de DNS de forma assistida ou automatizada.
 - Manifesto/ícones por tenant, instalação PWA e notificações com consentimento.
 - Não prometer publicação em lojas nesta fase.
 

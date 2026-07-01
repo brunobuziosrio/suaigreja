@@ -53,6 +53,7 @@ import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as NSlugPostIdRouteImport } from './routes/n.$slug.$postId'
+import { Route as ManifestSiteIdJsonRouteImport } from './routes/manifest.$siteId.json'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api.public.whatsapp-webhook'
 import { Route as ApiPublicWhatsappOptOutRouteImport } from './routes/api.public.whatsapp-opt-out'
 import { Route as ApiPublicMercadopagoWebhookRouteImport } from './routes/api.public.mercadopago-webhook'
@@ -290,6 +291,11 @@ const NSlugPostIdRoute = NSlugPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => NSlugRoute,
 } as any)
+const ManifestSiteIdJsonRoute = ManifestSiteIdJsonRouteImport.update({
+  id: '/manifest/$siteId/json',
+  path: '/manifest/$siteId/json',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhatsappWebhookRoute =
   ApiPublicWhatsappWebhookRouteImport.update({
     id: '/api/public/whatsapp-webhook',
@@ -431,6 +437,7 @@ export interface FileRoutesByFullPath {
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/manifest/$siteId/json': typeof ManifestSiteIdJsonRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
@@ -491,6 +498,7 @@ export interface FileRoutesByTo {
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/manifest/$siteId/json': typeof ManifestSiteIdJsonRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
@@ -553,6 +561,7 @@ export interface FileRoutesById {
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/manifest/$siteId/json': typeof ManifestSiteIdJsonRoute
   '/n/$slug/$postId': typeof NSlugPostIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/api/public/agenda/$siteId': typeof ApiPublicAgendaSiteIdRoute
@@ -615,6 +624,7 @@ export interface FileRouteTypes {
     | '/api/public/mercadopago-webhook'
     | '/api/public/whatsapp-opt-out'
     | '/api/public/whatsapp-webhook'
+    | '/manifest/$siteId/json'
     | '/n/$slug/$postId'
     | '/admin/'
     | '/api/public/agenda/$siteId'
@@ -675,6 +685,7 @@ export interface FileRouteTypes {
     | '/api/public/mercadopago-webhook'
     | '/api/public/whatsapp-opt-out'
     | '/api/public/whatsapp-webhook'
+    | '/manifest/$siteId/json'
     | '/n/$slug/$postId'
     | '/admin'
     | '/api/public/agenda/$siteId'
@@ -736,6 +747,7 @@ export interface FileRouteTypes {
     | '/api/public/mercadopago-webhook'
     | '/api/public/whatsapp-opt-out'
     | '/api/public/whatsapp-webhook'
+    | '/manifest/$siteId/json'
     | '/n/$slug/$postId'
     | '/_authenticated/admin/'
     | '/api/public/agenda/$siteId'
@@ -766,6 +778,7 @@ export interface RootRouteChildren {
   ApiPublicMercadopagoWebhookRoute: typeof ApiPublicMercadopagoWebhookRoute
   ApiPublicWhatsappOptOutRoute: typeof ApiPublicWhatsappOptOutRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
+  ManifestSiteIdJsonRoute: typeof ManifestSiteIdJsonRoute
   ApiPublicAgendaSiteIdRoute: typeof ApiPublicAgendaSiteIdRoute
   ApiPublicCronTitheReminderRoute: typeof ApiPublicCronTitheReminderRoute
   ApiPublicCronWhatsappBirthdaysRoute: typeof ApiPublicCronWhatsappBirthdaysRoute
@@ -1083,6 +1096,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NSlugPostIdRouteImport
       parentRoute: typeof NSlugRoute
     }
+    '/manifest/$siteId/json': {
+      id: '/manifest/$siteId/json'
+      path: '/manifest/$siteId/json'
+      fullPath: '/manifest/$siteId/json'
+      preLoaderRoute: typeof ManifestSiteIdJsonRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp-webhook': {
       id: '/api/public/whatsapp-webhook'
       path: '/api/public/whatsapp-webhook'
@@ -1310,6 +1330,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicMercadopagoWebhookRoute: ApiPublicMercadopagoWebhookRoute,
   ApiPublicWhatsappOptOutRoute: ApiPublicWhatsappOptOutRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
+  ManifestSiteIdJsonRoute: ManifestSiteIdJsonRoute,
   ApiPublicAgendaSiteIdRoute: ApiPublicAgendaSiteIdRoute,
   ApiPublicCronTitheReminderRoute: ApiPublicCronTitheReminderRoute,
   ApiPublicCronWhatsappBirthdaysRoute: ApiPublicCronWhatsappBirthdaysRoute,

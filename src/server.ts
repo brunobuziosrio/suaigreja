@@ -2,12 +2,109 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { supabaseAdmin } from "./integrations/supabase/client.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
+
+type DomainRoute = {
+  slug: string;
+  expiresAt: number;
+};
+
+const customDomainCache = new Map<string, DomainRoute>();
+const PLATFORM_HOSTS = new Set([
+  "suaigreja.top",
+  "www.suaigreja.top",
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+]);
+
+function normalizeHost(host: string | null) {
+  return (host ?? "").toLowerCase().split(":")[0].replace(/^www\./, "");
+}
+
+function isPublicAssetPath(pathname: string) {
+  return (
+    pathname.startsWith("/assets/") ||
+    pathname.startsWith("/api/") ||
+    pathname.startsWith("/_build/") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/icon-") ||
+    pathname === "/manifest.json"
+  );
+}
+
+async function resolveCustomDomain(host: string): Promise<DomainRoute | null> {
+  if (!host || PLATFORM_HOSTS.has(host)) return null;
+
+  const cached = customDomainCache.get(host);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached;
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("accounts")
+    .select("site_id, custom_slug")
+    .eq("custom_domain", host)
+    .eq("custom_domain_status", "verified")
+    .maybeSingle();
+
+  if (error || !data) {
+    customDomainCache.delete(host);
+    return null;
+  }
+
+  const route = {
+    slug: data.custom_slug || data.site_id,
+    expiresAt: Date.now() + 60_000,
+  };
+  customDomainCache.set(host, route);
+  return route;
+}
+
+async function rewriteCustomDomainRequest(request: Request) {
+  const url = new URL(request.url);
+  if (isPublicAssetPath(url.pathname)) return request;
+
+  const host = normalizeHost(request.headers.get("host"));
+  const domainRoute = await resolveCustomDomain(host);
+  if (!domainRoute) return request;
+
+  let nextPath = url.pathname;
+  if (nextPath === "/" || nextPath === "") nextPath = `/${domainRoute.slug}`;
+  else if (nextPath === "/agenda") nextPath = `/a/${domainRoute.slug}`;
+  else if (nextPath === "/eventos") nextPath = `/eventos/${domainRoute.slug}`;
+  else if (nextPath === "/noticias") nextPath = `/n/${domainRoute.slug}`;
+  else if (nextPath === "/oracao" || nextPath === "/oracoes") nextPath = `/o/${domainRoute.slug}`;
+  else if (nextPath === "/visitantes") nextPath = `/v/${domainRoute.slug}`;
+  else if (nextPath === "/doacoes") nextPath = `/d/${domainRoute.slug}`;
+
+  if (nextPath === url.pathname) return request;
+
+  url.pathname = nextPath;
+  const headers = new Headers(request.headers);
+  headers.set("x-suaigreja-custom-domain", host);
+  headers.set("x-suaigreja-domain-slug", domainRoute.slug);
+
+  const requestInit: RequestInit & { duplex?: "half" } = {
+    method: request.method,
+    headers,
+    redirect: request.redirect,
+    signal: request.signal,
+  };
+
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    requestInit.body = request.body;
+    requestInit.duplex = "half";
+  }
+
+  return new Request(url, requestInit);
+}
 
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
@@ -70,7 +167,8 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
+      const routedRequest = await rewriteCustomDomainRequest(request);
+      const response = await handler.fetch(routedRequest, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);

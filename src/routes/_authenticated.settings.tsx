@@ -15,7 +15,10 @@ import {
   getMyAccount,
   updateAccountSettings,
   checkSlugAvailability,
+  requestManagedDomain,
   updateCustomSlug,
+  updateCustomDomain,
+  verifyCustomDomain,
   uploadAccountAsset,
 } from "@/lib/account.functions";
 import { listEvents } from "@/lib/events.functions";
@@ -29,6 +32,7 @@ import {
   Check,
   Copy,
   Eye,
+  Globe,
   IdCard,
   Landmark,
   Loader2,
@@ -51,6 +55,7 @@ const DEFAULT_COLOR = "#467da5";
 
 const SETTINGS_SECTIONS = [
   { id: "institution", label: "Instituição", description: "Endereço, identidade e tradição", icon: Building2 },
+  { id: "domain", label: "Domínio e PWA", description: "Domínio próprio e app instalável", icon: Globe },
   { id: "agenda", label: "Agenda pública", description: "Campos, textos e aparência", icon: CalendarCog },
   { id: "donations", label: "Doações", description: "Contas e recebimentos", icon: Landmark },
   { id: "member-card", label: "Carteirinha", description: "Identidade do membro", icon: IdCard },
@@ -67,7 +72,10 @@ function SettingsPage() {
   const getAccount = useServerFn(getMyAccount);
   const updateSettings = useServerFn(updateAccountSettings);
   const checkSlug = useServerFn(checkSlugAvailability);
+  const requestDomain = useServerFn(requestManagedDomain);
   const saveSlug = useServerFn(updateCustomSlug);
+  const saveDomain = useServerFn(updateCustomDomain);
+  const verifyDomain = useServerFn(verifyCustomDomain);
   const uploadAsset = useServerFn(uploadAccountAsset);
   const fetchEvents = useServerFn(listEvents);
   const fetchTypes = useServerFn(listTypes);
@@ -239,6 +247,82 @@ function SettingsPage() {
       qc.invalidateQueries({ queryKey: ["account"] });
     },
     onError: (e: Error) => toast.error(e.message ?? "Erro ao salvar"),
+  });
+
+  const [domainInput, setDomainInput] = useState("");
+  useEffect(() => {
+    setDomainInput(((account as any)?.custom_domain ?? "") as string);
+  }, [(account as any)?.custom_domain]);
+
+  const domainMut = useMutation({
+    mutationFn: (domain: string | null) => saveDomain({ data: { domain } }),
+    onSuccess: () => {
+      toast.success("Domínio atualizado");
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Erro ao salvar domínio"),
+  });
+
+  const verifyDomainMut = useMutation({
+    mutationFn: () => verifyDomain(),
+    onSuccess: (res) => {
+      if (res.ok) toast.success("Domínio verificado");
+      else toast.error(res.error || "Registro DNS ainda não encontrado");
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Erro ao verificar domínio"),
+  });
+
+  const [managedDomainForm, setManagedDomainForm] = useState({
+    domain: "",
+    holder_name: "",
+    holder_document: "",
+    holder_email: "",
+    holder_phone: "",
+    holder_address: "",
+    notes: "",
+  });
+
+  useEffect(() => {
+    setManagedDomainForm({
+      domain: ((account as any)?.managed_domain_requested_name ?? "") as string,
+      holder_name: ((account as any)?.managed_domain_holder_name ?? "") as string,
+      holder_document: ((account as any)?.managed_domain_holder_document ?? "") as string,
+      holder_email: ((account as any)?.managed_domain_holder_email ?? "") as string,
+      holder_phone: ((account as any)?.managed_domain_holder_phone ?? "") as string,
+      holder_address: ((account as any)?.managed_domain_holder_address ?? "") as string,
+      notes: ((account as any)?.managed_domain_notes ?? "") as string,
+    });
+  }, [
+    (account as any)?.managed_domain_requested_name,
+    (account as any)?.managed_domain_holder_name,
+    (account as any)?.managed_domain_holder_document,
+    (account as any)?.managed_domain_holder_email,
+    (account as any)?.managed_domain_holder_phone,
+    (account as any)?.managed_domain_holder_address,
+    (account as any)?.managed_domain_notes,
+  ]);
+
+  const managedDomainMut = useMutation({
+    mutationFn: () => requestDomain({ data: managedDomainForm }),
+    onSuccess: () => {
+      toast.success("Pedido de domínio gerenciado registrado");
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Erro ao registrar pedido"),
+  });
+
+  const cancelManagedDomainMut = useMutation({
+    mutationFn: () => requestDomain({ data: { domain: null } }),
+    onSuccess: () => {
+      toast.success("Pedido de domínio gerenciado removido");
+      qc.invalidateQueries({ queryKey: ["my-account"] });
+      qc.invalidateQueries({ queryKey: ["account"] });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Erro ao remover pedido"),
   });
 
   const publicOrigin = "https://suaigreja.top";
@@ -450,6 +534,29 @@ function SettingsPage() {
         </Card>
         </>}
 
+        {activeSection === "domain" && (
+          <DomainPwaSection
+            account={account}
+            value={domainInput}
+            setValue={setDomainInput}
+            saving={domainMut.isPending}
+            verifying={verifyDomainMut.isPending}
+            onSave={() => domainMut.mutate(domainInput.trim() || null)}
+            onRemove={() => {
+              setDomainInput("");
+              domainMut.mutate(null);
+            }}
+            onVerify={() => verifyDomainMut.mutate()}
+            managedForm={managedDomainForm}
+            setManagedForm={setManagedDomainForm}
+            savingManaged={managedDomainMut.isPending}
+            removingManaged={cancelManagedDomainMut.isPending}
+            onSaveManaged={() => managedDomainMut.mutate()}
+            onRemoveManaged={() => cancelManagedDomainMut.mutate()}
+            copy={copy}
+          />
+        )}
+
         {activeSection === "agenda" && <>
 
         <Card className="p-6 space-y-4">
@@ -652,6 +759,328 @@ function SettingsPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+function DomainPwaSection({
+  account,
+  value,
+  setValue,
+  saving,
+  verifying,
+  onSave,
+  onRemove,
+  onVerify,
+  managedForm,
+  setManagedForm,
+  savingManaged,
+  removingManaged,
+  onSaveManaged,
+  onRemoveManaged,
+  copy,
+}: {
+  account: any;
+  value: string;
+  setValue: (value: string) => void;
+  saving: boolean;
+  verifying: boolean;
+  onSave: () => void;
+  onRemove: () => void;
+  onVerify: () => void;
+  managedForm: {
+    domain: string;
+    holder_name: string;
+    holder_document: string;
+    holder_email: string;
+    holder_phone: string;
+    holder_address: string;
+    notes: string;
+  };
+  setManagedForm: (value: {
+    domain: string;
+    holder_name: string;
+    holder_document: string;
+    holder_email: string;
+    holder_phone: string;
+    holder_address: string;
+    notes: string;
+  }) => void;
+  savingManaged: boolean;
+  removingManaged: boolean;
+  onSaveManaged: () => void;
+  onRemoveManaged: () => void;
+  copy: (text: string) => void;
+}) {
+  const status = account?.custom_domain_status ?? "not_configured";
+  const token = account?.custom_domain_verification_token ?? "";
+  const configuredDomain = account?.custom_domain ?? "";
+  const isPremium = account?.plan_tier === "premium";
+  const manifestPath = configuredDomain
+    ? `https://${configuredDomain}/manifest/${account?.custom_slug || account?.site_id}/json`
+    : account
+      ? `https://suaigreja.top/manifest/${account.custom_slug || account.site_id}/json`
+      : "";
+  const statusCopy: Record<string, { label: string; className: string }> = {
+    not_configured: { label: "Não configurado", className: "bg-muted text-muted-foreground" },
+    pending: { label: "Aguardando DNS", className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" },
+    failed: { label: "Não verificado", className: "bg-destructive/10 text-destructive" },
+    verified: { label: "Verificado", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" },
+  };
+  const statusInfo = statusCopy[status] ?? statusCopy.not_configured;
+  const managedStatus = account?.managed_domain_status ?? "not_requested";
+  const managedStatusCopy: Record<string, { label: string; className: string }> = {
+    not_requested: { label: "Não solicitado", className: "bg-muted text-muted-foreground" },
+    requested: { label: "Pedido recebido", className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" },
+    in_progress: { label: "Em andamento", className: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300" },
+    registered: { label: "Registrado", className: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300" },
+    configured: { label: "Configurado", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    blocked: { label: "Pendente", className: "bg-destructive/10 text-destructive" },
+  };
+  const managedInfo = managedStatusCopy[managedStatus] ?? managedStatusCopy.not_requested;
+  const setManagedField = (field: keyof typeof managedForm, fieldValue: string) =>
+    setManagedForm({ ...managedForm, [field]: fieldValue });
+
+  return (
+    <div className="space-y-6">
+      <Card className="p-6 space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Domínio próprio</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Configure um domínio da instituição e valide a posse via DNS antes de ativar o roteamento.
+            </p>
+          </div>
+          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", statusInfo.className)}>
+            {statusInfo.label}
+          </span>
+        </div>
+
+        {!isPremium && (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+            Domínio próprio é um recurso do plano Premium ativo. O manifesto PWA por tenant continua funcionando nos links da suaigreja.top.
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="custom_domain">Domínio da instituição</Label>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              id="custom_domain"
+              value={value}
+              onChange={(e) => setValue(e.target.value.toLowerCase().replace(/^https?:\/\//, ""))}
+              placeholder="minhaigreja.org.br"
+              disabled={!isPremium || saving}
+              className="font-mono"
+            />
+            <Button type="button" onClick={onSave} disabled={!isPremium || saving || value.trim() === configuredDomain}>
+              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Salvar domínio
+            </Button>
+            {configuredDomain && (
+              <Button type="button" variant="outline" onClick={onRemove} disabled={!isPremium || saving}>
+                Remover
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Use apenas o domínio, sem https:// e sem caminho. Exemplo: <code>paroquia.org.br</code>.
+          </p>
+        </div>
+
+        {configuredDomain && token && (
+          <div className="rounded-md border bg-muted/30 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 className="text-sm font-medium">Registros DNS necessários</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Adicione estes registros no provedor do domínio e clique em verificar.
+                </p>
+              </div>
+              <Button type="button" variant="secondary" onClick={onVerify} disabled={!isPremium || verifying}>
+                {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Verificar DNS
+              </Button>
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <div className="rounded-md border bg-background p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">TXT</p>
+                <p className="mt-1 text-sm">Nome: <code>@</code></p>
+                <div className="mt-1 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all rounded bg-muted px-2 py-1 text-xs">{token}</code>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => copy(token)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+              <div className="rounded-md border bg-background p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">CNAME/ALIAS</p>
+                <p className="mt-1 text-sm">Nome: <code>@</code> ou <code>www</code></p>
+                <div className="mt-1 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 break-all rounded bg-muted px-2 py-1 text-xs">suaigreja.top</code>
+                  <Button type="button" variant="ghost" size="icon" onClick={() => copy("suaigreja.top")}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {account?.custom_domain_error && (
+              <p className="mt-3 text-xs text-destructive">{account.custom_domain_error}</p>
+            )}
+            {account?.custom_domain_last_checked_at && (
+              <p className="mt-2 text-xs text-muted-foreground">
+                Última verificação: {new Date(account.custom_domain_last_checked_at).toLocaleString("pt-BR")}
+              </p>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <Card className="p-6 space-y-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-base font-semibold">Domínio gerenciado pela plataforma</h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Para um plano com domínio incluso, registre o domínio desejado e os dados do titular.
+              A equipe usa estas informações para registro, cobrança e configuração.
+            </p>
+          </div>
+          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", managedInfo.className)}>
+            {managedInfo.label}
+          </span>
+        </div>
+
+        <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+          Esta etapa ainda é assistida: o sistema coleta os dados e acompanha o status. A automação completa
+          com registrador/Registro.br fica para a próxima fase, depois da decisão comercial e operacional.
+        </div>
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor="managed_domain">Domínio desejado</Label>
+            <Input
+              id="managed_domain"
+              value={managedForm.domain}
+              onChange={(e) => setManagedField("domain", e.target.value.toLowerCase().replace(/^https?:\/\//, ""))}
+              placeholder="minhaigreja.org.br"
+              disabled={!isPremium || savingManaged}
+              className="font-mono"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="managed_holder_name">Nome do titular</Label>
+            <Input
+              id="managed_holder_name"
+              value={managedForm.holder_name}
+              onChange={(e) => setManagedField("holder_name", e.target.value)}
+              placeholder="Paróquia Santa Ana ou Comunidade Exemplo"
+              disabled={!isPremium || savingManaged}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="managed_holder_document">CPF/CNPJ do titular</Label>
+            <Input
+              id="managed_holder_document"
+              value={managedForm.holder_document}
+              onChange={(e) => setManagedField("holder_document", e.target.value)}
+              placeholder="00.000.000/0001-00"
+              disabled={!isPremium || savingManaged}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="managed_holder_email">E-mail do titular</Label>
+            <Input
+              id="managed_holder_email"
+              type="email"
+              value={managedForm.holder_email}
+              onChange={(e) => setManagedField("holder_email", e.target.value)}
+              placeholder="contato@instituicao.org.br"
+              disabled={!isPremium || savingManaged}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="managed_holder_phone">Telefone</Label>
+            <Input
+              id="managed_holder_phone"
+              value={managedForm.holder_phone}
+              onChange={(e) => setManagedField("holder_phone", e.target.value)}
+              placeholder="(11) 99999-9999"
+              disabled={!isPremium || savingManaged}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="managed_holder_address">Endereço completo</Label>
+            <Input
+              id="managed_holder_address"
+              value={managedForm.holder_address}
+              onChange={(e) => setManagedField("holder_address", e.target.value)}
+              placeholder="Rua, número, cidade, UF e CEP"
+              disabled={!isPremium || savingManaged}
+            />
+          </div>
+          <div className="space-y-1 md:col-span-2">
+            <Label htmlFor="managed_notes">Observações</Label>
+            <Textarea
+              id="managed_notes"
+              rows={3}
+              value={managedForm.notes}
+              onChange={(e) => setManagedField("notes", e.target.value)}
+              placeholder="Domínios alternativos, preferência por .org.br/.com.br ou dados complementares."
+              disabled={!isPremium || savingManaged}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-wrap justify-end gap-2">
+          {managedStatus !== "not_requested" && (
+            <Button type="button" variant="outline" onClick={onRemoveManaged} disabled={!isPremium || removingManaged}>
+              {removingManaged ? "Removendo..." : "Remover pedido"}
+            </Button>
+          )}
+          <Button type="button" onClick={onSaveManaged} disabled={!isPremium || savingManaged}>
+            {savingManaged && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Solicitar domínio incluso
+          </Button>
+        </div>
+
+        {account?.managed_domain_requested_at && (
+          <p className="text-xs text-muted-foreground">
+            Pedido registrado em {new Date(account.managed_domain_requested_at).toLocaleString("pt-BR")}.
+          </p>
+        )}
+      </Card>
+
+      <Card className="p-6 space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">App instalável</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            O manifesto PWA já usa a identidade da instituição nas páginas públicas.
+          </p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-md border p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nome do app</p>
+            <p className="mt-1 text-sm font-medium">{account?.brand_title ?? "Sua Igreja"}</p>
+          </div>
+          <div className="rounded-md border p-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cor do tema</p>
+            <div className="mt-2 flex items-center gap-2">
+              <span className="h-5 w-5 rounded border" style={{ background: account?.primary_color ?? DEFAULT_COLOR }} />
+              <code className="text-xs">{account?.primary_color ?? DEFAULT_COLOR}</code>
+            </div>
+          </div>
+        </div>
+        {manifestPath && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input readOnly value={manifestPath} className="font-mono text-sm" />
+            <Button type="button" variant="outline" onClick={() => copy(manifestPath)}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
+      </Card>
+    </div>
   );
 }
 

@@ -63,7 +63,7 @@ export const Route = createFileRoute("/a/$siteId")({
       <p className="text-sm text-muted-foreground">{error.message}</p>
     </div>
   ),
-  head: ({ loaderData }) => ({
+  head: ({ loaderData, params }) => ({
     meta: [
       { title: loaderData?.account.brand_title ?? "Agenda" },
       {
@@ -73,6 +73,7 @@ export const Route = createFileRoute("/a/$siteId")({
           "Próximas celebrações e horários.",
       },
     ],
+    links: loaderData ? [{ rel: "manifest", href: `/manifest/${params.siteId}/json` }] : [],
   }),
 });
 

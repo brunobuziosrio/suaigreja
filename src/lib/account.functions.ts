@@ -3,6 +3,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { RELIGION_PROFILES, type ReligionProfile } from "./religion-profiles";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAccountAccess } from "@/lib/plan-access";
+import { randomBytes } from "node:crypto";
+import { resolveTxt } from "node:dns/promises";
 
 const RESERVED_SLUGS = new Set([
   "a", "admin", "api", "app", "assets", "auth", "agenda", "billing",
@@ -12,6 +15,29 @@ const RESERVED_SLUGS = new Set([
 ]);
 
 const SLUG_REGEX = /^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/;
+const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
+const DOMAIN_TARGET = "suaigreja.top";
+
+function normalizeDomain(value: string) {
+  return value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+}
+
+function verificationToken() {
+  return `suaigreja-domain=${randomBytes(16).toString("hex")}`;
+}
+
+async function requirePremiumDomainAccess(supabase: any, userId: string) {
+  const { data, error } = await supabase
+    .from("accounts")
+    .select("plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  const access = resolveAccountAccess(data);
+  if (!access.billingActive || access.tier !== "premium") {
+    throw new Error("Domínio próprio está disponível apenas no plano Premium ativo.");
+  }
+}
 
 const slugSchema = z.object({
   slug: z
@@ -77,6 +103,182 @@ export const updateCustomSlug = createServerFn({ method: "POST" })
       .eq("id", userId);
     if (error) throw new Error(error.message);
     return { ok: true, slug: parsed.slug };
+  });
+
+const domainSchema = z.object({
+  domain: z.string().trim().max(253).nullable(),
+});
+
+const managedDomainSchema = z.object({
+  domain: z.string().trim().max(253).nullable(),
+  holder_name: z.string().trim().max(160).nullable().optional(),
+  holder_document: z.string().trim().max(32).nullable().optional(),
+  holder_email: z.string().trim().max(160).nullable().optional(),
+  holder_phone: z.string().trim().max(32).nullable().optional(),
+  holder_address: z.string().trim().max(500).nullable().optional(),
+  notes: z.string().trim().max(1000).nullable().optional(),
+});
+
+export const updateCustomDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => domainSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requirePremiumDomainAccess(supabase, userId);
+
+    const domain = data.domain ? normalizeDomain(data.domain) : "";
+    if (!domain) {
+      const { error } = await supabase
+        .from("accounts")
+        .update({
+          custom_domain: null,
+          custom_domain_status: "not_configured",
+          custom_domain_verification_token: null,
+          custom_domain_verified_at: null,
+          custom_domain_last_checked_at: null,
+          custom_domain_error: null,
+        })
+        .eq("id", userId);
+      if (error) throw new Error(error.message);
+      return { ok: true, domain: null, token: null, status: "not_configured" };
+    }
+
+    if (!DOMAIN_REGEX.test(domain) || domain.length > 253 || domain.endsWith(`.${DOMAIN_TARGET}`)) {
+      throw new Error("Informe um domínio válido, como igreja.org.br.");
+    }
+
+    const { data: existing } = await supabaseAdmin
+      .from("accounts")
+      .select("id")
+      .eq("custom_domain", domain)
+      .maybeSingle();
+    if (existing && existing.id !== userId) {
+      throw new Error("Este domínio já está configurado em outra conta.");
+    }
+
+    const token = verificationToken();
+    const { error } = await supabase
+      .from("accounts")
+      .update({
+        custom_domain: domain,
+        custom_domain_status: "pending",
+        custom_domain_verification_token: token,
+        custom_domain_verified_at: null,
+        custom_domain_last_checked_at: null,
+        custom_domain_error: null,
+      })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true, domain, token, status: "pending" };
+  });
+
+export const verifyCustomDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await requirePremiumDomainAccess(supabase, userId);
+
+    const { data: account, error: accountError } = await supabase
+      .from("accounts")
+      .select("custom_domain, custom_domain_verification_token")
+      .eq("id", userId)
+      .maybeSingle();
+    if (accountError) throw new Error(accountError.message);
+    if (!account?.custom_domain || !account?.custom_domain_verification_token) {
+      throw new Error("Configure um domínio antes de verificar.");
+    }
+
+    let verified = false;
+    let message = "";
+    try {
+      const txtRecords = await resolveTxt(account.custom_domain);
+      const values = txtRecords.map((parts) => parts.join(""));
+      verified = values.includes(account.custom_domain_verification_token);
+      message = verified
+        ? ""
+        : "Registro TXT ainda não encontrado. A propagação DNS pode levar alguns minutos.";
+    } catch (e) {
+      message = (e as Error).message || "Não foi possível consultar o DNS do domínio.";
+    }
+
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("accounts")
+      .update({
+        custom_domain_status: verified ? "verified" : "failed",
+        custom_domain_verified_at: verified ? now : null,
+        custom_domain_last_checked_at: now,
+        custom_domain_error: verified ? null : message,
+      })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: verified, status: verified ? "verified" : "failed", error: verified ? null : message };
+  });
+
+export const requestManagedDomain = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => managedDomainSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requirePremiumDomainAccess(supabase, userId);
+
+    const domain = data.domain ? normalizeDomain(data.domain) : "";
+    if (!domain) {
+      const { error } = await supabase
+        .from("accounts")
+        .update({
+          managed_domain_requested_name: null,
+          managed_domain_status: "not_requested",
+          managed_domain_holder_name: null,
+          managed_domain_holder_document: null,
+          managed_domain_holder_email: null,
+          managed_domain_holder_phone: null,
+          managed_domain_holder_address: null,
+          managed_domain_notes: null,
+          managed_domain_requested_at: null,
+          managed_domain_updated_at: new Date().toISOString(),
+        })
+        .eq("id", userId);
+      if (error) throw new Error(error.message);
+      return { ok: true, status: "not_requested" };
+    }
+
+    if (!DOMAIN_REGEX.test(domain) || domain.length > 253 || domain.endsWith(`.${DOMAIN_TARGET}`)) {
+      throw new Error("Informe um domínio válido, como paroquia-santana.org.br.");
+    }
+
+    const required = [
+      data.holder_name,
+      data.holder_document,
+      data.holder_email,
+      data.holder_phone,
+      data.holder_address,
+    ];
+    if (required.some((value) => !value?.trim())) {
+      throw new Error("Preencha titular, documento, e-mail, telefone e endereço.");
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.holder_email ?? "")) {
+      throw new Error("Informe um e-mail válido.");
+    }
+
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from("accounts")
+      .update({
+        managed_domain_requested_name: domain,
+        managed_domain_status: "requested",
+        managed_domain_holder_name: data.holder_name?.trim() || null,
+        managed_domain_holder_document: data.holder_document?.trim() || null,
+        managed_domain_holder_email: data.holder_email?.trim() || null,
+        managed_domain_holder_phone: data.holder_phone?.trim() || null,
+        managed_domain_holder_address: data.holder_address?.trim() || null,
+        managed_domain_notes: data.notes?.trim() || null,
+        managed_domain_requested_at: now,
+        managed_domain_updated_at: now,
+      })
+      .eq("id", userId);
+    if (error) throw new Error(error.message);
+    return { ok: true, status: "requested", domain };
   });
 
 const ALLOWED_IMAGE_MIME = new Set([
