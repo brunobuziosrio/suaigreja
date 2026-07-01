@@ -418,6 +418,26 @@ Arquivo principal:
 - Este catálogo será a base para esconder módulos em laboratório/beta, organizar
   add-ons e proteger o núcleo vendável enquanto novos recursos são desenvolvidos.
 
+### Secretaria Digital - anexos privados e operação interna
+
+Arquivos principais:
+
+- `src/lib/secretaria.functions.ts`
+- `src/routes/_authenticated.secretaria.tsx`
+- `supabase/migrations/20260701103000_secretaria_private_attachments.sql`
+
+- Solicitações da Secretaria agora possuem responsável interno e prazo interno.
+- Criado bucket privado `secretaria-attachments`, sem URL pública permanente.
+- Criada tabela `secretaria_request_attachments` com `account_id`, `request_id`,
+  caminho privado, tipo, tamanho e data de criação.
+- Criado trigger de integridade para impedir anexo vinculado a solicitação de outra
+  igreja ou caminho fora da pasta do tenant.
+- Upload, listagem, download por URL assinada temporária e remoção de anexos foram
+  adicionados via funções de servidor com validação de plano e tenant.
+- A tela da Secretaria mostra anexos privados no modal da solicitação e mantém o
+  histórico de auditoria separado.
+- `npm run build`: aprovado em 2026-07-01 após este incremento.
+
 ## Próximas etapas priorizadas
 
 ### P0 - concluir antes de produção

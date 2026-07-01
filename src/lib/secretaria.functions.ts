@@ -9,8 +9,10 @@
  */
 
 import { createServerFn } from "@tanstack/react-start";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requirePlanTier } from "@/lib/plan-access";
 
 const REQUEST_TYPES = [
@@ -36,7 +38,7 @@ const STATUSES = [
 const PRIORITIES = ["baixa", "normal", "alta"] as const;
 
 const SELECT_COLUMNS =
-  "id, member_id, request_type, requester_name, requester_phone, requester_email, details, status, priority, preferred_date, scheduled_at, internal_notes, created_at, updated_at";
+  "id, member_id, request_type, requester_name, requester_phone, requester_email, details, status, priority, preferred_date, scheduled_at, assignee_name, due_date, internal_notes, created_at, updated_at";
 
 const optionalText = z.string().max(2000).optional().nullable();
 
@@ -102,6 +104,8 @@ const upsertSchema = z.object({
   priority: z.enum(PRIORITIES).optional().default("normal"),
   preferred_date: z.string().optional().nullable(),
   scheduled_at: z.string().optional().nullable(),
+  assignee_name: z.string().max(160).optional().nullable(),
+  due_date: z.string().optional().nullable(),
   internal_notes: optionalText,
 });
 
@@ -123,6 +127,8 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
       priority: data.priority ?? "normal",
       preferred_date: data.preferred_date || null,
       scheduled_at: data.scheduled_at || null,
+      assignee_name: data.assignee_name?.trim() || null,
+      due_date: data.due_date || null,
       internal_notes: data.internal_notes?.trim() || null,
     };
     if (data.id) {
@@ -190,6 +196,136 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
       .limit(50);
     if (error) throw new Error(error.message);
     return events ?? [];
+  });
+
+export const listSecretariaAttachments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ request_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
+    const { data: request, error: requestError } = await supabase
+      .from("secretaria_requests")
+      .select("id")
+      .eq("id", data.request_id)
+      .eq("account_id", userId)
+      .maybeSingle();
+    if (requestError) throw new Error(requestError.message);
+    if (!request) throw new Error("Solicitação não encontrada nesta igreja.");
+
+    const { data: rows, error } = await supabase
+      .from("secretaria_request_attachments")
+      .select("id, file_name, content_type, file_size, created_at")
+      .eq("account_id", userId)
+      .eq("request_id", data.request_id)
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    return rows ?? [];
+  });
+
+const attachmentSchema = z.object({
+  request_id: z.string().uuid(),
+  file_name: z.string().min(1).max(180),
+  content_type: z.string().max(120).optional().nullable(),
+  base64: z.string().min(1),
+});
+
+export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => attachmentSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
+    const { data: request, error: requestError } = await supabase
+      .from("secretaria_requests")
+      .select("id")
+      .eq("id", data.request_id)
+      .eq("account_id", userId)
+      .maybeSingle();
+    if (requestError) throw new Error(requestError.message);
+    if (!request) throw new Error("Solicitação não encontrada nesta igreja.");
+
+    const bytes = Buffer.from(data.base64, "base64");
+    if (bytes.length > 8 * 1024 * 1024) {
+      throw new Error("Anexo muito grande. O limite é 8 MB por arquivo.");
+    }
+
+    const cleanName = data.file_name.replace(/[^\w.\- ]+/g, "_").slice(0, 180);
+    const path = `${userId}/${data.request_id}/${randomUUID()}-${cleanName}`;
+    const contentType = data.content_type || "application/octet-stream";
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from("secretaria-attachments")
+      .upload(path, bytes, { contentType, upsert: false });
+    if (uploadError) throw new Error(uploadError.message);
+
+    const { data: row, error } = await supabase
+      .from("secretaria_request_attachments")
+      .insert({
+        account_id: userId,
+        request_id: data.request_id,
+        file_name: cleanName,
+        file_path: path,
+        content_type: contentType,
+        file_size: bytes.length,
+      } as any)
+      .select("id")
+      .single();
+    if (error) {
+      await supabaseAdmin.storage.from("secretaria-attachments").remove([path]);
+      throw new Error(error.message);
+    }
+    return { id: row!.id };
+  });
+
+export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
+    const { data: attachment, error } = await supabase
+      .from("secretaria_request_attachments")
+      .select("file_path")
+      .eq("id", data.id)
+      .eq("account_id", userId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!attachment) throw new Error("Anexo não encontrado nesta igreja.");
+
+    const { data: signed, error: signError } = await supabaseAdmin.storage
+      .from("secretaria-attachments")
+      .createSignedUrl((attachment as any).file_path, 120);
+    if (signError || !signed?.signedUrl) {
+      throw new Error(signError?.message || "Falha ao gerar link temporário.");
+    }
+    return { url: signed.signedUrl };
+  });
+
+export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    await requirePlanTier(context, "pro");
+    const { supabase, userId } = context;
+    const { data: attachment, error: fetchError } = await supabase
+      .from("secretaria_request_attachments")
+      .select("id, file_path")
+      .eq("id", data.id)
+      .eq("account_id", userId)
+      .maybeSingle();
+    if (fetchError) throw new Error(fetchError.message);
+    if (!attachment) throw new Error("Anexo não encontrado nesta igreja.");
+
+    const { error } = await supabase
+      .from("secretaria_request_attachments")
+      .delete()
+      .eq("id", data.id)
+      .eq("account_id", userId);
+    if (error) throw new Error(error.message);
+    await supabaseAdmin.storage
+      .from("secretaria-attachments")
+      .remove([(attachment as any).file_path]);
+    return { ok: true };
   });
 
 export const deleteSecretariaRequest = createServerFn({ method: "POST" })

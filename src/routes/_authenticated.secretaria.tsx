@@ -11,7 +11,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,12 +43,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, ClipboardList } from "lucide-react";
+import { Plus, Edit2, Trash2, ClipboardList, Paperclip, Download, Upload } from "lucide-react";
 import {
   listSecretariaRequests,
   getSecretariaStats,
+  createSecretariaAttachmentDownloadUrl,
+  deleteSecretariaAttachment,
+  listSecretariaAttachments,
   listSecretariaRequestEvents,
   upsertSecretariaRequest,
+  uploadSecretariaAttachment,
   updateSecretariaStatus,
   deleteSecretariaRequest,
 } from "@/lib/secretaria.functions";
@@ -70,6 +74,8 @@ type SecretariaRequest = {
   priority: string;
   preferred_date: string | null;
   scheduled_at: string | null;
+  assignee_name: string | null;
+  due_date: string | null;
   internal_notes: string | null;
   created_at: string;
 };
@@ -80,6 +86,14 @@ type SecretariaEvent = {
   from_status: string | null;
   to_status: string | null;
   metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+type SecretariaAttachment = {
+  id: string;
+  file_name: string;
+  content_type: string | null;
+  file_size: number;
   created_at: string;
 };
 
@@ -144,6 +158,8 @@ const emptyForm = {
   priority: "normal",
   preferred_date: "",
   scheduled_at: "",
+  assignee_name: "",
+  due_date: "",
   internal_notes: "",
 };
 
@@ -152,14 +168,19 @@ function SecretariaPage() {
   const fetchRequests = useServerFn(listSecretariaRequests);
   const fetchStats = useServerFn(getSecretariaStats);
   const fetchEvents = useServerFn(listSecretariaRequestEvents);
+  const fetchAttachments = useServerFn(listSecretariaAttachments);
   const fetchMembers = useServerFn(listMembers);
   const saveRequest = useServerFn(upsertSecretariaRequest);
+  const uploadAttachment = useServerFn(uploadSecretariaAttachment);
+  const createDownloadUrl = useServerFn(createSecretariaAttachmentDownloadUrl);
+  const removeAttachment = useServerFn(deleteSecretariaAttachment);
   const changeStatus = useServerFn(updateSecretariaStatus);
   const removeRequest = useServerFn(deleteSecretariaRequest);
 
   const [statusFilter, setStatusFilter] = useState("todos");
   const [openDialog, setOpenDialog] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
     data: requests = [],
@@ -195,6 +216,13 @@ function SecretariaPage() {
     staleTime: 30000,
   });
 
+  const { data: attachments = [] } = useQuery({
+    queryKey: ["secretaria-request-attachments", form.id],
+    queryFn: () => fetchAttachments({ data: { request_id: form.id } }),
+    enabled: openDialog && !!form.id,
+    staleTime: 30000,
+  });
+
   const filtered = useMemo(
     () =>
       statusFilter === "todos"
@@ -207,6 +235,7 @@ function SecretariaPage() {
     qc.invalidateQueries({ queryKey: ["secretaria-requests"] });
     qc.invalidateQueries({ queryKey: ["secretaria-stats"] });
     if (form.id) qc.invalidateQueries({ queryKey: ["secretaria-request-events", form.id] });
+    if (form.id) qc.invalidateQueries({ queryKey: ["secretaria-request-attachments", form.id] });
   };
 
   const saveMut = useMutation({
@@ -239,6 +268,43 @@ function SecretariaPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const uploadMut = useMutation({
+    mutationFn: async (file: File) => {
+      const base64 = await fileToBase64(file);
+      return uploadAttachment({
+        data: {
+          request_id: form.id,
+          file_name: file.name,
+          content_type: file.type || "application/octet-stream",
+          base64,
+        },
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["secretaria-request-attachments", form.id] });
+      toast.success("Anexo enviado");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const downloadMut = useMutation({
+    mutationFn: (id: string) => createDownloadUrl({ data: { id } }),
+    onSuccess: (res) => {
+      window.open(res.url, "_blank", "noopener,noreferrer");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const deleteAttachmentMut = useMutation({
+    mutationFn: (id: string) => removeAttachment({ data: { id } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["secretaria-request-attachments", form.id] });
+      toast.success("Anexo removido");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const openNew = () => {
     setForm(emptyForm);
     setOpenDialog(true);
@@ -257,6 +323,8 @@ function SecretariaPage() {
       priority: req.priority,
       preferred_date: req.preferred_date || "",
       scheduled_at: req.scheduled_at ? req.scheduled_at.slice(0, 16) : "",
+      assignee_name: req.assignee_name || "",
+      due_date: req.due_date || "",
       internal_notes: req.internal_notes || "",
     });
     setOpenDialog(true);
@@ -340,6 +408,7 @@ function SecretariaPage() {
                     <TableHead>Prioridade</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Preferência</TableHead>
+                    <TableHead>Responsável</TableHead>
                     <TableHead className="text-right">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -381,6 +450,14 @@ function SecretariaPage() {
                         {req.preferred_date
                           ? new Date(req.preferred_date).toLocaleDateString("pt-BR")
                           : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <div>{req.assignee_name || "—"}</div>
+                        {req.due_date && (
+                          <div className="text-xs text-muted-foreground">
+                            Prazo {new Date(req.due_date).toLocaleDateString("pt-BR")}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell className="space-x-2 text-right">
                         <Button variant="outline" size="sm" onClick={() => openEdit(req)}>
@@ -550,6 +627,78 @@ function SecretariaPage() {
                 />
               </div>
 
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label>Responsável interno</Label>
+                  <Input
+                    value={form.assignee_name}
+                    onChange={(e) => setForm({ ...form, assignee_name: e.target.value })}
+                    placeholder="Nome da pessoa responsável"
+                  />
+                </div>
+                <div>
+                  <Label>Prazo interno</Label>
+                  <Input
+                    type="date"
+                    value={form.due_date}
+                    onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              {form.id && (
+                <div className="rounded-md border p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label className="flex items-center gap-2">
+                      <Paperclip className="h-4 w-4" /> Anexos privados
+                    </Label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadMut.isPending}
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      {uploadMut.isPending ? "Enviando" : "Anexar"}
+                    </Button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadMut.mutate(file);
+                      }}
+                    />
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    {(attachments as SecretariaAttachment[]).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum anexo enviado.</p>
+                    ) : (
+                      (attachments as SecretariaAttachment[]).map((attachment) => (
+                        <div key={attachment.id} className="flex items-center justify-between gap-3 rounded-md border px-3 py-2 text-sm">
+                          <div className="min-w-0">
+                            <div className="truncate font-medium">{attachment.file_name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatFileSize(attachment.file_size)} · {new Date(attachment.created_at).toLocaleString("pt-BR")}
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 gap-2">
+                            <Button type="button" variant="outline" size="sm" onClick={() => downloadMut.mutate(attachment.id)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                            <Button type="button" variant="outline" size="sm" onClick={() => deleteAttachmentMut.mutate(attachment.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
               {form.id && (
                 <div className="rounded-md border p-3">
                   <Label>Histórico da solicitação</Label>
@@ -611,4 +760,22 @@ function eventLabel(event: SecretariaEvent) {
   if (event.event_type === "status_changed") return "Status alterado";
   if (event.event_type === "deleted") return "Solicitação removida";
   return "Solicitação atualizada";
+}
+
+function fileToBase64(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      resolve(result.includes(",") ? result.split(",")[1] : result);
+    };
+    reader.onerror = () => reject(new Error("Falha ao ler o arquivo."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function formatFileSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
