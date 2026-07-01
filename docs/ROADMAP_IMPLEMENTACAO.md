@@ -560,6 +560,28 @@ Arquivos principais:
   o trabalho não commitado da sessão anterior; feature coerente nas três camadas
   — migration, funções de servidor e UI de Configurações).
 
+### Domínio gerenciado - painel de atendimento no Admin
+
+Arquivos principais:
+
+- `src/lib/admin.functions.ts`
+- `src/routes/_authenticated.admin.domains.tsx`
+- `src/routes/_authenticated.admin.index.tsx`
+
+- Criadas funções de servidor `listManagedDomainRequests` e
+  `adminUpdateManagedDomainStatus`, ambas protegidas por `assertAdmin` e validação zod.
+- Criada rota `/admin/domains` que lista os pedidos de domínio gerenciado em cards
+  responsivos: dados do titular, domínio desejado, vínculo com domínio próprio,
+  observações internas editáveis e seletor de status do atendimento
+  (solicitado, em andamento, registrado, configurado, bloqueado, cancelar).
+- Adicionado o atalho "Domínios" no hub Admin e corrigidas variantes de Badge
+  inválidas (`secondary`/`destructive`) em `admin.index.tsx`.
+- Fecha o fluxo assistido: o cliente Premium solicita em Configurações e o Admin
+  processa e acompanha o pedido aqui. Registro/cobrança/automação com registrador
+  seguem como próxima fase.
+- `bun run build`: aprovado em 2026-07-01; deploy em produção validado
+  (`/`, `/dashboard`, `/admin`, `/admin/domains` = HTTP 200).
+
 ## Próximas etapas priorizadas
 
 ### P0 - concluir antes de produção
