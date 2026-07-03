@@ -793,6 +793,26 @@ continha nome da escala e do voluntário com emoji de status certo; popup
 de impressão abriu com tabela limpa (data/horário/voluntário/"Confirmado").
 Zero erro de console. Dados de teste removidos depois.
 
+### Jornada Espiritual do Membro — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima sexta feature do backlog. Mapeia em que etapa de crescimento
+espiritual cada fiel está (novo convertido, em acompanhamento, batizado,
+serve num ministério, líder) pra direcionar ação pastoral. Coluna nova
+`members.spiritual_stage` (nullable, validado no Zod, sem enum no banco).
+`types.ts` regenerado de novo (mesma técnica de
+[[fix_types_ts_incompleto]]) pra incluir a coluna sem reintroduzir o
+problema das tabelas faltando.
+
+Rota dedicada `/jornada-espiritual` (não mexi no arquivo grande de
+`/membros` pra reduzir risco): cards de contagem por etapa clicáveis como
+filtro + lista de fiéis com select de etapa inline (`setMemberSpiritualStage`,
+função dedicada de update rápido, não abre o formulário completo).
+
+Testado com dado real: defini "Batizado" pra um fiel real → toast de
+sucesso → card "Batizado" foi de 0 pra 1 → filtro aplicado mostrou só ele.
+Zero erro de console. Etapa revertida pra `null` depois do teste (não
+alterei dado real da conta).
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
