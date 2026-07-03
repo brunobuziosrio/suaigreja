@@ -719,6 +719,30 @@ Testado com login real: 18 páginas percorridas (incluindo todas as
 afetadas pelos fixes de Badge e a página de escalas), zero erro de
 console em qualquer uma.
 
+### Alertas inteligentes no Dashboard — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima segunda feature do backlog. Estende o card "O que fazer hoje" com
+dois alertas novos, sem tabela nova:
+
+- **Turnos sem confirmação**: `listUpcomingUnconfirmedShifts` cruza todas
+  as escalas da conta buscando turnos dos próximos 7 dias que ninguém
+  confirmou ainda → alerta com link pra `/escalas`.
+- **Campanha abaixo do ritmo da meta**: compara % do prazo decorrido
+  contra % da meta arrecadada (folga de 15 pontos pra não alarmar à toa
+  logo no início) usando `campaigns` (contribution campaigns reais, com
+  `goal_amount_cents`/`current_amount_cents`/datas — diferente de
+  `donation_campaigns`, que é só a config do Pix no site público e não
+  rastreia arrecadação de verdade) → alerta com link pra `/campanhas`.
+
+Ambos respeitam o gate de plano/permissão (`canAccessPath` pra
+`/escalas`/`/campanhas`), mesmo padrão dos alertas já existentes.
+
+Testado com dados reais temporários (sem dado real da conta pra disparar
+os dois cenários, então criei um turno não confirmado + uma campanha
+simulando 80% do prazo decorrido com só 1% arrecadado): os dois alertas
+apareceram corretamente no card, com ícone/título/descrição certos. Zero
+erro de console. Dados de teste removidos depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
