@@ -348,9 +348,13 @@ git), `156041b` (lote 1-2: módulos com gate de plano), `017d3a4` (lote 3: módu
 sem gate + bug do client anônimo). `bun run build` e `tsc --noEmit` sem novos erros
 em nenhum dos três commits.
 
-**PENDENTE**: build local não foi copiado para o container (`docker cp`) — o código
-corrigido está no git mas a VPS ainda roda o `dist/` de antes desta sessão (que tem
-o bug do `account_id = userId`). Avisar/confirmar com o Bruno antes de deployar.
+**DEPLOYADA em produção 03-07**: build local enviado via tar+scp+`docker cp` para
+`igreja-app` (backup do dist anterior em `/app/dist.bak` dentro do container, para
+rollback). Validado em múltiplas camadas: `docker logs` sem erro desde o restart;
+HTTP 200 em `/login`, `/dashboard`, `/equipe`; navegador real via Playwright
+headless (`/login` hidrata e renderiza o formulário completo, zero erro de
+console, screenshot conferido); bundle do servidor no container contém
+`resolveAccountContext` (19 arquivos), confirmando que não é cache antigo.
 
 Item 2 da lacuna (matriz de permissões por verbo, `roleCan()`) **continua pendente**
 — não foi tocado nesta sessão. Ver `permissions.ts` para o catálogo já existente.
