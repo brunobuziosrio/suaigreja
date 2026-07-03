@@ -11,6 +11,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { requirePermission } from "@/lib/permission-guard.server";
 
+// String vazia ("") vinda do formulário de registro novo nao e nem
+// undefined nem null, entao .optional().nullable() nao intercepta antes
+// da checagem .uuid() -- precisa normalizar ANTES via preprocess.
+// Ver memoria fix_uuid_validation.md.
+const optionalUuid = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.string().uuid().optional(),
+);
+
 export const listWhatsappTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -27,7 +36,7 @@ export const listWhatsappTemplates = createServerFn({ method: "GET" })
   });
 
 const templateSchema = z.object({
-  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
+  id: optionalUuid,
   name: z.string().min(1).max(160),
   kind: z.string().min(1).max(50),
   content: z.string().min(10).max(800),
@@ -99,10 +108,10 @@ export const listWhatsappAutomationRules = createServerFn({ method: "GET" })
   });
 
 const automationSchema = z.object({
-  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
+  id: optionalUuid,
   name: z.string().min(1).max(160),
   trigger_type: z.string().min(1).max(50),
-  template_id: z.string().uuid().nullable().optional(),
+  template_id: optionalUuid,
   custom_content: z.string().max(800).optional().nullable(),
   is_active: z.boolean().optional().default(false),
   send_hour_brt: z.number().int().min(0).max(23).optional().default(9),

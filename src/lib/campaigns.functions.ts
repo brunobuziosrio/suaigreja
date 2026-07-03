@@ -11,6 +11,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
+// String vazia ("") vinda do formulário de registro novo nao e nem
+// undefined nem null, entao .optional().nullable() nao intercepta antes
+// da checagem .uuid() -- precisa normalizar ANTES via preprocess.
+// Ver memoria fix_uuid_validation.md.
+const optionalUuid = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.string().uuid().optional(),
+);
+
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -30,7 +39,7 @@ export const listCampaigns = createServerFn({ method: "GET" })
   });
 
 const upsertSchema = z.object({
-  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
+  id: optionalUuid,
   name: z.string().min(1).max(160),
   description: z.string().max(1000).optional().nullable(),
   goal_amount_cents: z.number().int().min(0),

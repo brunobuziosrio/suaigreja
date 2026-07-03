@@ -11,6 +11,15 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
+// String vazia ("") vinda do formulário de registro novo nao e nem
+// undefined nem null, entao .optional().nullable() nao intercepta antes
+// da checagem .uuid() -- precisa normalizar ANTES via preprocess.
+// Ver memoria fix_uuid_validation.md.
+const optionalUuid = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.string().uuid().optional(),
+);
+
 export const listVolunteerSchedules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -27,7 +36,7 @@ export const listVolunteerSchedules = createServerFn({ method: "GET" })
   });
 
 const scheduleSchema = z.object({
-  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
+  id: optionalUuid,
   name: z.string().min(1).max(160),
   description: z.string().max(1000).optional().nullable(),
   volunteer_type: z.string().min(1).max(100),
@@ -102,7 +111,7 @@ export const listVolunteerShifts = createServerFn({ method: "GET" })
   });
 
 const shiftSchema = z.object({
-  id: z.string().uuid().optional().nullable().transform(v => v || undefined),
+  id: optionalUuid,
   schedule_id: z.string().uuid(),
   member_id: z.string().uuid(),
   shift_date: z.string(),
