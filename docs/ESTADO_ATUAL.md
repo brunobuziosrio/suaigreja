@@ -531,6 +531,27 @@ corretos; movido de "Novos" pra "Em contato" e confirmado que migrou de
 aba e os contadores atualizaram. Zero erro de console em todo o fluxo.
 Registro de teste removido depois.
 
+### Reserva de Ambientes — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Sétima feature do backlog. Reserva salas/locais já cadastrados em `Locais`
+com fluxo de aprovação (pendente/aprovada/recusada/cancelada) e **detecção
+de conflito de horário**: não deixa duas reservas do mesmo local
+sobreporem quando uma já está aprovada (pendentes podem se sobrepor até
+alguém decidir — evita travar solicitações concorrentes). A checagem roda
+tanto na criação quanto no momento de aprovar (fecha a corrida entre duas
+aprovações concorrentes da mesma janela).
+
+Migration cria `room_reservations` já com RLS baseada em membership desde
+o início (mesmo padrão de `decisions`). Rota `/reservas`, novo item de
+menu em "Agenda e operação".
+
+Testado de ponta a ponta com dados reais e login real: criada reserva A
+(Matriz Santa Rita, 15h-16h) → aprovada → tentativa de criar reserva B
+sobrepondo (15h30-16h30) → **bloqueada com mensagem clara**: "Esse local
+já está reservado nesse horário: 'Teste Reserva A'." Confirmado
+visualmente que a reserva B não foi criada. Registro de teste removido
+depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
