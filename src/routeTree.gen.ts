@@ -36,6 +36,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSecretariaRouteImport } from './routes/_authenticated.secretaria'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated.reservas'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated.relatorios'
+import { Route as AuthenticatedPrivacidadeRouteImport } from './routes/_authenticated.privacidade'
 import { Route as AuthenticatedPatrimonioRouteImport } from './routes/_authenticated.patrimonio'
 import { Route as AuthenticatedOracoesRouteImport } from './routes/_authenticated.oracoes'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
@@ -217,6 +218,12 @@ const AuthenticatedRelatoriosRoute = AuthenticatedRelatoriosRouteImport.update({
   path: '/relatorios',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedPrivacidadeRoute =
+  AuthenticatedPrivacidadeRouteImport.update({
+    id: '/privacidade',
+    path: '/privacidade',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedPatrimonioRoute = AuthenticatedPatrimonioRouteImport.update({
   id: '/patrimonio',
   path: '/patrimonio',
@@ -490,6 +497,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/patrimonio': typeof AuthenticatedPatrimonioRoute
+  '/privacidade': typeof AuthenticatedPrivacidadeRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/reservas': typeof AuthenticatedReservasRoute
   '/secretaria': typeof AuthenticatedSecretariaRoute
@@ -563,6 +571,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/patrimonio': typeof AuthenticatedPatrimonioRoute
+  '/privacidade': typeof AuthenticatedPrivacidadeRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/reservas': typeof AuthenticatedReservasRoute
   '/secretaria': typeof AuthenticatedSecretariaRoute
@@ -638,6 +647,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/oracoes': typeof AuthenticatedOracoesRoute
   '/_authenticated/patrimonio': typeof AuthenticatedPatrimonioRoute
+  '/_authenticated/privacidade': typeof AuthenticatedPrivacidadeRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
   '/_authenticated/secretaria': typeof AuthenticatedSecretariaRoute
@@ -713,6 +723,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/oracoes'
     | '/patrimonio'
+    | '/privacidade'
     | '/relatorios'
     | '/reservas'
     | '/secretaria'
@@ -786,6 +797,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/oracoes'
     | '/patrimonio'
+    | '/privacidade'
     | '/relatorios'
     | '/reservas'
     | '/secretaria'
@@ -860,6 +872,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/oracoes'
     | '/_authenticated/patrimonio'
+    | '/_authenticated/privacidade'
     | '/_authenticated/relatorios'
     | '/_authenticated/reservas'
     | '/_authenticated/secretaria'
@@ -1124,6 +1137,13 @@ declare module '@tanstack/react-router' {
       path: '/relatorios'
       fullPath: '/relatorios'
       preLoaderRoute: typeof AuthenticatedRelatoriosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/privacidade': {
+      id: '/_authenticated/privacidade'
+      path: '/privacidade'
+      fullPath: '/privacidade'
+      preLoaderRoute: typeof AuthenticatedPrivacidadeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/patrimonio': {
@@ -1485,6 +1505,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedOracoesRoute: typeof AuthenticatedOracoesRoute
   AuthenticatedPatrimonioRoute: typeof AuthenticatedPatrimonioRoute
+  AuthenticatedPrivacidadeRoute: typeof AuthenticatedPrivacidadeRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedReservasRoute: typeof AuthenticatedReservasRoute
   AuthenticatedSecretariaRoute: typeof AuthenticatedSecretariaRoute
@@ -1529,6 +1550,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedOracoesRoute: AuthenticatedOracoesRoute,
   AuthenticatedPatrimonioRoute: AuthenticatedPatrimonioRoute,
+  AuthenticatedPrivacidadeRoute: AuthenticatedPrivacidadeRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedReservasRoute: AuthenticatedReservasRoute,
   AuthenticatedSecretariaRoute: AuthenticatedSecretariaRoute,

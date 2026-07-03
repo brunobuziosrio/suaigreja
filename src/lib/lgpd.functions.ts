@@ -74,44 +74,45 @@ export const getConsentStatus = createServerFn({ method: "GET" })
     return Object.fromEntries(latest);
   });
 
-export const exportMemberData = createServerFn({ method: "GET" })
+// Exporta os dados que a PLATAFORMA guarda sobre o usuário autenticado
+// (o membro da equipe que fez login) -- não confundir com os dados dos
+// fiéis/membros da congregação, que pertencem à igreja (controladora),
+// não ao usuário da plataforma. A versão anterior desta função tentava
+// exportar "um membro" via account_id sem filtrar por pessoa nenhuma
+// (`.single()` sem `.eq` no usuário), o que não fazia sentido pro
+// modelo de dados real (account_members != members).
+export const exportMyAccountData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
-    const { accountId } = await resolveAccountContext(userId);
+    const { accountId, role } = await resolveAccountContext(userId);
 
-    const [{ data: member }, { data: donations }, { data: tithes }, { data: prayers }, { data: consents }] =
-      await Promise.all([
-        supabase
-          .from("members")
-          .select("*")
-          .eq("account_id", accountId)
-          .single(),
-        supabase
-          .from("donations")
-          .select("*")
-          .eq("account_id", accountId),
-        supabase
-          .from("tithes")
-          .select("*")
-          .eq("account_id", accountId),
-        supabase
-          .from("prayer_requests")
-          .select("*")
-          .eq("account_id", accountId),
-        supabase
-          .from("lgpd_consent_records")
-          .select("*")
-          .eq("user_id", userId),
-      ]);
+    const [{ data: membership }, { data: consents }, { data: deletionRequests }] = await Promise.all([
+      supabase
+        .from("account_members" as never)
+        .select("role, status, created_at")
+        .eq("account_id", accountId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("lgpd_consent_records")
+        .select("consent_type, accepted, recorded_at")
+        .eq("user_id", userId)
+        .order("recorded_at", { ascending: false }),
+      supabase
+        .from("lgpd_deletion_requests" as never)
+        .select("status, reason, requested_at, processed_at")
+        .eq("user_id", userId)
+        .order("requested_at", { ascending: false }),
+    ]);
 
     return {
       exportedAt: new Date().toISOString(),
-      member,
-      donations: donations ?? [],
-      tithes: tithes ?? [],
-      prayers: prayers ?? [],
-      consents: consents ?? [],
+      userId,
+      accountRole: role,
+      membership: membership ?? null,
+      consentHistory: consents ?? [],
+      deletionRequests: deletionRequests ?? [],
     };
   });
 

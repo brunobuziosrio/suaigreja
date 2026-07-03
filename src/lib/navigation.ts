@@ -24,6 +24,7 @@ import {
   IdCard,
   LayoutDashboard,
   ListChecks,
+  Lock,
   MapPin,
   Megaphone,
   MessageCircle,
@@ -143,6 +144,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       items: [
         { title: "Configurações", url: "/settings", icon: Settings },
         { title: "Equipe e permissões", url: "/equipe", icon: ShieldCheck },
+        { title: "Privacidade e Dados", url: "/privacidade", icon: Lock },
         { title: "Integrações", url: "/embed", icon: Code2 },
         { title: "Plugins e extras", url: "/marketplace", icon: Store },
         { title: "Assinatura", url: "/billing", icon: WalletCards },
