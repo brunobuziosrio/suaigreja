@@ -310,6 +310,51 @@ mas vazio. Deploy: `/`, `/dashboard`, `/equipe` = 200, sem erros nos logs.
    `roleCan()`/`account_role_permissions` (catálogo já existe em `permissions.ts`),
    análogo ao que `requirePlanTier` já faz para plano.
 
+### Equipe e Permissões — Fase 3b (correção de account_id), 2026-07-03 — CORRIGIDA NO CÓDIGO, AGUARDANDO DEPLOY
+
+Fechado o item 1 da lacuna acima: as ~41 funções de módulo (na verdade ~55 pontos,
+espalhados em 28 arquivos) que filtravam/gravavam `account_id` com o **userId bruto**
+do convidado agora usam o `accountId` resolvido:
+
+- `requirePlanTier`/`requireModuleAccess` (`plan-access.ts`) passaram a retornar
+  `{ tier, accountId, role }` em vez de só `tier` (nenhum call site usava o retorno
+  antes, mudança segura). Todo módulo com gate de plano (membros, campanhas,
+  check-in, documentos, doações, EBD, páginas de evento, relatórios, secretaria,
+  células, dízimos, visitantes, escalas, WhatsApp, financeiro) captura `accountId`
+  daí em vez de usar `context.userId`.
+- Módulos sem gate de plano (domínio próprio, slug, onboarding, billing, admin,
+  LGPD, eventos, locais, tipos, hub, Mercado Pago, produtos, devocionais,
+  Instagram, transmissões, modelos de WhatsApp) chamam `resolveAccountContext`
+  diretamente.
+- Achado lateral corrigido no mesmo ponto de código: `whatsapp-templates.functions.ts`,
+  `event-inscriptions.functions.ts` e `lgpd.functions.ts` importavam o client Supabase
+  anônimo do browser (`@/integrations/supabase/client`, sem sessão no servidor) em vez
+  de `context.supabase` — RLS bloqueava essas queries **para qualquer usuário**, não só
+  convidados. Trocado para o client autenticado da requisição.
+- Achado lateral corrigido: o upload de anexos da Secretaria usava `userId` como
+  prefixo do path de storage; um trigger no banco (`enforce_secretaria_attachment_account`)
+  exige que esse prefixo bata com `account_id` — corrigido para `accountId`, senão
+  todo upload de convidado seria rejeitado pelo trigger.
+
+**Validado direto no Postgres de produção** (RLS real, como o convidado
+`tesoureiro_geral`, dentro de transação com `ROLLBACK`): filtro antigo
+(`account_id = userId do convidado`) retorna 0 em `members`/`events`; filtro novo
+(`account_id = accountId resolvido`) retorna 31 membros e 89 eventos reais. INSERT
+em `members` com o `accountId` correto também passou pelo `WITH CHECK` da RLS.
+
+Commits locais (branch `main`, ainda não sincronizados com a VPS):
+`f4cfc26` (Fases 1-3 + UX, já rodava em produção via docker cp mas não estava no
+git), `156041b` (lote 1-2: módulos com gate de plano), `017d3a4` (lote 3: módulos
+sem gate + bug do client anônimo). `bun run build` e `tsc --noEmit` sem novos erros
+em nenhum dos três commits.
+
+**PENDENTE**: build local não foi copiado para o container (`docker cp`) — o código
+corrigido está no git mas a VPS ainda roda o `dist/` de antes desta sessão (que tem
+o bug do `account_id = userId`). Avisar/confirmar com o Bruno antes de deployar.
+
+Item 2 da lacuna (matriz de permissões por verbo, `roleCan()`) **continua pendente**
+— não foi tocado nesta sessão. Ver `permissions.ts` para o catálogo já existente.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
