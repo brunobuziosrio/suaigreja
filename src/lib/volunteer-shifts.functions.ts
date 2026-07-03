@@ -9,11 +9,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listVolunteerSchedules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("volunteer_schedules")
@@ -38,6 +40,7 @@ export const upsertVolunteerSchedule = createServerFn({ method: "POST" })
   .inputValidator((i) => scheduleSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload = {
       name: data.name.trim(),
@@ -69,6 +72,7 @@ export const deleteVolunteerSchedule = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "delete");
     const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_schedules")
@@ -84,6 +88,7 @@ export const listVolunteerShifts = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ scheduleId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "view");
     const { supabase } = context;
     const { data: shifts, error } = await supabase
       .from("volunteer_shifts")
@@ -113,6 +118,7 @@ export const upsertVolunteerShift = createServerFn({ method: "POST" })
   .inputValidator((i) => shiftSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload = {
       schedule_id: data.schedule_id,
@@ -147,6 +153,7 @@ export const deleteVolunteerShift = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "delete");
     const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_shifts")
@@ -162,6 +169,7 @@ export const confirmVolunteerShift = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "edit");
     const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_shifts")
@@ -185,6 +193,7 @@ export const requestVolunteerReplacement = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "edit");
     const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_shifts")

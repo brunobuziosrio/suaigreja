@@ -9,11 +9,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "campaigns", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("campaigns")
@@ -44,6 +46,7 @@ export const upsertCampaign = createServerFn({ method: "POST" })
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "campaigns", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload = {
       name: data.name.trim(),
@@ -78,6 +81,7 @@ export const deleteCampaign = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "campaigns", "delete");
     const { supabase: client } = context;
     const { error } = await client
       .from("campaigns")
@@ -93,6 +97,7 @@ export const getCampaignStats = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ campaignId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "campaigns", "view");
     const { supabase } = context;
     const { data: campaign, error: cErr } = await supabase
       .from("campaigns")

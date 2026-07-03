@@ -3,11 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "members", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("members")
@@ -49,6 +51,7 @@ export const upsertMember = createServerFn({ method: "POST" })
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "members", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
       full_name: data.full_name.trim(),
@@ -97,6 +100,7 @@ export const deleteMember = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "members", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("members")

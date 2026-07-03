@@ -3,11 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listVisitors = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requirePlanTier(context, "pro");
+    await requirePermission(context, "visitors", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("visitors")
@@ -27,6 +29,7 @@ export const updateVisitorStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
+    await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").update({ status: data.status }).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -38,6 +41,7 @@ export const updateVisitorNotes = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid(), notes: z.string().max(2000) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
+    await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").update({ notes: data.notes }).eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -49,6 +53,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
+    await requirePermission(context, "visitors", "delete");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
@@ -59,6 +64,7 @@ export const getVisitorSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "visitors", "view");
     const { supabase } = context;
     const { data } = await supabase
       .from("accounts")
@@ -78,6 +84,7 @@ export const saveVisitorSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "visitors", "manage");
     const { supabase } = context;
     const { error } = await supabase
       .from("accounts")

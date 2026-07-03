@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireModuleAccess } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 async function assertMemberBelongsToAccount(
   supabase: any,
@@ -39,6 +40,7 @@ export const listDocumentTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requireModuleAccess(context, "/documentos");
+    await requirePermission(context, "documents", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("document_templates")
@@ -55,6 +57,7 @@ export const listMemberDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requireModuleAccess(context, "/documentos");
+    await requirePermission(context, "documents", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("member_documents")
@@ -79,6 +82,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
   .inputValidator((i) => issueSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requireModuleAccess(context, "/documentos");
+    await requirePermission(context, "documents", data.id ? "edit" : "create");
     const { supabase } = context;
     await assertMemberBelongsToAccount(supabase, accountId, data.member_id);
     await assertTemplateAllowed(supabase, accountId, data.template_id);
@@ -115,6 +119,7 @@ export const deleteMemberDocument = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requireModuleAccess(context, "/documentos");
+    await requirePermission(context, "documents", "delete");
     const { supabase } = context;
     const { data: deleted, error } = await supabase
       .from("member_documents")

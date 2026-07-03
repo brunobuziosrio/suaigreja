@@ -14,6 +14,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 const REQUEST_TYPES = [
   "batismo",
@@ -62,6 +63,7 @@ export const listSecretariaRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("secretaria_requests")
@@ -76,6 +78,7 @@ export const getSecretariaStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("secretaria_requests")
@@ -114,6 +117,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", data.id ? "edit" : "create");
     const { supabase: client } = context;
     await assertMemberBelongsToAccount(client, accountId, data.member_id);
     const payload = {
@@ -159,6 +163,7 @@ export const updateSecretariaStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "edit");
     const { supabase: client } = context;
     const { data: updated, error } = await client
       .from("secretaria_requests")
@@ -177,6 +182,7 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
       .from("secretaria_requests")
@@ -203,6 +209,7 @@ export const listSecretariaAttachments = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ request_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
       .from("secretaria_requests")
@@ -235,6 +242,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
   .inputValidator((i) => attachmentSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "edit");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
       .from("secretaria_requests")
@@ -282,6 +290,7 @@ export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "P
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: attachment, error } = await supabase
       .from("secretaria_request_attachments")
@@ -306,6 +315,7 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "delete");
     const { supabase } = context;
     const { data: attachment, error: fetchError } = await supabase
       .from("secretaria_request_attachments")
@@ -333,6 +343,7 @@ export const deleteSecretariaRequest = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "secretaria", "delete");
     const { supabase: client } = context;
     const { data: deleted, error } = await client
       .from("secretaria_requests")

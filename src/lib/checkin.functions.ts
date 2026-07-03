@@ -3,11 +3,13 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listCheckinSessions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "checkin", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("checkin_sessions")
@@ -23,6 +25,7 @@ export const listCheckinEntries = createServerFn({ method: "GET" })
   .inputValidator((i: { session_id: string }) => z.object({ session_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "checkin", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("checkin_entries")
@@ -48,6 +51,7 @@ export const upsertCheckinSession = createServerFn({ method: "POST" })
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "checkin", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
     if (data.id) {
@@ -65,6 +69,7 @@ export const deleteCheckinSession = createServerFn({ method: "POST" })
   .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "checkin", "delete");
     const { supabase } = context;
     const { error } = await supabase.from("checkin_sessions").delete().eq("id", data.id).eq("account_id", accountId);
     if (error) throw new Error(error.message);
