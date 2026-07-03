@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveAccountContext } from "@/lib/account-context.server";
 import { z } from "zod";
 
 const REDIRECT_URI = "https://suaigreja.top/api/public/instagram/callback";
@@ -37,10 +38,10 @@ export async function verifyState(state: string): Promise<string | null> {
 export const startInstagramConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const appId = process.env.INSTAGRAM_APP_ID;
     if (!appId) throw new Error("INSTAGRAM_APP_ID não está configurado");
-    const state = await signState(userId);
+    const state = await signState(accountId);
     const url = new URL("https://www.instagram.com/oauth/authorize");
     url.searchParams.set("client_id", appId);
     url.searchParams.set("redirect_uri", REDIRECT_URI);
@@ -56,11 +57,11 @@ export const getInstagramConnection = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { userId } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data } = await supabaseAdmin
       .from("instagram_connections")
       .select("ig_user_id, username, connected_at, token_expires_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
     return data ?? null;
   });
@@ -70,8 +71,8 @@ export const disconnectInstagram = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { userId } = context;
-    await supabaseAdmin.from("instagram_connections").delete().eq("account_id", userId);
+    const { accountId } = await resolveAccountContext(context.userId);
+    await supabaseAdmin.from("instagram_connections").delete().eq("account_id", accountId);
     return { ok: true };
   });
 

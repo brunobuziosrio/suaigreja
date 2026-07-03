@@ -11,8 +11,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabase } from "@/integrations/supabase/client";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export const recordDataConsent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -33,11 +33,12 @@ export const recordDataConsent = createServerFn({ method: "POST" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
     const now = new Date().toISOString();
 
     const { error } = await supabase.from("lgpd_consent_records").insert({
-      account_id: userId,
+      account_id: accountId,
       user_id: userId,
       consent_type: data.consent_type,
       accepted: data.accepted,
@@ -53,7 +54,7 @@ export const recordDataConsent = createServerFn({ method: "POST" })
 export const getConsentStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("lgpd_consent_records")
       .select("consent_type, accepted")
@@ -76,28 +77,29 @@ export const getConsentStatus = createServerFn({ method: "GET" })
 export const exportMemberData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
 
     const [{ data: member }, { data: donations }, { data: tithes }, { data: prayers }, { data: consents }] =
       await Promise.all([
         supabase
           .from("members")
           .select("*")
-          .eq("account_id", userId)
+          .eq("account_id", accountId)
           .single()
           .catch(() => ({ data: null })),
         supabase
           .from("donations")
           .select("*")
-          .eq("account_id", userId),
+          .eq("account_id", accountId),
         supabase
           .from("tithes")
           .select("*")
-          .eq("account_id", userId),
+          .eq("account_id", accountId),
         supabase
           .from("prayer_requests")
           .select("*")
-          .eq("account_id", userId),
+          .eq("account_id", accountId),
         supabase
           .from("lgpd_consent_records")
           .select("*")
@@ -125,7 +127,8 @@ export const requestDataDeletion = createServerFn({ method: "POST" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
 
     if (!data.confirm_deletion) {
       throw new Error("Deve confirmar a exclusão de dados");
@@ -135,7 +138,7 @@ export const requestDataDeletion = createServerFn({ method: "POST" })
 
     await supabase.from("lgpd_deletion_requests").insert({
       user_id: userId,
-      account_id: userId,
+      account_id: accountId,
       reason: data.reason || null,
       status: "pending",
       requested_at: now,
@@ -158,9 +161,10 @@ export const logDataAccess = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
 
     const { error } = await supabaseAdmin.from("lgpd_audit_logs").insert({
-      account_id: userId,
+      account_id: accountId,
       user_id: userId,
       action: data.action,
       resource_type: data.resource_type,
@@ -183,14 +187,15 @@ export const getAuditLog = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - data.days);
 
     const { data: logs, error } = await supabase
       .from("lgpd_audit_logs")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .gte("timestamp", sinceDate.toISOString())
       .order("timestamp", { ascending: false });
 
@@ -209,7 +214,8 @@ export const anonymizeData = createServerFn({ method: "POST" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
 
     if (!data.confirm) throw new Error("Deve confirmar anonimização");
 
@@ -233,7 +239,7 @@ export const anonymizeData = createServerFn({ method: "POST" })
         whatsapp_consent: false,
       } as any)
       .eq("id", data.member_id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
 
     await logDataAccess({
       data: {

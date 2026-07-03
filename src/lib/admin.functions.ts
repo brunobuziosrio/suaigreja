@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAccountContext } from "@/lib/account-context.server";
 import { z } from "zod";
 
 async function assertAdmin(userId: string) {
@@ -531,7 +532,7 @@ export const deleteTestData = createServerFn({ method: "POST" })
 export const countTestData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const userId = context.userId;
+    const { accountId } = await resolveAccountContext(context.userId);
 
     const tables = ["members", "donations", "events", "ebd_classes", "ebd_enrollments", "ebd_attendance"];
     const counts: Record<string, number> = {};
@@ -540,7 +541,7 @@ export const countTestData = createServerFn({ method: "GET" })
       const { count } = await supabaseAdmin
         .from(table)
         .select("*", { count: "exact", head: true })
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .eq("is_test_data", true);
       counts[table] = count ?? 0;
     }

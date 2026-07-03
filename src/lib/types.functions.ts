@@ -1,15 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export const listTypes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("celebration_types")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -28,7 +30,8 @@ export const upsertType = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     if (data.id) {
       const { error } = await supabase
         .from("celebration_types")
@@ -39,11 +42,11 @@ export const upsertType = createServerFn({ method: "POST" })
           icon: data.icon ?? "",
         })
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabase.from("celebration_types").insert({
-        account_id: userId,
+        account_id: accountId,
         name: data.name,
         active: data.active ?? true,
         color: data.color ?? "#467da5",
@@ -58,12 +61,13 @@ export const deleteType = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
       .from("celebration_types")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

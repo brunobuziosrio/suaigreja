@@ -8,7 +8,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabase } from "@/integrations/supabase/client";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export const createEventInscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -24,14 +24,15 @@ export const createEventInscription = createServerFn({ method: "POST" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
 
     // Check event exists and has capacity
     const { data: event, error: eventErr } = await supabase
       .from("events")
       .select("id, max_inscriptions, current_inscriptions, price_cents")
       .eq("id", data.event_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .single();
 
     if (eventErr) throw new Error("Evento não encontrado");
@@ -51,7 +52,7 @@ export const createEventInscription = createServerFn({ method: "POST" })
       .from("event_inscriptions")
       .insert({
         event_id: data.event_id,
-        account_id: userId,
+        account_id: accountId,
         full_name: data.full_name.trim(),
         email: data.email.trim(),
         phone: data.phone.trim(),
@@ -72,7 +73,7 @@ export const createEventInscription = createServerFn({ method: "POST" })
         current_inscriptions: currentSeats + data.attendance_count,
       })
       .eq("id", data.event_id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
 
     return { id: inscription?.id, totalPrice };
   });
@@ -87,12 +88,13 @@ export const listEventInscriptions = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: inscriptions, error } = await supabase
       .from("event_inscriptions")
       .select("*")
       .eq("event_id", data.event_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("inscribed_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -109,12 +111,13 @@ export const generateQRCodeForInscription = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: inscription, error } = await supabase
       .from("event_inscriptions")
       .select("*, events(id, name)")
       .eq("id", data.inscription_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .single();
 
     if (error) throw new Error(error.message);
@@ -141,7 +144,8 @@ export const recordEventAttendance = createServerFn({ method: "POST" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
 
     const { error } = await supabase
       .from("event_inscriptions")
@@ -150,7 +154,7 @@ export const recordEventAttendance = createServerFn({ method: "POST" })
         checked_in_at: data.checked_in ? new Date().toISOString() : null,
       })
       .eq("id", data.inscription_id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
 
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -166,12 +170,13 @@ export const generateEventCertificate = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: inscription, error: inscErr } = await supabase
       .from("event_inscriptions")
       .select("*, events(name, event_date)")
       .eq("id", data.inscription_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .single();
 
     if (inscErr) throw new Error(inscErr.message);
@@ -201,12 +206,13 @@ export const exportEventInscriptionsToCSV = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: inscriptions, error } = await supabase
       .from("event_inscriptions")
       .select("*")
       .eq("event_id", data.event_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("inscribed_at", { ascending: true });
 
     if (error) throw new Error(error.message);

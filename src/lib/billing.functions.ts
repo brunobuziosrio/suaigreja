@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
 import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import { resolveAccountContext } from "@/lib/account-context.server";
 import QRCode from "qrcode";
 import { z } from "zod";
 
@@ -64,11 +65,12 @@ async function activateSubscription(accountId: string, plan: BillingPlanId, paid
 export const listMyPayments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("payment_transactions")
       .select("id, plan, amount_cents, status, copy_paste, pay_url, qr_code, expires_at, paid_at, created_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false })
       .limit(10);
     if (error) throw new Error(error.message);
@@ -78,11 +80,12 @@ export const listMyPayments = createServerFn({ method: "GET" })
 export const getBillingSetup = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("accounts")
       .select("current_plan, plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
-      .eq("id", userId)
+      .eq("id", accountId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return { account: data, hasAtivoPayKey: !!(await resolveAtivoPayApiKey()) };
@@ -101,14 +104,15 @@ export const createPixPayment = createServerFn({ method: "POST" })
     ]) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { userId, claims } = context;
+    const { claims } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const plan = data.plan as BillingPlanId;
     const planInfo = BILLING_PLANS[plan];
 
     const { data: existingPending, error: pendingError } = await supabaseAdmin
       .from("payment_transactions")
       .select("id, plan, amount_cents, status, copy_paste, pay_url, qr_code, expires_at, paid_at, created_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("plan", plan)
       .in("status", ["pending", "waiting_payment"])
       .order("created_at", { ascending: false })
@@ -156,9 +160,9 @@ export const createPixPayment = createServerFn({ method: "POST" })
           phone: "11999999999",
           document: { type: "CPF", number: "00000000000" },
         },
-        metadata: JSON.stringify({ accountId: userId, plan }),
+        metadata: JSON.stringify({ accountId, plan }),
         traceable: false,
-        externalRef: `${userId}:${plan}:${Date.now()}`,
+        externalRef: `${accountId}:${plan}:${Date.now()}`,
         postbackUrl,
         paymentMethod: "PIX",
       }),
@@ -177,7 +181,7 @@ export const createPixPayment = createServerFn({ method: "POST" })
     const { data: inserted, error } = await supabaseAdmin
       .from("payment_transactions")
       .insert({
-        account_id: userId,
+        account_id: accountId,
         plan,
         amount_cents: planInfo.amountCents,
         status: normalizeStatus(payment.status),

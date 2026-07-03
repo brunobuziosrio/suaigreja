@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 const upsertSchema = z.object({
   id: z.string().uuid().optional(),
@@ -19,20 +20,21 @@ const upsertSchema = z.object({
 export const listLiveStreams = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const [{ data: streams, error }, { data: overrides, error: ovErr }] = await Promise.all([
       supabase
         .from("live_streams")
         .select(
           "id, title, recurrence, weekday, event_date, start_time, duration_minutes, minutes_before, default_live_url, active, sort_order",
         )
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false }),
       supabase
         .from("live_stream_overrides")
         .select("id, live_stream_id, event_date, live_url, cancelled")
-        .eq("account_id", userId),
+        .eq("account_id", accountId),
     ]);
     if (error) throw new Error(error.message);
     if (ovErr) throw new Error(ovErr.message);
@@ -43,9 +45,10 @@ export const upsertLiveStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const payload = {
-      account_id: userId,
+      account_id: accountId,
       title: data.title,
       recurrence: data.recurrence,
       weekday: data.recurrence === "weekly" ? data.weekday : null,
@@ -62,7 +65,7 @@ export const upsertLiveStream = createServerFn({ method: "POST" })
         .from("live_streams")
         .update(payload)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabase.from("live_streams").insert(payload);
@@ -75,12 +78,13 @@ export const deleteLiveStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
       .from("live_streams")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -96,13 +100,14 @@ export const upsertLiveStreamOverride = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => overrideSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     // If both default state (no url + not cancelled) delete the row
     if (!data.live_url && !data.cancelled) {
       const { error } = await supabase
         .from("live_stream_overrides")
         .delete()
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .eq("live_stream_id", data.live_stream_id)
         .eq("event_date", data.event_date);
       if (error) throw new Error(error.message);
@@ -112,7 +117,7 @@ export const upsertLiveStreamOverride = createServerFn({ method: "POST" })
       .from("live_stream_overrides")
       .upsert(
         {
-          account_id: userId,
+          account_id: accountId,
           live_stream_id: data.live_stream_id,
           event_date: data.event_date,
           live_url: data.live_url,

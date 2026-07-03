@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 const listSchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -11,11 +12,12 @@ export const listEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => listSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: rows, error } = await supabase
       .from("events")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .gte("event_date", data.from)
       .lte("event_date", data.to)
       .order("event_date", { ascending: true })
@@ -41,12 +43,13 @@ export const upsertEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
 
     // Resolve location and type names (denormalize for public embed)
     const [{ data: loc, error: locErr }, { data: typ, error: typErr }] = await Promise.all([
-      supabase.from("locations").select("name").eq("id", data.location_id).eq("account_id", userId).maybeSingle(),
-      supabase.from("celebration_types").select("name").eq("id", data.type_id).eq("account_id", userId).maybeSingle(),
+      supabase.from("locations").select("name").eq("id", data.location_id).eq("account_id", accountId).maybeSingle(),
+      supabase.from("celebration_types").select("name").eq("id", data.type_id).eq("account_id", accountId).maybeSingle(),
     ]);
     if (locErr) throw new Error(locErr.message);
     if (typErr) throw new Error(typErr.message);
@@ -54,7 +57,7 @@ export const upsertEvent = createServerFn({ method: "POST" })
     if (!typ) throw new Error("Tipo não encontrado");
 
     const payload = {
-      account_id: userId,
+      account_id: accountId,
       event_date: data.event_date,
       start_time: data.start_time,
       end_time: data.end_time || null,
@@ -73,7 +76,7 @@ export const upsertEvent = createServerFn({ method: "POST" })
         .from("events")
         .update(payload)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabase.from("events").insert(payload);
@@ -86,12 +89,13 @@ export const deleteEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
       .from("events")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

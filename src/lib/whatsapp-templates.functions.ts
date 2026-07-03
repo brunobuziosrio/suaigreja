@@ -8,16 +8,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabase } from "@/integrations/supabase/client";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export const listWhatsappTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("whatsapp_template_library")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("kind", { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -36,7 +37,8 @@ export const upsertWhatsappTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => templateSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase: client, userId } = context;
+    const { supabase: client } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const payload = {
       name: data.name.trim(),
       kind: data.kind.trim(),
@@ -49,13 +51,13 @@ export const upsertWhatsappTemplate = createServerFn({ method: "POST" })
         .from("whatsapp_template_library")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await client
       .from("whatsapp_template_library")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -66,12 +68,13 @@ export const deleteWhatsappTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase: client, userId } = context;
+    const { supabase: client } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await client
       .from("whatsapp_template_library")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -79,11 +82,12 @@ export const deleteWhatsappTemplate = createServerFn({ method: "POST" })
 export const listWhatsappAutomationRules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("whatsapp_automation_rules")
       .select("*, template:whatsapp_template_library(name, content)")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -104,7 +108,8 @@ export const upsertWhatsappAutomationRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => automationSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase: client, userId } = context;
+    const { supabase: client } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const payload = {
       name: data.name.trim(),
       trigger_type: data.trigger_type.trim(),
@@ -119,13 +124,13 @@ export const upsertWhatsappAutomationRule = createServerFn({ method: "POST" })
         .from("whatsapp_automation_rules")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await client
       .from("whatsapp_automation_rules")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -136,12 +141,13 @@ export const deleteWhatsappAutomationRule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase: client, userId } = context;
+    const { supabase: client } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await client
       .from("whatsapp_automation_rules")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

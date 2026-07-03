@@ -10,6 +10,7 @@ import {
   type LiveOverrideRow,
 } from "@/lib/live-streams.shared";
 import { fetchYoutubeVideos, buildAudioEmbed } from "@/lib/media.server";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 const RESERVED = new Set([
   "a","admin","api","app","assets","auth","agenda","billing","dashboard",
@@ -354,8 +355,9 @@ export const updateHubSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => HubSettingsInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { error } = await supabase.from("accounts").update(data).eq("id", userId);
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
+    const { error } = await supabase.from("accounts").update(data).eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -389,8 +391,9 @@ export const upsertNews = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => NewsInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const row = { ...data, account_id: userId };
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
+    const row = { ...data, account_id: accountId };
     const { error } = data.id
       ? await supabase.from("news_posts").update(row).eq("id", data.id)
       : await supabase.from("news_posts").insert(row);
@@ -434,11 +437,11 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => UploadInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
-    const path = `${userId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
+    const path = `${accountId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
     const bytes = Buffer.from(data.base64, "base64");
     if (bytes.length === 0 || bytes.length > 8 * 1024 * 1024) {
       throw new Error("A imagem deve ter entre 1 byte e 8 MB.");
@@ -469,11 +472,11 @@ export const createHubUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => SignInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
-    const path = `${userId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
+    const path = `${accountId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
     const { data: signed, error } = await supabaseAdmin.storage
       .from("event-covers")
       .createSignedUploadUrl(path);

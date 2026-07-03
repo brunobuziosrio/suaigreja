@@ -5,6 +5,7 @@ import { RELIGION_PROFILES, type ReligionProfile } from "./religion-profiles";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountAccess } from "@/lib/plan-access";
 import { resolveAccountContext } from "@/lib/account-context.server";
+
 import { randomBytes } from "node:crypto";
 import { resolveTxt } from "node:dns/promises";
 
@@ -27,11 +28,11 @@ function verificationToken() {
   return `suaigreja-domain=${randomBytes(16).toString("hex")}`;
 }
 
-async function requirePremiumDomainAccess(supabase: any, userId: string) {
+async function requirePremiumDomainAccess(supabase: any, accountId: string) {
   const { data, error } = await supabase
     .from("accounts")
     .select("plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
-    .eq("id", userId)
+    .eq("id", accountId)
     .maybeSingle();
   if (error) throw new Error(error.message);
   const access = resolveAccountAccess(data);
@@ -54,7 +55,7 @@ export const checkSlugAvailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => slugSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     if (RESERVED_SLUGS.has(data.slug)) {
       return { available: false, reason: "Este nome é reservado" as const };
     }
@@ -63,7 +64,7 @@ export const checkSlugAvailability = createServerFn({ method: "POST" })
       .select("id")
       .eq("custom_slug", data.slug)
       .maybeSingle();
-    if (existing && existing.id !== userId) {
+    if (existing && existing.id !== accountId) {
       return { available: false, reason: "Já está em uso" as const };
     }
     return { available: true as const };
@@ -77,12 +78,13 @@ export const updateCustomSlug = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     if (data.slug === null || data.slug === "") {
       const { error } = await supabase
         .from("accounts")
         .update({ custom_slug: null })
-        .eq("id", userId);
+        .eq("id", accountId);
       if (error) throw new Error(error.message);
       return { ok: true, slug: null };
     }
@@ -95,13 +97,13 @@ export const updateCustomSlug = createServerFn({ method: "POST" })
       .select("id")
       .eq("custom_slug", parsed.slug)
       .maybeSingle();
-    if (existing && existing.id !== userId) {
+    if (existing && existing.id !== accountId) {
       throw new Error("Já está em uso");
     }
     const { error } = await supabase
       .from("accounts")
       .update({ custom_slug: parsed.slug })
-      .eq("id", userId);
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true, slug: parsed.slug };
   });
@@ -124,8 +126,9 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => domainSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    await requirePremiumDomainAccess(supabase, userId);
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePremiumDomainAccess(supabase, accountId);
 
     const domain = data.domain ? normalizeDomain(data.domain) : "";
     if (!domain) {
@@ -139,7 +142,7 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
           custom_domain_last_checked_at: null,
           custom_domain_error: null,
         })
-        .eq("id", userId);
+        .eq("id", accountId);
       if (error) throw new Error(error.message);
       return { ok: true, domain: null, token: null, status: "not_configured" };
     }
@@ -153,7 +156,7 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
       .select("id")
       .eq("custom_domain", domain)
       .maybeSingle();
-    if (existing && existing.id !== userId) {
+    if (existing && existing.id !== accountId) {
       throw new Error("Este domínio já está configurado em outra conta.");
     }
 
@@ -168,7 +171,7 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
         custom_domain_last_checked_at: null,
         custom_domain_error: null,
       })
-      .eq("id", userId);
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true, domain, token, status: "pending" };
   });
@@ -176,13 +179,14 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
 export const verifyCustomDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    await requirePremiumDomainAccess(supabase, userId);
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePremiumDomainAccess(supabase, accountId);
 
     const { data: account, error: accountError } = await supabase
       .from("accounts")
       .select("custom_domain, custom_domain_verification_token")
-      .eq("id", userId)
+      .eq("id", accountId)
       .maybeSingle();
     if (accountError) throw new Error(accountError.message);
     if (!account?.custom_domain || !account?.custom_domain_verification_token) {
@@ -211,7 +215,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
         custom_domain_last_checked_at: now,
         custom_domain_error: verified ? null : message,
       })
-      .eq("id", userId);
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: verified, status: verified ? "verified" : "failed", error: verified ? null : message };
   });
@@ -220,8 +224,9 @@ export const requestManagedDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => managedDomainSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    await requirePremiumDomainAccess(supabase, userId);
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePremiumDomainAccess(supabase, accountId);
 
     const domain = data.domain ? normalizeDomain(data.domain) : "";
     if (!domain) {
@@ -239,7 +244,7 @@ export const requestManagedDomain = createServerFn({ method: "POST" })
           managed_domain_requested_at: null,
           managed_domain_updated_at: new Date().toISOString(),
         })
-        .eq("id", userId);
+        .eq("id", accountId);
       if (error) throw new Error(error.message);
       return { ok: true, status: "not_requested" };
     }
@@ -277,7 +282,7 @@ export const requestManagedDomain = createServerFn({ method: "POST" })
         managed_domain_requested_at: now,
         managed_domain_updated_at: now,
       })
-      .eq("id", userId);
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true, status: "requested", domain };
   });
@@ -305,11 +310,11 @@ export const uploadAccountAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => UploadInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { userId } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
-    const path = `${data.folder}/${userId}-${Date.now()}-${rand}.${ext}`;
+    const path = `${data.folder}/${accountId}-${Date.now()}-${rand}.${ext}`;
     const bytes = Buffer.from(data.base64, "base64");
     if (bytes.length === 0 || bytes.length > 8 * 1024 * 1024) {
       throw new Error("A imagem deve ter entre 1 byte e 8 MB.");
@@ -359,24 +364,25 @@ export const completeOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => onboardingSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const profile = RELIGION_PROFILES.find((p) => p.id === data.religion_profile)!;
 
     const { error: updateErr } = await supabase
       .from("accounts")
       .update({ religion_profile: data.religion_profile as ReligionProfile, onboarded: true })
-      .eq("id", userId);
+      .eq("id", accountId);
     if (updateErr) throw new Error(updateErr.message);
 
     // seed default celebration types if account has none
     const { count } = await supabase
       .from("celebration_types")
       .select("id", { count: "exact", head: true })
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
 
     if (!count) {
       const rows = profile.defaultTypes.map((name, idx) => ({
-        account_id: userId,
+        account_id: accountId,
         name,
         sort_order: idx,
       }));
@@ -423,11 +429,12 @@ export const updateAccountSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => settingsSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
       .from("accounts")
       .update(data)
-      .eq("id", userId);
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

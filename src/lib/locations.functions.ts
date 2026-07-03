@@ -1,15 +1,17 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export const listLocations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("locations")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
@@ -43,7 +45,8 @@ export const upsertLocation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const extra = {
       is_main: data.is_main ?? false,
       phone: data.phone ?? null,
@@ -67,11 +70,11 @@ export const upsertLocation = createServerFn({ method: "POST" })
         .from("locations")
         .update({ name: data.name, address: data.address ?? null, active: data.active ?? true, ...extra } as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
     } else {
       const { error } = await supabase.from("locations").insert({
-        account_id: userId,
+        account_id: accountId,
         name: data.name,
         address: data.address ?? null,
         active: data.active ?? true,
@@ -86,12 +89,13 @@ export const deleteLocation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
       .from("locations")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

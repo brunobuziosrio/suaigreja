@@ -3,6 +3,7 @@ import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import { resolveAccountContext } from "@/lib/account-context.server";
 import QRCode from "qrcode";
 import { z } from "zod";
 
@@ -37,7 +38,8 @@ export const getProductBySlug = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ slug: z.string().min(1).max(120) }).parse(i))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: product, error } = await supabase
       .from("products")
       .select("*")
@@ -49,7 +51,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
     const { data: purchase } = await supabase
       .from("product_purchases")
       .select("id, status, purchased_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("product_id", product.id)
       .order("created_at", { ascending: false })
       .limit(1)
@@ -60,11 +62,12 @@ export const getProductBySlug = createServerFn({ method: "GET" })
 export const listMyPurchases = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("product_purchases")
       .select("id, status, amount_cents, purchased_at, created_at, product:products(id, name, slug, image_url)")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -74,7 +77,8 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ productId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { userId, claims } = context;
+    const { claims } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data: product, error: pErr } = await supabaseAdmin
       .from("products")
       .select("id, name, price_cents, active")
@@ -119,9 +123,9 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
           phone: "11999999999",
           document: { type: "CPF", number: "00000000000" },
         },
-        metadata: JSON.stringify({ accountId: userId, kind: "product", productId: product.id }),
+        metadata: JSON.stringify({ accountId, kind: "product", productId: product.id }),
         traceable: false,
-        externalRef: `${userId}:product:${product.id}:${Date.now()}`,
+        externalRef: `${accountId}:product:${product.id}:${Date.now()}`,
         postbackUrl,
         paymentMethod: "PIX",
       }),
@@ -140,7 +144,7 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
     const { data: tx, error: txErr } = await supabaseAdmin
       .from("payment_transactions")
       .insert({
-        account_id: userId,
+        account_id: accountId,
         kind: "product",
         product_id: product.id,
         plan: null,
@@ -158,7 +162,7 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
     if (txErr) throw new Error(txErr.message);
 
     const { error: ppErr } = await supabaseAdmin.from("product_purchases").insert({
-      account_id: userId,
+      account_id: accountId,
       product_id: product.id,
       transaction_id: tx.id,
       status: "pending",
