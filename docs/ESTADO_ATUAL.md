@@ -402,6 +402,24 @@ devem funcionar via e-mail normal agora. O contorno por link manual
 Também nesta sessão: removido o vínculo de teste `brunobuzios@hotmail.com`
 (`tesoureiro_geral`) da conta real — sobrou só o dono como membro.
 
+### Importação CSV de membros — NOVA feature, 2026-07-03 — COMMITADA, NÃO DEPLOYADA
+
+Primeira feature implementada a partir do `IDEIAS_IMPLEMENTACOES.md` (dor real
+de migração de dados, sem dependência externa). `src/lib/csv.ts` — parser/
+gerador CSV próprio (RFC4180, detecta vírgula ou ponto-e-vírgula para
+exportações do Excel em pt-BR, remove BOM). `importMembersCsv` em
+`members.functions.ts` — até 2000 linhas, cabeçalhos em português com aliases
+flexíveis, datas em `YYYY-MM-DD` ou `DD/MM/YYYY`, dedup por CPF/e-mail
+existente (atualiza em vez de duplicar), relatório linha a linha. UI em
+`/membros`: botão "Importar CSV" + modelo para download.
+
+Parser validado com testes isolados (vírgula dentro de aspas, Excel BR com
+BOM, acentos em cabeçalho, linha vazia final) — todos passaram. Build e
+`tsc --noEmit` limpos. **NÃO testado em navegador com login real** (sem
+credenciais nesta sessão) e **NÃO deployado** — só commitado no git local.
+Antes de deployar: testar o fluxo completo (baixar modelo, importar,
+conferir dedup) logado de verdade.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
