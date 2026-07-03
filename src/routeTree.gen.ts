@@ -21,6 +21,7 @@ import { Route as NSlugRouteImport } from './routes/n.$slug'
 import { Route as EventosSlugRouteImport } from './routes/eventos.$slug'
 import { Route as EnderecosSlugRouteImport } from './routes/enderecos.$slug'
 import { Route as ESlugRouteImport } from './routes/e.$slug'
+import { Route as DecSiteIdRouteImport } from './routes/dec.$siteId'
 import { Route as DSlugRouteImport } from './routes/d.$slug'
 import { Route as CheckinSessionIdRouteImport } from './routes/checkin.$sessionId'
 import { Route as CertIdRouteImport } from './routes/cert.$id'
@@ -47,6 +48,7 @@ import { Route as AuthenticatedEmbedRouteImport } from './routes/_authenticated.
 import { Route as AuthenticatedEbdRouteImport } from './routes/_authenticated.ebd'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated.documentos'
 import { Route as AuthenticatedDevocionalRouteImport } from './routes/_authenticated.devocional'
+import { Route as AuthenticatedDecisoesRouteImport } from './routes/_authenticated.decisoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated.checkin'
 import { Route as AuthenticatedCelulasRouteImport } from './routes/_authenticated.celulas'
@@ -131,6 +133,11 @@ const EnderecosSlugRoute = EnderecosSlugRouteImport.update({
 const ESlugRoute = ESlugRouteImport.update({
   id: '/e/$slug',
   path: '/e/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DecSiteIdRoute = DecSiteIdRouteImport.update({
+  id: '/dec/$siteId',
+  path: '/dec/$siteId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DSlugRoute = DSlugRouteImport.update({
@@ -263,6 +270,11 @@ const AuthenticatedDocumentosRoute = AuthenticatedDocumentosRouteImport.update({
 const AuthenticatedDevocionalRoute = AuthenticatedDevocionalRouteImport.update({
   id: '/devocional',
   path: '/devocional',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedDecisoesRoute = AuthenticatedDecisoesRouteImport.update({
+  id: '/decisoes',
+  path: '/decisoes',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -422,6 +434,7 @@ export interface FileRoutesByFullPath {
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/decisoes': typeof AuthenticatedDecisoesRoute
   '/devocional': typeof AuthenticatedDevocionalRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ebd': typeof AuthenticatedEbdRoute
@@ -448,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/cert/$id': typeof CertIdRoute
   '/checkin/$sessionId': typeof CheckinSessionIdRoute
   '/d/$slug': typeof DSlugRoute
+  '/dec/$siteId': typeof DecSiteIdRoute
   '/e/$slug': typeof ESlugRoute
   '/enderecos/$slug': typeof EnderecosSlugRoute
   '/eventos/$slug': typeof EventosSlugRoute
@@ -487,6 +501,7 @@ export interface FileRoutesByTo {
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/decisoes': typeof AuthenticatedDecisoesRoute
   '/devocional': typeof AuthenticatedDevocionalRoute
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ebd': typeof AuthenticatedEbdRoute
@@ -513,6 +528,7 @@ export interface FileRoutesByTo {
   '/cert/$id': typeof CertIdRoute
   '/checkin/$sessionId': typeof CheckinSessionIdRoute
   '/d/$slug': typeof DSlugRoute
+  '/dec/$siteId': typeof DecSiteIdRoute
   '/e/$slug': typeof ESlugRoute
   '/enderecos/$slug': typeof EnderecosSlugRoute
   '/eventos/$slug': typeof EventosSlugRoute
@@ -554,6 +570,7 @@ export interface FileRoutesById {
   '/_authenticated/celulas': typeof AuthenticatedCelulasRoute
   '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/decisoes': typeof AuthenticatedDecisoesRoute
   '/_authenticated/devocional': typeof AuthenticatedDevocionalRoute
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/ebd': typeof AuthenticatedEbdRoute
@@ -580,6 +597,7 @@ export interface FileRoutesById {
   '/cert/$id': typeof CertIdRoute
   '/checkin/$sessionId': typeof CheckinSessionIdRoute
   '/d/$slug': typeof DSlugRoute
+  '/dec/$siteId': typeof DecSiteIdRoute
   '/e/$slug': typeof ESlugRoute
   '/enderecos/$slug': typeof EnderecosSlugRoute
   '/eventos/$slug': typeof EventosSlugRoute
@@ -621,6 +639,7 @@ export interface FileRouteTypes {
     | '/celulas'
     | '/checkin'
     | '/dashboard'
+    | '/decisoes'
     | '/devocional'
     | '/documentos'
     | '/ebd'
@@ -647,6 +666,7 @@ export interface FileRouteTypes {
     | '/cert/$id'
     | '/checkin/$sessionId'
     | '/d/$slug'
+    | '/dec/$siteId'
     | '/e/$slug'
     | '/enderecos/$slug'
     | '/eventos/$slug'
@@ -686,6 +706,7 @@ export interface FileRouteTypes {
     | '/celulas'
     | '/checkin'
     | '/dashboard'
+    | '/decisoes'
     | '/devocional'
     | '/documentos'
     | '/ebd'
@@ -712,6 +733,7 @@ export interface FileRouteTypes {
     | '/cert/$id'
     | '/checkin/$sessionId'
     | '/d/$slug'
+    | '/dec/$siteId'
     | '/e/$slug'
     | '/enderecos/$slug'
     | '/eventos/$slug'
@@ -752,6 +774,7 @@ export interface FileRouteTypes {
     | '/_authenticated/celulas'
     | '/_authenticated/checkin'
     | '/_authenticated/dashboard'
+    | '/_authenticated/decisoes'
     | '/_authenticated/devocional'
     | '/_authenticated/documentos'
     | '/_authenticated/ebd'
@@ -778,6 +801,7 @@ export interface FileRouteTypes {
     | '/cert/$id'
     | '/checkin/$sessionId'
     | '/d/$slug'
+    | '/dec/$siteId'
     | '/e/$slug'
     | '/enderecos/$slug'
     | '/eventos/$slug'
@@ -817,6 +841,7 @@ export interface RootRouteChildren {
   CertIdRoute: typeof CertIdRoute
   CheckinSessionIdRoute: typeof CheckinSessionIdRoute
   DSlugRoute: typeof DSlugRoute
+  DecSiteIdRoute: typeof DecSiteIdRoute
   ESlugRoute: typeof ESlugRoute
   EnderecosSlugRoute: typeof EnderecosSlugRoute
   EventosSlugRoute: typeof EventosSlugRoute
@@ -920,6 +945,13 @@ declare module '@tanstack/react-router' {
       path: '/e/$slug'
       fullPath: '/e/$slug'
       preLoaderRoute: typeof ESlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dec/$siteId': {
+      id: '/dec/$siteId'
+      path: '/dec/$siteId'
+      fullPath: '/dec/$siteId'
+      preLoaderRoute: typeof DecSiteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/d/$slug': {
@@ -1102,6 +1134,13 @@ declare module '@tanstack/react-router' {
       path: '/devocional'
       fullPath: '/devocional'
       preLoaderRoute: typeof AuthenticatedDevocionalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/decisoes': {
+      id: '/_authenticated/decisoes'
+      path: '/decisoes'
+      fullPath: '/decisoes'
+      preLoaderRoute: typeof AuthenticatedDecisoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -1311,6 +1350,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCelulasRoute: typeof AuthenticatedCelulasRoute
   AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDecisoesRoute: typeof AuthenticatedDecisoesRoute
   AuthenticatedDevocionalRoute: typeof AuthenticatedDevocionalRoute
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedEbdRoute: typeof AuthenticatedEbdRoute
@@ -1349,6 +1389,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCelulasRoute: AuthenticatedCelulasRoute,
   AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDecisoesRoute: AuthenticatedDecisoesRoute,
   AuthenticatedDevocionalRoute: AuthenticatedDevocionalRoute,
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedEbdRoute: AuthenticatedEbdRoute,
@@ -1404,6 +1445,7 @@ const rootRouteChildren: RootRouteChildren = {
   CertIdRoute: CertIdRoute,
   CheckinSessionIdRoute: CheckinSessionIdRoute,
   DSlugRoute: DSlugRoute,
+  DecSiteIdRoute: DecSiteIdRoute,
   ESlugRoute: ESlugRoute,
   EnderecosSlugRoute: EnderecosSlugRoute,
   EventosSlugRoute: EventosSlugRoute,
