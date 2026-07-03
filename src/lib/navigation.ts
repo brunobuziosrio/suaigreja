@@ -111,6 +111,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
         { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },
         { title: "Locais", url: "/locations", icon: MapPin },
         { title: "Reserva de Ambientes", url: "/reservas", icon: CalendarClock },
+        { title: "Patrimônio", url: "/patrimonio", icon: Package },
         { title: "Tipos de evento", url: "/types", icon: ListChecks },
       ],
     },
