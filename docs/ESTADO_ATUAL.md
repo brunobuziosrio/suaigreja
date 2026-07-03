@@ -356,8 +356,31 @@ headless (`/login` hidrata e renderiza o formulário completo, zero erro de
 console, screenshot conferido); bundle do servidor no container contém
 `resolveAccountContext` (19 arquivos), confirmando que não é cache antigo.
 
-Item 2 da lacuna (matriz de permissões por verbo, `roleCan()`) **continua pendente**
-— não foi tocado nesta sessão. Ver `permissions.ts` para o catálogo já existente.
+### Equipe e Permissões — Matriz por verbo aplicada nos dados, 2026-07-03 — COMMITADA, NÃO DEPLOYADA
+
+Item 2 da lacuna (matriz de permissões por verbo, `roleCan()`) **fechado no código**:
+criado `requirePermission()` (`permission-guard.server.ts`), mesmo padrão de
+`requirePlanTier` — resolve accountId+role via `resolveAccountContext`, busca
+overrides em `account_role_permissions` e checa `roleCan()`. Aplicado nos 15
+módulos do catálogo (`permissions.ts`) em ~26 arquivos: membros, visitantes,
+eventos (agenda + páginas de evento + inscrições), check-in, campanhas
+(inclui campanhas de doação), financeiro (dízimos + relatório de doações),
+secretaria, WhatsApp (mensagens + modelos), células, EBD, escalas,
+documentos, relatórios e configurações (conta + hub). "Equipe" ficou de fora
+deliberadamente — já é mais restrito que a matriz exigiria (owner-only
+hardcoded em `team.functions.ts`).
+
+**PENDENTE — decisão consciente de não deployar ainda**: diferente da
+correção de `account_id` (só amplia visibilidade de dados que já eram do
+convidado), este enforcement passa a **bloquear** ações antes permitidas.
+Existe um convidado real de teste (`tesoureiro_geral`) ativo na conta de
+produção; com a matriz padrão desse cargo (`members: view`, `campaigns: ALL`,
+`finances: ALL`, `reports: view`, `documents: view`), qualquer teste dele
+fora desses módulos passaria a ser bloqueado assim que isso for para o ar.
+Perguntei ao Bruno se pode deployar e ele não respondeu (sessão em
+background) — commits `f04b752`/`4800e2c`/`664ca20` prontos, build e
+`tsc --noEmit` limpos em cada um. Antes de deployar: confirmar com o Bruno,
+ou pelo menos verificar se o teste com esse usuário já terminou.
 
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
