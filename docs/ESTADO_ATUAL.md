@@ -779,6 +779,20 @@ correto do voluntário e a mensagem incluiu nome, escala, data formatada
 (05/07/2026) e horário. Zero erro de console. Dado de teste removido
 depois.
 
+### Imprimir/compartilhar escala — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima quinta feature do backlog. Na escala ativa em `/escalas`: botão
+"Copiar" monta texto formatado (✅/⏳ por turno) pronto pra colar no grupo
+do WhatsApp da equipe; botão "Imprimir" abre popup com layout limpo
+(data/horário/voluntário/status, mesmo padrão de popup já usado em
+`documentos.tsx`) pra postar no mural físico. Sem server function nova —
+opera direto sobre os turnos já carregados da escala ativa.
+
+Testado com uma escala e turno confirmado de teste: texto copiado
+continha nome da escala e do voluntário com emoji de status certo; popup
+de impressão abriu com tabela limpa (data/horário/voluntário/"Confirmado").
+Zero erro de console. Dados de teste removidos depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
