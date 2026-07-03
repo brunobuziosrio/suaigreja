@@ -605,6 +605,24 @@ transpila) mas deveria ser corrigido numa sessão futura adicionando as 3
 tabelas ao `types.ts` ou convertendo o arquivo pro padrão `as never` usado
 nas tabelas novas desta sessão.
 
+### Ação Social Digital — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima feature do backlog. Cadastro de famílias em acompanhamento
+assistencial (nome, responsável, contato, nº de pessoas, necessidades) com
+histórico de entregas por família (cesta básica, roupas, etc — o quê, quando,
+quem entregou). Cabeçalho com contadores: famílias ativas, pessoas
+assistidas, entregas no mês corrente.
+
+Migration cria `social_families` e `social_deliveries` já com RLS baseada
+em membership desde o início (mesmo padrão de `decisions`/
+`room_reservations`/`assets` nesta sessão). Rota `/acao-social`, novo item
+de menu em "Comunidade".
+
+Testado de ponta a ponta com login real: cadastrada família → registrada
+entrega → apareceu no histórico da família e o contador "entregas este mês"
+foi de 0 para 1 corretamente. Zero erro de console. Dados de teste removidos
+depois (delete em cascata da família apagou a entrega junto).
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
