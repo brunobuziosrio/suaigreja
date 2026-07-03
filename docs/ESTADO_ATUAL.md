@@ -447,6 +447,36 @@ certo, trocado o status via seletor (novo → retornou) e confirmado que o
 visitante migrou de aba e o contador do funil atualizou, zero erro de
 console. Registro de teste removido depois.
 
+### Certificados automáticos — NOVA feature, 2026-07-03 — DEPLOYADA, mas MÓDULO "DOCUMENTOS" AINDA NÃO É VENDÁVEL
+
+Quarta feature do backlog. Numeração sequencial de certificados
+("NNNN/AAAA" por conta/ano) em cima do sistema de documentos já existente
+(`document_templates`/`member_documents`), com QR Code de validação pública
+em `/cert/$id`. Migration `20260703160000_certificate_numbering.sql`
+(coluna `certificate_number`) aplicada em produção. `/documentos` ganhou
+toggle "Emitir como certificado numerado", selo do número no card, e QR
+Code embutido na impressão.
+
+**Achado importante durante o teste**: `/documentos` está bloqueado na
+navegação real mesmo para o dono (`plan-access.ts` → `MODULE_CATALOG` tem
+`documents: { sellable: false, status: "beta" }`) — isso é **decisão de
+produto pré-existente**, não algo que esta sessão quebrou (ver roadmap:
+"Amadurecer módulos beta para venda... Documentos: fechar pontas" já estava
+listado como pendência antes). Ou seja, a feature de certificados está
+pronta e funcionando, mas **ninguém consegue chegar nela pela UI ainda**
+até o módulo Documentos ser promovido de beta pra vendável.
+
+Por isso o teste real foi feito de outra forma: inserido 1 documento de
+teste via SQL com `certificate_number`, validada a página pública
+`/cert/$id` diretamente (não exige login) — renderizou nome da igreja,
+número, tipo de documento, membro e data corretos, zero erro de console.
+Não deu pra testar o fluxo de emissão pela UI autenticada por causa do
+bloqueio do módulo. Registro de teste removido depois.
+
+**Pendente decisão do Bruno**: promover `documents` de `sellable: false`
+para `sellable: true` em `plan-access.ts` quando o módulo (documentos +
+certificados) estiver pronto pra clientes reais usarem.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
