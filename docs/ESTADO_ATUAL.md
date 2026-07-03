@@ -427,6 +427,26 @@ fiéis com cargo/telefone/CPF corretos e completude de ficha calculada certo
 (40% e 30%), zero erro de console. Registros de teste removidos depois —
 voltou a 31 fiéis reais, nada tocado.
 
+### Jornada do Visitante — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Terceira feature do backlog. Evoluiu o status simples de visitantes (novo/
+contatado/membro/arquivado) para um funil de 6 etapas: novo → contatado →
+retornou → entrou em grupo → membro (+ arquivado como saída). Migration
+`20260703150000_visitor_journey_funnel.sql` adiciona `status_changed_at`
+(aplicada em produção). `/visitantes` ganhou cards de resumo do funil por
+etapa, taxa de conversão geral, alerta de visitantes parados 7+ dias sem
+avanço, e cada card de visitante mostra "há X dias nesta etapa". O controle
+de status virou um seletor (`Select`) cobrindo as 6 etapas, no lugar dos 3
+botões fixos anteriores. De quebra, corrigido `variant="secondary"` inválido
+no Badge (bug de tipo pré-existente na mesma tela).
+
+Testada de ponta a ponta em produção com login real (mesma técnica de magic
+link): criado 1 visitante de teste via SQL, confirmado no navegador que os
+cards do funil, a taxa de conversão e o selo de "dias na etapa" calculam
+certo, trocado o status via seletor (novo → retornou) e confirmado que o
+visitante migrou de aba e o contador do funil atualizou, zero erro de
+console. Registro de teste removido depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
