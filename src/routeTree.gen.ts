@@ -42,6 +42,7 @@ import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authentic
 import { Route as AuthenticatedMembrosRouteImport } from './routes/_authenticated.membros'
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated.marketplace'
 import { Route as AuthenticatedLocationsRouteImport } from './routes/_authenticated.locations'
+import { Route as AuthenticatedJornadaEspiritualRouteImport } from './routes/_authenticated.jornada-espiritual'
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hub'
 import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated.familias'
@@ -247,6 +248,12 @@ const AuthenticatedLocationsRoute = AuthenticatedLocationsRouteImport.update({
   path: '/locations',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedJornadaEspiritualRoute =
+  AuthenticatedJornadaEspiritualRouteImport.update({
+    id: '/jornada-espiritual',
+    path: '/jornada-espiritual',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedHubRoute = AuthenticatedHubRouteImport.update({
   id: '/hub',
   path: '/hub',
@@ -476,6 +483,7 @@ export interface FileRoutesByFullPath {
   '/familias': typeof AuthenticatedFamiliasRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
+  '/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/membros': typeof AuthenticatedMembrosRoute
@@ -548,6 +556,7 @@ export interface FileRoutesByTo {
   '/familias': typeof AuthenticatedFamiliasRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
+  '/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/membros': typeof AuthenticatedMembrosRoute
@@ -622,6 +631,7 @@ export interface FileRoutesById {
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
   '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/hub': typeof AuthenticatedHubRoute
+  '/_authenticated/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
   '/_authenticated/locations': typeof AuthenticatedLocationsRoute
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/_authenticated/membros': typeof AuthenticatedMembrosRoute
@@ -696,6 +706,7 @@ export interface FileRouteTypes {
     | '/familias'
     | '/finances'
     | '/hub'
+    | '/jornada-espiritual'
     | '/locations'
     | '/marketplace'
     | '/membros'
@@ -768,6 +779,7 @@ export interface FileRouteTypes {
     | '/familias'
     | '/finances'
     | '/hub'
+    | '/jornada-espiritual'
     | '/locations'
     | '/marketplace'
     | '/membros'
@@ -841,6 +853,7 @@ export interface FileRouteTypes {
     | '/_authenticated/familias'
     | '/_authenticated/finances'
     | '/_authenticated/hub'
+    | '/_authenticated/jornada-espiritual'
     | '/_authenticated/locations'
     | '/_authenticated/marketplace'
     | '/_authenticated/membros'
@@ -1155,6 +1168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLocationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/jornada-espiritual': {
+      id: '/_authenticated/jornada-espiritual'
+      path: '/jornada-espiritual'
+      fullPath: '/jornada-espiritual'
+      preLoaderRoute: typeof AuthenticatedJornadaEspiritualRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/hub': {
       id: '/_authenticated/hub'
       path: '/hub'
@@ -1458,6 +1478,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
   AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
+  AuthenticatedJornadaEspiritualRoute: typeof AuthenticatedJornadaEspiritualRoute
   AuthenticatedLocationsRoute: typeof AuthenticatedLocationsRoute
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRouteWithChildren
   AuthenticatedMembrosRoute: typeof AuthenticatedMembrosRoute
@@ -1501,6 +1522,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
   AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
+  AuthenticatedJornadaEspiritualRoute: AuthenticatedJornadaEspiritualRoute,
   AuthenticatedLocationsRoute: AuthenticatedLocationsRoute,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRouteWithChildren,
   AuthenticatedMembrosRoute: AuthenticatedMembrosRoute,

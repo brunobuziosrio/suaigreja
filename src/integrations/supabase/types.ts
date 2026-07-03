@@ -1935,6 +1935,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           role: string
+          spiritual_stage: string | null
           status: string
           updated_at: string
           whatsapp_consent: boolean
@@ -1966,6 +1967,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           role?: string
+          spiritual_stage?: string | null
           status?: string
           updated_at?: string
           whatsapp_consent?: boolean
@@ -1997,6 +1999,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           role?: string
+          spiritual_stage?: string | null
           status?: string
           updated_at?: string
           whatsapp_consent?: boolean

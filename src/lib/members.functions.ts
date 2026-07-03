@@ -45,6 +45,7 @@ const upsertSchema = z.object({
   congregation: z.string().max(160).optional().nullable(),
   is_tither: z.boolean().optional().default(false),
   whatsapp_consent: z.boolean().optional().default(false),
+  spiritual_stage: z.string().max(40).optional().nullable(),
 });
 
 export const upsertMember = createServerFn({ method: "POST" })
@@ -77,6 +78,7 @@ export const upsertMember = createServerFn({ method: "POST" })
       congregation: data.congregation?.trim() || null,
       is_tither: data.is_tither ?? false,
       whatsapp_consent: data.whatsapp_consent ?? false,
+      spiritual_stage: data.spiritual_stage || null,
     };
     if (data.id) {
       const { error } = await supabase
@@ -178,6 +180,37 @@ export const setMemberFamilyHead = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from("members")
       .update({ family_head_id: data.family_head_id } as any)
+      .eq("id", data.member_id)
+      .eq("account_id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// ===================== JORNADA ESPIRITUAL =====================
+
+export const SPIRITUAL_STAGES = [
+  "novo_convertido",
+  "em_acompanhamento",
+  "batizado",
+  "serve",
+  "lider",
+] as const;
+
+export const setMemberSpiritualStage = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({
+      member_id: z.string().uuid(),
+      spiritual_stage: z.enum(SPIRITUAL_STAGES).nullable(),
+    }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "members", "edit");
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("members")
+      .update({ spiritual_stage: data.spiritual_stage } as any)
       .eq("id", data.member_id)
       .eq("account_id", accountId);
     if (error) throw new Error(error.message);

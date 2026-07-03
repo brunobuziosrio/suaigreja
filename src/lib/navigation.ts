@@ -34,6 +34,7 @@ import {
   Settings,
   ShieldCheck,
   Sparkles,
+  Sprout,
   Store,
   TrendingUp,
   UserCheck,
@@ -95,6 +96,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       icon: Users,
       items: [
         { title: terms.people, url: "/membros", icon: IdCard },
+        { title: "Jornada Espiritual", url: "/jornada-espiritual", icon: Sprout },
         { title: "Vínculo Familiar", url: "/familias", icon: Users2 },
         { title: "Visitantes", url: "/visitantes", icon: UserPlus },
         { title: terms.smallGroups, url: "/celulas", icon: Users2 },
