@@ -552,6 +552,24 @@ já está reservado nesse horário: 'Teste Reserva A'." Confirmado
 visualmente que a reserva B não foi criada. Registro de teste removido
 depois.
 
+### Patrimônio e Manutenção — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Oitava feature do backlog. Cadastro de instrumentos, som, projeção, móveis
+e informática da igreja, com local de guarda (reaproveita `Locais`),
+responsável atual (empréstimo vinculado a um membro) e status de
+manutenção. Ações dedicadas em vez de update genérico — "Emprestar",
+"Devolver", "Manutenção", "Voltou ao uso" — deixam a intenção explícita e
+evitam estado inconsistente (ex.: item marcado emprestado sem responsável).
+
+Migration cria `assets` já com RLS baseada em membership desde o início
+(mesmo padrão de `decisions`/`room_reservations` nesta sessão). Rota
+`/patrimonio`, novo item de menu em "Agenda e operação".
+
+Testado de ponta a ponta com login real: cadastrado um item → emprestado
+pra um membro (card passou a mostrar "Com Ana Costa [Teste] #13 desde
+03/07/2026") → devolvido → voltou a "Disponível". Zero erro de console em
+todo o fluxo. Item de teste removido depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
