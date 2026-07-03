@@ -18,6 +18,8 @@ import {
   ArrowRight,
   AlertTriangle,
   Sparkles,
+  UserCheck,
+  TrendingDown,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -30,6 +32,8 @@ import { listEvents } from "@/lib/events.functions";
 import { listMembers } from "@/lib/members.functions";
 import { listMyDonationCampaigns } from "@/lib/donations.functions";
 import { listSystemUpdates, createSuggestion } from "@/lib/feedback.functions";
+import { listUpcomingUnconfirmedShifts } from "@/lib/volunteer-shifts.functions";
+import { listCampaigns } from "@/lib/campaigns.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,10 +53,14 @@ function DashboardPage() {
   const fetchEvents = useServerFn(listEvents);
   const fetchMembers = useServerFn(listMembers);
   const fetchCampaigns = useServerFn(listMyDonationCampaigns);
+  const fetchUnconfirmedShifts = useServerFn(listUpcomingUnconfirmedShifts);
+  const fetchContributionCampaigns = useServerFn(listCampaigns);
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
   const planTier = resolvePlanTier(account);
   const canUseMembers = !!account && canAccessPath(planTier, "/membros");
   const canUseEbd = !!account && canAccessPath(planTier, "/ebd");
+  const canUseShifts = !!account && canAccessPath(planTier, "/escalas");
+  const canUseContribCampaigns = !!account && canAccessPath(planTier, "/campanhas");
   const { data: locations = [] } = useQuery({ queryKey: ["locations"], queryFn: () => fetchLocations() });
   const { data: types = [] } = useQuery({ queryKey: ["types"], queryFn: () => fetchTypes() });
   const { data: members = [] } = useQuery({
@@ -61,6 +69,16 @@ function DashboardPage() {
     enabled: canUseMembers,
   });
   const { data: campaigns = [] } = useQuery({ queryKey: ["my-donations"], queryFn: () => fetchCampaigns() });
+  const { data: unconfirmedShifts = [] } = useQuery({
+    queryKey: ["unconfirmed-shifts"],
+    queryFn: () => fetchUnconfirmedShifts(),
+    enabled: canUseShifts,
+  });
+  const { data: contribCampaigns = [] } = useQuery({
+    queryKey: ["contribution-campaigns"],
+    queryFn: () => fetchContributionCampaigns(),
+    enabled: canUseContribCampaigns,
+  });
   const range = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -110,6 +128,23 @@ function DashboardPage() {
     if (!canUseMembers) return 0;
     return (members as any[]).filter((m) => memberCompleteness(m) < 80).length;
   }, [canUseMembers, members]);
+
+  // Campanha "atrasada": já passou mais tempo do prazo do que arrecadou
+  // proporcionalmente da meta (com folga de 15 pontos pra não alarmar à toa
+  // logo no início da campanha).
+  const campaignsBehindPace = useMemo(() => {
+    if (!canUseContribCampaigns) return [];
+    const now = Date.now();
+    return (contribCampaigns as any[]).filter((c) => {
+      if (!c.is_active || !c.start_date || !c.end_date || !c.goal_amount_cents) return false;
+      const start = new Date(`${c.start_date}T00:00:00`).getTime();
+      const end = new Date(`${c.end_date}T23:59:59`).getTime();
+      if (end <= start || now < start) return false;
+      const timeElapsedPct = Math.min(100, ((now - start) / (end - start)) * 100);
+      const raisedPct = ((c.current_amount_cents ?? 0) / c.goal_amount_cents) * 100;
+      return timeElapsedPct - raisedPct > 15;
+    });
+  }, [canUseContribCampaigns, contribCampaigns]);
 
   const alerts = useMemo(() => {
     const list: Array<{
@@ -163,8 +198,39 @@ function DashboardPage() {
         search: { tab: "doacoes" },
       });
     }
+    if (canUseShifts && unconfirmedShifts.length > 0) {
+      list.push({
+        key: "unconfirmed-shifts",
+        icon: UserCheck,
+        tone: "text-amber-600 bg-amber-500/10",
+        title: `${unconfirmedShifts.length} turno(s) sem confirmação`,
+        description: "Voluntários escalados nos próximos 7 dias ainda não confirmaram presença.",
+        href: "/escalas",
+      });
+    }
+    if (canUseContribCampaigns && campaignsBehindPace.length > 0) {
+      list.push({
+        key: "campaigns-behind-pace",
+        icon: TrendingDown,
+        tone: "text-red-600 bg-red-500/10",
+        title: `${campaignsBehindPace.length} campanha(s) abaixo do ritmo da meta`,
+        description: "A arrecadação está atrasada em relação ao prazo. Vale reforçar a divulgação.",
+        href: "/campanhas",
+      });
+    }
     return list;
-  }, [activeCampaigns, birthdaysToday, canUseMembers, incompleteMembers, todayKey, upcomingEvents]);
+  }, [
+    activeCampaigns,
+    birthdaysToday,
+    campaignsBehindPace,
+    canUseContribCampaigns,
+    canUseMembers,
+    canUseShifts,
+    incompleteMembers,
+    todayKey,
+    unconfirmedShifts,
+    upcomingEvents,
+  ]);
   const setupTasks = useMemo(
     () => [
       {

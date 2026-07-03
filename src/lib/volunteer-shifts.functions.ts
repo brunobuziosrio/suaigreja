@@ -313,3 +313,30 @@ export const deleteVolunteerUnavailability = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// Usado no alerta "O que fazer hoje" do Dashboard — turnos dos proximos
+// 7 dias que ninguem confirmou ainda, cruzando todas as escalas da conta
+// (nao precisa de scheduleId como listVolunteerShifts).
+export const listUpcomingUnconfirmedShifts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "view");
+    const { supabase } = context;
+    const today = new Date();
+    const in7Days = new Date(today);
+    in7Days.setDate(in7Days.getDate() + 7);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const toIso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+    const { data, error } = await supabase
+      .from("volunteer_shifts")
+      .select("id, shift_date, members(full_name), schedule:volunteer_schedules(name)")
+      .eq("account_id", accountId)
+      .eq("confirmed", false)
+      .gte("shift_date", toIso(today))
+      .lte("shift_date", toIso(in7Days))
+      .order("shift_date", { ascending: true });
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
