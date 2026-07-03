@@ -25,6 +25,7 @@ import {
   MapPin,
   Megaphone,
   MessageCircle,
+  Newspaper,
   Package,
   QrCode,
   Radio,
@@ -81,6 +82,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       icon: Globe,
       items: [
         { title: terms.publicPage, url: "/hub", icon: Globe },
+        { title: "Boletim Semanal", url: "/boletim", icon: Newspaper },
         { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
         { title: "Transmissões", url: "/transmissoes", icon: Radio },
       ],

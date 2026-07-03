@@ -51,6 +51,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated.checkin'
 import { Route as AuthenticatedCelulasRouteImport } from './routes/_authenticated.celulas'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
+import { Route as AuthenticatedBoletimRouteImport } from './routes/_authenticated.boletim'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
@@ -284,6 +285,11 @@ const AuthenticatedCampanhasRoute = AuthenticatedCampanhasRouteImport.update({
   path: '/campanhas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedBoletimRoute = AuthenticatedBoletimRouteImport.update({
+  id: '/boletim',
+  path: '/boletim',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -411,6 +417,7 @@ export interface FileRoutesByFullPath {
   '/update-password': typeof UpdatePasswordRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/billing': typeof AuthenticatedBillingRoute
+  '/boletim': typeof AuthenticatedBoletimRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
@@ -475,6 +482,7 @@ export interface FileRoutesByTo {
   '/update-password': typeof UpdatePasswordRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/billing': typeof AuthenticatedBillingRoute
+  '/boletim': typeof AuthenticatedBoletimRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
@@ -541,6 +549,7 @@ export interface FileRoutesById {
   '/update-password': typeof UpdatePasswordRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
+  '/_authenticated/boletim': typeof AuthenticatedBoletimRoute
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/celulas': typeof AuthenticatedCelulasRoute
   '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
@@ -607,6 +616,7 @@ export interface FileRouteTypes {
     | '/update-password'
     | '/agenda'
     | '/billing'
+    | '/boletim'
     | '/campanhas'
     | '/celulas'
     | '/checkin'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/update-password'
     | '/agenda'
     | '/billing'
+    | '/boletim'
     | '/campanhas'
     | '/celulas'
     | '/checkin'
@@ -736,6 +747,7 @@ export interface FileRouteTypes {
     | '/update-password'
     | '/_authenticated/agenda'
     | '/_authenticated/billing'
+    | '/_authenticated/boletim'
     | '/_authenticated/campanhas'
     | '/_authenticated/celulas'
     | '/_authenticated/checkin'
@@ -1120,6 +1132,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCampanhasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/boletim': {
+      id: '/_authenticated/boletim'
+      path: '/boletim'
+      fullPath: '/boletim'
+      preLoaderRoute: typeof AuthenticatedBoletimRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/billing': {
       id: '/_authenticated/billing'
       path: '/billing'
@@ -1287,6 +1306,7 @@ const AuthenticatedMarketplaceRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
+  AuthenticatedBoletimRoute: typeof AuthenticatedBoletimRoute
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedCelulasRoute: typeof AuthenticatedCelulasRoute
   AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
@@ -1324,6 +1344,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
+  AuthenticatedBoletimRoute: AuthenticatedBoletimRoute,
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedCelulasRoute: AuthenticatedCelulasRoute,
   AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
