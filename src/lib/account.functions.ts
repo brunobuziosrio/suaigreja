@@ -5,6 +5,7 @@ import { RELIGION_PROFILES, type ReligionProfile } from "./religion-profiles";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountAccess } from "@/lib/plan-access";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 import { randomBytes } from "node:crypto";
 import { resolveTxt } from "node:dns/promises";
@@ -80,6 +81,7 @@ export const updateCustomSlug = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     if (data.slug === null || data.slug === "") {
       const { error } = await supabase
         .from("accounts")
@@ -128,6 +130,7 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     await requirePremiumDomainAccess(supabase, accountId);
 
     const domain = data.domain ? normalizeDomain(data.domain) : "";
@@ -181,6 +184,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     await requirePremiumDomainAccess(supabase, accountId);
 
     const { data: account, error: accountError } = await supabase
@@ -226,6 +230,7 @@ export const requestManagedDomain = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     await requirePremiumDomainAccess(supabase, accountId);
 
     const domain = data.domain ? normalizeDomain(data.domain) : "";
@@ -311,6 +316,7 @@ export const uploadAccountAsset = createServerFn({ method: "POST" })
   .inputValidator((input) => UploadInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
@@ -431,6 +437,7 @@ export const updateAccountSettings = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { error } = await supabase
       .from("accounts")
       .update(data)

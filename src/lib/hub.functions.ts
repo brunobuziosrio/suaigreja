@@ -11,6 +11,7 @@ import {
 } from "@/lib/live-streams.shared";
 import { fetchYoutubeVideos, buildAudioEmbed } from "@/lib/media.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 const RESERVED = new Set([
   "a","admin","api","app","assets","auth","agenda","billing","dashboard",
@@ -357,6 +358,7 @@ export const updateHubSettings = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { error } = await supabase.from("accounts").update(data).eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -438,6 +440,7 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
   .inputValidator((input) => UploadInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
@@ -473,6 +476,7 @@ export const createHubUploadUrl = createServerFn({ method: "POST" })
   .inputValidator((input) => SignInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
