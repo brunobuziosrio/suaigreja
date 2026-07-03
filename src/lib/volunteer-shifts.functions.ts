@@ -122,6 +122,32 @@ const shiftSchema = z.object({
   notes: z.string().max(500).optional().nullable(),
 });
 
+async function assertMemberAvailable(
+  supabase: any,
+  accountId: string,
+  memberId: string,
+  shiftDate: string,
+) {
+  const { data, error } = await supabase
+    .from("volunteer_unavailability" as never)
+    .select("start_date, end_date, reason")
+    .eq("account_id", accountId)
+    .eq("member_id", memberId)
+    .lte("start_date", shiftDate)
+    .gte("end_date", shiftDate)
+    .limit(1);
+  if (error) throw new Error(error.message);
+  const conflict = (data as any[])?.[0];
+  if (conflict) {
+    const period = conflict.start_date === conflict.end_date
+      ? new Date(`${conflict.start_date}T00:00:00`).toLocaleDateString("pt-BR")
+      : `${new Date(`${conflict.start_date}T00:00:00`).toLocaleDateString("pt-BR")} a ${new Date(`${conflict.end_date}T00:00:00`).toLocaleDateString("pt-BR")}`;
+    throw new Error(
+      `Este voluntário marcou indisponibilidade em ${period}${conflict.reason ? ` (${conflict.reason})` : ""}. Remova o bloqueio ou escolha outro voluntário/data.`,
+    );
+  }
+}
+
 export const upsertVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => shiftSchema.parse(i))
@@ -129,6 +155,7 @@ export const upsertVolunteerShift = createServerFn({ method: "POST" })
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "volunteer_shifts", data.id ? "edit" : "create");
     const { supabase: client } = context;
+    await assertMemberAvailable(client, accountId, data.member_id, data.shift_date);
     const payload = {
       schedule_id: data.schedule_id,
       member_id: data.member_id,
@@ -212,6 +239,76 @@ export const requestVolunteerReplacement = createServerFn({ method: "POST" })
         notes: data.reason || "Solicitou substituição",
       } as any)
       .eq("id", data.shiftId)
+      .eq("account_id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export type VolunteerUnavailabilityRow = {
+  id: string;
+  account_id: string;
+  member_id: string;
+  start_date: string;
+  end_date: string;
+  reason: string | null;
+  created_at: string;
+  members?: { full_name: string } | null;
+};
+
+export const listVolunteerUnavailability = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "view");
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("volunteer_unavailability" as never)
+      .select("*, members(full_name)")
+      .eq("account_id", accountId)
+      .order("start_date", { ascending: false });
+    if (error) throw new Error(error.message);
+    return (data ?? []) as unknown as VolunteerUnavailabilityRow[];
+  });
+
+const unavailabilitySchema = z.object({
+  member_id: z.string().uuid(),
+  start_date: z.string(),
+  end_date: z.string(),
+  reason: z.string().max(300).optional().nullable(),
+});
+
+export const addVolunteerUnavailability = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => unavailabilitySchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "create");
+    const { supabase } = context;
+    if (new Date(data.end_date).getTime() < new Date(data.start_date).getTime()) {
+      throw new Error("A data final precisa ser igual ou depois da data inicial.");
+    }
+    const { error } = await supabase.from("volunteer_unavailability" as never).insert({
+      account_id: accountId,
+      member_id: data.member_id,
+      start_date: data.start_date,
+      end_date: data.end_date,
+      reason: data.reason?.trim() || null,
+    } as never);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const deleteVolunteerUnavailability = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "volunteer_shifts", "delete");
+    const { supabase } = context;
+    const { error } = await supabase
+      .from("volunteer_unavailability" as never)
+      .delete()
+      .eq("id", data.id)
       .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
