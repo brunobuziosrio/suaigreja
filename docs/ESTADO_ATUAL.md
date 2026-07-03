@@ -665,6 +665,60 @@ em cada). Não afeta runtime, mas merece uma sessão dedicada só pra isso:
 regenerar `types.ts` com todas as tabelas ou converter esses arquivos pro
 padrão `as never`.
 
+### types.ts regenerado — RESOLVIDO, 2026-07-03
+
+O achado acima era maior do que parecia: `types.ts` (arquivo manual, nunca
+regenerado desde que foi criado) só tinha ~39 das **69 tabelas reais** do
+banco de produção. Toda tabela nova desde então precisou do workaround
+`as never` nos server functions — inclusive as 6 tabelas criadas nesta
+própria sessão.
+
+Corrigido de vez: subimos o container oficial `supabase/postgres-meta`
+na rede docker do banco (`supabase_default`, sem publicar porta nenhuma
+pra fora — só acessível internamente) e usamos o endpoint HTTP dele
+(`/generators/typescript`) pra gerar os tipos direto do schema real do
+Postgres de produção. Depois reintroduzimos manualmente o campo
+`__InternalSupabase.PostgrestVersion: "14.5"` que o gerador oficial da CLI
+Supabase adiciona e o postgres-meta cru não inclui (usado só pra inferência
+de tipo do `createClient`, sem efeito em runtime).
+
+**Resultado**: `tsc --noEmit` caiu de 150+ erros espalhados por dezenas de
+arquivos pra **3 erros, todos num componente morto** (`pagination.tsx`,
+confirmado sem nenhum import em lugar nenhum do app — não corrigido por
+ser código inativo).
+
+Com o typecheck finalmente limpo, apareceram bugs reais que estavam
+escondidos atrás do ruído dos erros de "tabela não existe":
+
+1. **QR code de check-in e certificado de presença com nome do evento
+   sempre em branco** (`event-inscriptions.functions.ts`): o código
+   selecionava `events(name)`/`events(name, event_date)`, mas a coluna
+   real chama `type_name` — nunca existiu `name` na tabela `events`.
+   Corrigido nos dois lugares.
+2. **Exportação de dados LGPD quebrada** (`lgpd.functions.ts`,
+   `exportMemberData`): chamava `.catch()` direto num `PostgrestBuilder`,
+   que só implementa `.then()` (não é uma Promise de verdade — confirmado
+   lendo o código-fonte do `@supabase/postgrest-js` instalado). Isso
+   quebraria com `TypeError` toda vez que a função rodasse. Função ainda
+   não está conectada a nenhuma tela hoje (código morto por enquanto), mas
+   é a exportação de dados exigida pela LGPD — corrigido antes de virar
+   incidente quando alguém finalmente ligar a UI nela.
+3. **Contador de limpeza de dados de teste sempre reportava 0** (admin,
+   `deleteTestData`): `.delete()` sem `.select()` nunca retorna as linhas
+   apagadas no Postgrest — a exclusão sempre funcionou, só o contador de
+   feedback estava errado. Corrigido encadeando `.select("id")`.
+4. **12 ocorrências do bug de `Badge variant="secondary"`** (variante que
+   não existe no componente — mesmo bug já corrigido 3x antes nesta sessão
+   em `visitantes.tsx`/`documentos.tsx`) espalhadas em mais 10 páginas
+   (billing, eventos, marketplace, oráções, relatórios, whatsapp, telas de
+   admin). Corrigido em lote.
+5. **`escalas.tsx`**: tipo local `Shift` declarava `members.phone`/`email`
+   como `string` obrigatória; o schema real permite `null`.
+
+Testado com login real: 18 páginas percorridas (incluindo todas as
+afetadas pelos fixes de Badge e a página de escalas), zero erro de
+console em qualquer uma.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
