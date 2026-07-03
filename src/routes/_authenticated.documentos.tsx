@@ -12,10 +12,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Plus, Trash2, Loader2, Printer } from "lucide-react";
+import { FileText, Plus, Trash2, Loader2, Printer, BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
+import QRCode from "qrcode";
 
 export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocsPage,
@@ -50,6 +52,7 @@ function DocsPage() {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [issuedAt, setIssuedAt] = useState(new Date().toISOString().slice(0, 10));
+  const [isCertificate, setIsCertificate] = useState(false);
 
   const selectedMember = members.find((m) => m.id === memberId);
   const selectedTpl = templates.find((t) => t.id === templateId);
@@ -72,32 +75,50 @@ function DocsPage() {
   const upsertMut = useMutation({
     mutationFn: () => save({ data: {
       template_id: templateId || null, member_id: memberId || null,
-      title, body, issued_at: issuedAt,
+      title, body, issued_at: issuedAt, is_certificate: isCertificate,
     }}),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["member-docs"] });
       toast.success("Documento emitido");
-      setOpen(false); setTemplateId(""); setMemberId(""); setTitle(""); setBody("");
+      setOpen(false); setTemplateId(""); setMemberId(""); setTitle(""); setBody(""); setIsCertificate(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  function printDoc(d: any) {
+  async function printDoc(d: any) {
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
     const safeTitle = escapeHtml(d.title);
     const safeChurch = escapeHtml(account?.brand_title ?? "Igreja");
     const safeDate = escapeHtml(new Date(d.issued_at).toLocaleDateString("pt-BR"));
     const safeBody = escapeHtml(d.body);
+
+    let certBlock = "";
+    if (d.certificate_number) {
+      const verifyUrl = `${window.location.origin}/cert/${d.id}`;
+      const qrDataUrl = await QRCode.toDataURL(verifyUrl, { width: 160, margin: 1 });
+      certBlock = `
+        <div class="cert">
+          <img src="${qrDataUrl}" alt="QR de validação" />
+          <div class="cert-text">
+            <strong>Certificado nº ${escapeHtml(d.certificate_number)}</strong>
+            <span>Valide a autenticidade em ${escapeHtml(verifyUrl.replace(/^https?:\/\//, ""))}</span>
+          </div>
+        </div>`;
+    }
+
     w.document.write(`<!doctype html><html><head><title>${safeTitle}</title>
       <style>body{font-family:Georgia,serif;max-width:680px;margin:60px auto;padding:0 40px;color:#222;line-height:1.7}
       h1{font-size:22px;text-align:center;margin-bottom:8px} .meta{text-align:center;color:#777;font-size:13px;margin-bottom:40px}
       .body{white-space:pre-wrap;font-size:15px} .sig{margin-top:80px;text-align:center;border-top:1px solid #333;padding-top:8px;width:60%;margin-left:auto;margin-right:auto;font-size:13px}
+      .cert{margin-top:40px;display:flex;align-items:center;gap:16px;border-top:1px dashed #ccc;padding-top:16px}
+      .cert img{width:80px;height:80px} .cert-text{display:flex;flex-direction:column;gap:2px;font-size:12px;color:#555}
       @media print{body{margin:20px}}</style></head><body>
       <h1>${safeTitle}</h1>
       <div class="meta">${safeChurch} · ${safeDate}</div>
       <div class="body">${safeBody}</div>
       <div class="sig">Assinatura e carimbo</div>
+      ${certBlock}
       <script>window.print()</script></body></html>`);
     w.document.close();
   }
@@ -146,6 +167,15 @@ function DocsPage() {
                   <Textarea rows={10} value={body} onChange={(e) => setBody(e.target.value)} />
                   {selectedTpl && <p className="text-xs text-muted-foreground">Variáveis: {`{{nome}} {{igreja}} {{data}} {{data_membresia}}`}</p>}
                 </div>
+                <div className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <Label>Emitir como certificado numerado</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Gera um número sequencial (ex: 0007/2026) e um QR Code de validação pública, impressos junto ao documento.
+                    </p>
+                  </div>
+                  <Switch checked={isCertificate} onCheckedChange={setIsCertificate} />
+                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
@@ -161,7 +191,7 @@ function DocsPage() {
           <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Modelos disponíveis</p>
           <div className="flex flex-wrap gap-1.5">
             {templates.map((t) => (
-              <Badge key={t.id} variant={t.is_global ? "secondary" : "outline"} className="text-xs">
+              <Badge key={t.id} variant={t.is_global ? "neutral" : "outline"} className="text-xs">
                 {t.is_global && "★ "}{t.title}
               </Badge>
             ))}
@@ -181,7 +211,14 @@ function DocsPage() {
             {docs.map((d: any) => (
               <Card key={d.id} className="p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="font-medium truncate">{d.title}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-medium truncate">{d.title}</p>
+                    {d.certificate_number && (
+                      <Badge variant="success" className="text-[10px] gap-1">
+                        <BadgeCheck className="h-3 w-3" />{d.certificate_number}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {d.members?.full_name ?? "Sem membro vinculado"} · {new Date(d.issued_at).toLocaleDateString("pt-BR")}
                   </p>

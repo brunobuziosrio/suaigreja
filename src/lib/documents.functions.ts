@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 async function assertMemberBelongsToAccount(
   supabase: any,
@@ -75,7 +76,23 @@ const issueSchema = z.object({
   title: z.string().min(1).max(200),
   body: z.string().min(1).max(10000),
   issued_at: z.string().optional(),
+  is_certificate: z.boolean().optional().default(false),
 });
+
+// Numeracao sequencial por conta e ano, ex.: "0007/2026". Conta quantos
+// certificados ja foram emitidos pela conta no mesmo ano do issued_at.
+async function nextCertificateNumber(supabase: any, accountId: string, issuedAt: string): Promise<string> {
+  const year = new Date(`${issuedAt}T00:00:00`).getFullYear();
+  const { count, error } = await supabase
+    .from("member_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("account_id", accountId)
+    .not("certificate_number", "is", null)
+    .gte("issued_at", `${year}-01-01`)
+    .lte("issued_at", `${year}-12-31`);
+  if (error) throw new Error(error.message);
+  return `${String((count ?? 0) + 1).padStart(4, "0")}/${year}`;
+}
 
 export const upsertMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -86,14 +103,27 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
     const { supabase } = context;
     await assertMemberBelongsToAccount(supabase, accountId, data.member_id);
     await assertTemplateAllowed(supabase, accountId, data.template_id);
-    const payload = {
+    const issuedAt = data.issued_at || new Date().toISOString().slice(0, 10);
+    const payload: Record<string, unknown> = {
       template_id: data.template_id || null,
       member_id: data.member_id || null,
       title: data.title.trim(),
       body: data.body.trim(),
-      issued_at: data.issued_at || new Date().toISOString().slice(0, 10),
+      issued_at: issuedAt,
     };
     if (data.id) {
+      if (data.is_certificate) {
+        const { data: current, error: currentErr } = await supabase
+          .from("member_documents")
+          .select("certificate_number")
+          .eq("id", data.id)
+          .eq("account_id", accountId)
+          .maybeSingle();
+        if (currentErr) throw new Error(currentErr.message);
+        if (!current?.certificate_number) {
+          payload.certificate_number = await nextCertificateNumber(supabase, accountId, issuedAt);
+        }
+      }
       const { data: updated, error } = await supabase
         .from("member_documents")
         .update(payload as any)
@@ -104,6 +134,9 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       if (!updated) throw new Error("Documento não encontrado nesta igreja.");
       return { id: data.id };
+    }
+    if (data.is_certificate) {
+      payload.certificate_number = await nextCertificateNumber(supabase, accountId, issuedAt);
     }
     const { data: row, error } = await supabase
       .from("member_documents")
@@ -131,6 +164,35 @@ export const deleteMemberDocument = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     if (!deleted) throw new Error("Documento não encontrado nesta igreja.");
     return { ok: true };
+  });
+
+// Validacao publica de certificado via QR Code — projeta apenas os campos
+// necessarios para confirmar autenticidade, nunca o corpo do documento
+// (pode conter informacao pastoral sensivel).
+export const getPublicCertificate = createServerFn({ method: "GET" })
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data }) => {
+    const { data: doc, error } = await supabaseAdmin
+      .from("member_documents")
+      .select("id, title, certificate_number, issued_at, account_id, members(full_name)")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!doc || !doc.certificate_number) return null;
+
+    const { data: account } = await supabaseAdmin
+      .from("accounts")
+      .select("brand_title, brand_logo_url, primary_color")
+      .eq("id", doc.account_id)
+      .maybeSingle();
+
+    return {
+      title: doc.title,
+      certificateNumber: doc.certificate_number,
+      issuedAt: doc.issued_at,
+      memberName: (doc as any).members?.full_name ?? null,
+      church: account ?? null,
+    };
   });
 
 // Replace template placeholders with member/church data.

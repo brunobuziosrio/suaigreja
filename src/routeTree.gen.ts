@@ -23,6 +23,7 @@ import { Route as EnderecosSlugRouteImport } from './routes/enderecos.$slug'
 import { Route as ESlugRouteImport } from './routes/e.$slug'
 import { Route as DSlugRouteImport } from './routes/d.$slug'
 import { Route as CheckinSessionIdRouteImport } from './routes/checkin.$sessionId'
+import { Route as CertIdRouteImport } from './routes/cert.$id'
 import { Route as CMemberIdRouteImport } from './routes/c.$memberId'
 import { Route as ASiteIdRouteImport } from './routes/a.$siteId'
 import { Route as AuthenticatedWhatsappRouteImport } from './routes/_authenticated.whatsapp'
@@ -139,6 +140,11 @@ const DSlugRoute = DSlugRouteImport.update({
 const CheckinSessionIdRoute = CheckinSessionIdRouteImport.update({
   id: '/checkin/$sessionId',
   path: '/checkin/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CertIdRoute = CertIdRouteImport.update({
+  id: '/cert/$id',
+  path: '/cert/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CMemberIdRoute = CMemberIdRouteImport.update({
@@ -432,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/whatsapp': typeof AuthenticatedWhatsappRoute
   '/a/$siteId': typeof ASiteIdRoute
   '/c/$memberId': typeof CMemberIdRoute
+  '/cert/$id': typeof CertIdRoute
   '/checkin/$sessionId': typeof CheckinSessionIdRoute
   '/d/$slug': typeof DSlugRoute
   '/e/$slug': typeof ESlugRoute
@@ -495,6 +502,7 @@ export interface FileRoutesByTo {
   '/whatsapp': typeof AuthenticatedWhatsappRoute
   '/a/$siteId': typeof ASiteIdRoute
   '/c/$memberId': typeof CMemberIdRoute
+  '/cert/$id': typeof CertIdRoute
   '/checkin/$sessionId': typeof CheckinSessionIdRoute
   '/d/$slug': typeof DSlugRoute
   '/e/$slug': typeof ESlugRoute
@@ -560,6 +568,7 @@ export interface FileRoutesById {
   '/_authenticated/whatsapp': typeof AuthenticatedWhatsappRoute
   '/a/$siteId': typeof ASiteIdRoute
   '/c/$memberId': typeof CMemberIdRoute
+  '/cert/$id': typeof CertIdRoute
   '/checkin/$sessionId': typeof CheckinSessionIdRoute
   '/d/$slug': typeof DSlugRoute
   '/e/$slug': typeof ESlugRoute
@@ -625,6 +634,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/a/$siteId'
     | '/c/$memberId'
+    | '/cert/$id'
     | '/checkin/$sessionId'
     | '/d/$slug'
     | '/e/$slug'
@@ -688,6 +698,7 @@ export interface FileRouteTypes {
     | '/whatsapp'
     | '/a/$siteId'
     | '/c/$memberId'
+    | '/cert/$id'
     | '/checkin/$sessionId'
     | '/d/$slug'
     | '/e/$slug'
@@ -752,6 +763,7 @@ export interface FileRouteTypes {
     | '/_authenticated/whatsapp'
     | '/a/$siteId'
     | '/c/$memberId'
+    | '/cert/$id'
     | '/checkin/$sessionId'
     | '/d/$slug'
     | '/e/$slug'
@@ -790,6 +802,7 @@ export interface RootRouteChildren {
   UpdatePasswordRoute: typeof UpdatePasswordRoute
   ASiteIdRoute: typeof ASiteIdRoute
   CMemberIdRoute: typeof CMemberIdRoute
+  CertIdRoute: typeof CertIdRoute
   CheckinSessionIdRoute: typeof CheckinSessionIdRoute
   DSlugRoute: typeof DSlugRoute
   ESlugRoute: typeof ESlugRoute
@@ -909,6 +922,13 @@ declare module '@tanstack/react-router' {
       path: '/checkin/$sessionId'
       fullPath: '/checkin/$sessionId'
       preLoaderRoute: typeof CheckinSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cert/$id': {
+      id: '/cert/$id'
+      path: '/cert/$id'
+      fullPath: '/cert/$id'
+      preLoaderRoute: typeof CertIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$memberId': {
@@ -1360,6 +1380,7 @@ const rootRouteChildren: RootRouteChildren = {
   UpdatePasswordRoute: UpdatePasswordRoute,
   ASiteIdRoute: ASiteIdRoute,
   CMemberIdRoute: CMemberIdRoute,
+  CertIdRoute: CertIdRoute,
   CheckinSessionIdRoute: CheckinSessionIdRoute,
   DSlugRoute: DSlugRoute,
   ESlugRoute: ESlugRoute,

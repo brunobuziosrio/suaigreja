@@ -1183,6 +1183,7 @@ export type Database = {
         Row: {
           account_id: string
           body: string
+          certificate_number: string | null
           created_at: string
           id: string
           issued_at: string
@@ -1194,6 +1195,7 @@ export type Database = {
         Insert: {
           account_id: string
           body?: string
+          certificate_number?: string | null
           created_at?: string
           id?: string
           issued_at?: string
@@ -1205,6 +1207,7 @@ export type Database = {
         Update: {
           account_id?: string
           body?: string
+          certificate_number?: string | null
           created_at?: string
           id?: string
           issued_at?: string
