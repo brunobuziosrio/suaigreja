@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, CheckCircle2, Clock, Users, CalendarOff, Loader2, MessageCircle } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Clock, Users, CalendarOff, Loader2, MessageCircle, Printer, Copy } from "lucide-react";
 import {
   listVolunteerSchedules,
   upsertVolunteerSchedule,
@@ -93,6 +93,59 @@ const VOLUNTEER_TYPES = [
   "limpeza",
   "transmissão",
 ];
+
+function escapeHtml(value: unknown) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
+function fmtShiftDate(dateStr: string) {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+}
+
+function printSchedule(schedule: Schedule, shifts: Shift[]) {
+  const w = window.open("", "_blank", "width=800,height=900");
+  if (!w) return;
+  const sorted = [...shifts].sort((a, b) => a.shift_date.localeCompare(b.shift_date));
+  const rows = sorted
+    .map(
+      (s) => `<tr>
+        <td>${escapeHtml(fmtShiftDate(s.shift_date))}</td>
+        <td>${escapeHtml(s.shift_start_time.slice(0, 5))}${s.shift_end_time ? ` – ${escapeHtml(s.shift_end_time.slice(0, 5))}` : ""}</td>
+        <td>${escapeHtml(s.members?.full_name ?? "—")}</td>
+        <td>${s.confirmed ? "Confirmado" : "Pendente"}</td>
+      </tr>`,
+    )
+    .join("");
+  w.document.write(`<!doctype html><html><head><title>${escapeHtml(schedule.name)}</title>
+    <style>
+      body{font-family:system-ui,Arial,sans-serif;max-width:680px;margin:40px auto;padding:0 20px;color:#1a1a1a}
+      h1{font-size:20px;margin-bottom:4px} .meta{color:#666;font-size:13px;margin-bottom:24px}
+      table{width:100%;border-collapse:collapse;font-size:14px}
+      th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #e5e5e5}
+      th{color:#666;font-weight:600;font-size:12px;text-transform:uppercase}
+      @media print{body{margin:16px}}
+    </style></head><body>
+    <h1>${escapeHtml(schedule.name)}</h1>
+    <div class="meta">${escapeHtml(schedule.description ?? "")}</div>
+    <table><thead><tr><th>Data</th><th>Horário</th><th>Voluntário</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody></table>
+    </body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
+function buildScheduleWhatsappText(schedule: Schedule, shifts: Shift[]) {
+  const sorted = [...shifts].sort((a, b) => a.shift_date.localeCompare(b.shift_date));
+  const lines = [`📋 *${schedule.name}*`, ""];
+  for (const s of sorted) {
+    const status = s.confirmed ? "✅" : "⏳";
+    lines.push(`${status} ${fmtShiftDate(s.shift_date)} ${s.shift_start_time.slice(0, 5)} — ${s.members?.full_name ?? "—"}`);
+  }
+  return lines.join("\n");
+}
 
 function VolunteerSchedulesPage() {
   const qc = useQueryClient();
@@ -351,6 +404,23 @@ function VolunteerSchedulesPage() {
                       <CardDescription>{schedule.description}</CardDescription>
                     </div>
                     <div className="flex gap-2">
+                      {schedule.id === activeScheduleId && shifts.length > 0 && (
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(buildScheduleWhatsappText(schedule, shifts));
+                              toast.success("Escala copiada — cole no WhatsApp");
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => printSchedule(schedule, shifts)}>
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
                       <Button variant="outline" size="sm" onClick={() => editSchedule(schedule)}>
                         <Edit2 className="h-4 w-4" />
                       </Button>
