@@ -41,7 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, CheckCircle2, Clock, Users, CalendarOff, Loader2 } from "lucide-react";
+import { Plus, Edit2, Trash2, CheckCircle2, Clock, Users, CalendarOff, Loader2, MessageCircle } from "lucide-react";
 import {
   listVolunteerSchedules,
   upsertVolunteerSchedule,
@@ -80,6 +80,7 @@ type Shift = {
   confirmed_at: string | null;
   notes: string | null;
   members?: { full_name: string; phone: string | null; email: string | null };
+  schedule?: { name: string } | null;
 };
 
 const VOLUNTEER_TYPES = [
@@ -483,6 +484,19 @@ function VolunteerSchedulesPage() {
                                       >
                                         Confirmar
                                       </Button>
+                                    )}
+                                    {!shift.confirmed && shift.members?.phone && (
+                                      <a
+                                        href={`https://wa.me/55${shift.members.phone.replace(/\D/g, "")}?text=${encodeURIComponent(
+                                          `Olá ${shift.members.full_name.split(" ")[0]}! Passando pra lembrar que você está escalado(a) em "${shift.schedule?.name ?? "uma escala"}" no dia ${new Date(`${shift.shift_date}T00:00:00`).toLocaleDateString("pt-BR")} às ${shift.shift_start_time}. Pode confirmar presença? 🙏`,
+                                        )}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                      >
+                                        <Button variant="outline" size="sm" title="Lembrar pelo WhatsApp">
+                                          <MessageCircle className="h-4 w-4" />
+                                        </Button>
+                                      </a>
                                     )}
                                     <Button
                                       variant="outline"
