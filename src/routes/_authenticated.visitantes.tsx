@@ -18,12 +18,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { QrCode, Copy, Download, MessageCircle, Phone, Mail, UserPlus, Trash2, Archive, Check } from "lucide-react";
+import { QrCode, Copy, Download, MessageCircle, Phone, Mail, UserPlus, Trash2, TrendingUp, AlertTriangle } from "lucide-react";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
 import QRCode from "qrcode";
 
 export const Route = createFileRoute("/_authenticated/visitantes")({ component: VisitantesPage });
+
+type VisitorStatus = "new" | "contacted" | "returned" | "in_group" | "member" | "archived";
+
+const FUNNEL_STAGES: { status: VisitorStatus; label: string }[] = [
+  { status: "new", label: "Novos" },
+  { status: "contacted", label: "Contatados" },
+  { status: "returned", label: "Retornaram" },
+  { status: "in_group", label: "Em grupo" },
+  { status: "member", label: "Membros" },
+];
+
+// Dias parado na etapa atual a partir dos quais consideramos que o visitante
+// "esfriou" e precisa de atencao (etapas iniciais, antes de virar membro).
+const STALE_DAYS_THRESHOLD = 7;
+
+function daysInStage(statusChangedAt: string): number {
+  const diffMs = Date.now() - new Date(statusChangedAt).getTime();
+  return Math.max(0, Math.floor(diffMs / (24 * 60 * 60 * 1000)));
+}
 
 function VisitantesPage() {
   const list = useServerFn(listVisitors);
@@ -37,13 +59,12 @@ function VisitantesPage() {
   const { data: visitors = [], isLoading } = useQuery({ queryKey: ["visitors"], queryFn: () => list() });
   const { data: cfg } = useQuery({ queryKey: ["visitor-cfg"], queryFn: () => getCfg() });
 
-  const [tab, setTab] = useState<"new" | "contacted" | "member" | "archived">("new");
+  const [tab, setTab] = useState<VisitorStatus>("new");
   const [qrOpen, setQrOpen] = useState(false);
   const [cfgOpen, setCfgOpen] = useState(false);
 
   const updMut = useMutation({
-    mutationFn: (v: { id: string; status: "new" | "contacted" | "member" | "archived" }) =>
-      upd({ data: v }),
+    mutationFn: (v: { id: string; status: VisitorStatus }) => upd({ data: v }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["visitors"] }),
   });
   const delMut = useMutation({
@@ -58,9 +79,24 @@ function VisitantesPage() {
   const counts = {
     new: visitors.filter((v) => v.status === "new").length,
     contacted: visitors.filter((v) => v.status === "contacted").length,
+    returned: visitors.filter((v) => v.status === "returned").length,
+    in_group: visitors.filter((v) => v.status === "in_group").length,
     member: visitors.filter((v) => v.status === "member").length,
     archived: visitors.filter((v) => v.status === "archived").length,
   };
+
+  const funnel = useMemo(() => {
+    const active = visitors.filter((v) => v.status !== "archived");
+    const totalActive = active.length;
+    const conversionRate = totalActive > 0 ? Math.round((counts.member / totalActive) * 100) : 0;
+    const stale = visitors.filter(
+      (v) =>
+        (v.status === "new" || v.status === "contacted") &&
+        daysInStage((v as { status_changed_at?: string }).status_changed_at ?? v.created_at) >= STALE_DAYS_THRESHOLD,
+    ).length;
+    return { totalActive, conversionRate, stale };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitors]);
 
   const siteSlug = cfg?.custom_slug || cfg?.site_id || "";
   const publicUrl = siteSlug ? `${typeof window !== "undefined" ? window.location.origin : ""}/v/${siteSlug}` : "";
@@ -85,10 +121,47 @@ function VisitantesPage() {
           </div>
         </div>
 
-        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          {FUNNEL_STAGES.map((stage, idx) => (
+            <Card key={stage.status} className="p-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">{stage.label}</p>
+                {idx > 0 && <span className="text-[10px] text-muted-foreground">etapa {idx + 1}</span>}
+              </div>
+              <p className="text-2xl font-semibold mt-1">{counts[stage.status]}</p>
+            </Card>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap gap-3">
+          <Card className="p-3 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-emerald-600 shrink-0" />
+            <p className="text-sm">
+              <span className="font-semibold">{funnel.conversionRate}%</span>{" "}
+              <span className="text-muted-foreground">
+                dos visitantes ativos ({funnel.totalActive}) viraram membros
+              </span>
+            </p>
+          </Card>
+          {funnel.stale > 0 && (
+            <Card className="p-3 flex items-center gap-2 border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-sm">
+                <span className="font-semibold">{funnel.stale}</span>{" "}
+                <span className="text-muted-foreground">
+                  visitante(s) sem avanço há {STALE_DAYS_THRESHOLD}+ dias — vale um contato
+                </span>
+              </p>
+            </Card>
+          )}
+        </div>
+
+        <Tabs value={tab} onValueChange={(v) => setTab(v as VisitorStatus)}>
+          <TabsList className="flex-wrap h-auto">
             <TabsTrigger value="new">Novos ({counts.new})</TabsTrigger>
             <TabsTrigger value="contacted">Contatados ({counts.contacted})</TabsTrigger>
+            <TabsTrigger value="returned">Retornaram ({counts.returned})</TabsTrigger>
+            <TabsTrigger value="in_group">Em grupo ({counts.in_group})</TabsTrigger>
             <TabsTrigger value="member">Membros ({counts.member})</TabsTrigger>
             <TabsTrigger value="archived">Arquivados ({counts.archived})</TabsTrigger>
           </TabsList>
@@ -138,6 +211,15 @@ function VisitantesPage() {
 
 type VisitorRow = Awaited<ReturnType<typeof listVisitors>>[number];
 
+const STATUS_LABELS: Record<VisitorStatus, string> = {
+  new: "Novo",
+  contacted: "Contatado",
+  returned: "Retornou",
+  in_group: "Entrou em grupo",
+  member: "Virou membro",
+  archived: "Arquivado",
+};
+
 function VisitorCard({
   v,
   onStatus,
@@ -145,7 +227,7 @@ function VisitorCard({
   onSaveNotes,
 }: {
   v: VisitorRow;
-  onStatus: (s: "new" | "contacted" | "member" | "archived") => void;
+  onStatus: (s: VisitorStatus) => void;
   onDelete: () => void;
   onSaveNotes: (notes: string) => Promise<void>;
 }) {
@@ -155,6 +237,9 @@ function VisitorCard({
         `Olá ${v.name.split(" ")[0]}! Que alegria conhecer você na nossa igreja. 🙏`,
       )}`
     : null;
+  const status = v.status as VisitorStatus;
+  const daysStuck = daysInStage((v as { status_changed_at?: string }).status_changed_at ?? v.created_at);
+  const isStale = (status === "new" || status === "contacted") && daysStuck >= STALE_DAYS_THRESHOLD;
 
   return (
     <Card className="p-4">
@@ -162,8 +247,13 @@ function VisitorCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium">{v.name}</span>
-            {v.is_first_time && <Badge variant="secondary">1ª vez</Badge>}
+            {v.is_first_time && <Badge variant="neutral">1ª vez</Badge>}
             {v.age_range && <Badge variant="outline">{v.age_range}</Badge>}
+            {status !== "archived" && (
+              <Badge variant={isStale ? "warning" : "neutral"}>
+                {daysStuck === 0 ? "há menos de 1 dia" : `há ${daysStuck} dia(s)`} nesta etapa
+              </Badge>
+            )}
             <span className="text-xs text-muted-foreground">
               {new Date(v.created_at).toLocaleString("pt-BR")}
             </span>
@@ -187,7 +277,7 @@ function VisitorCard({
             <p className="text-xs text-amber-600 mt-1">⚠ Não autorizou contato</p>
           )}
         </div>
-        <div className="flex flex-col gap-1 shrink-0">
+        <div className="flex flex-col gap-1.5 shrink-0 w-44">
           {waLink && v.allow_contact && (
             <a href={waLink} target="_blank" rel="noreferrer">
               <Button size="sm" variant="outline" className="w-full">
@@ -195,21 +285,16 @@ function VisitorCard({
               </Button>
             </a>
           )}
-          {v.status !== "contacted" && v.status !== "member" && (
-            <Button size="sm" variant="ghost" onClick={() => onStatus("contacted")}>
-              <Check className="h-3.5 w-3.5 mr-1" /> Contatado
-            </Button>
-          )}
-          {v.status !== "member" && (
-            <Button size="sm" variant="ghost" onClick={() => onStatus("member")}>
-              <UserPlus className="h-3.5 w-3.5 mr-1" /> Tornou membro
-            </Button>
-          )}
-          {v.status !== "archived" && (
-            <Button size="sm" variant="ghost" onClick={() => onStatus("archived")}>
-              <Archive className="h-3.5 w-3.5 mr-1" /> Arquivar
-            </Button>
-          )}
+          <Select value={status} onValueChange={(v2) => onStatus(v2 as VisitorStatus)}>
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(STATUS_LABELS) as VisitorStatus[]).map((s) => (
+                <SelectItem key={s} value={s}>{STATUS_LABELS[s]}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button size="sm" variant="ghost" onClick={onDelete}>
             <Trash2 className="h-3.5 w-3.5 mr-1" /> Excluir
           </Button>

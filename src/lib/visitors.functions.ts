@@ -24,14 +24,17 @@ export const updateVisitorStatus = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z.object({
       id: z.string().uuid(),
-      status: z.enum(["new", "contacted", "member", "archived"]),
+      status: z.enum(["new", "contacted", "returned", "in_group", "member", "archived"]),
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
     await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
-    const { error } = await supabase.from("visitors").update({ status: data.status }).eq("id", data.id);
+    const { error } = await supabase
+      .from("visitors")
+      .update({ status: data.status, status_changed_at: new Date().toISOString() })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
