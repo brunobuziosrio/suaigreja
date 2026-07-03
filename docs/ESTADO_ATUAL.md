@@ -370,17 +370,19 @@ documentos, relatórios e configurações (conta + hub). "Equipe" ficou de fora
 deliberadamente — já é mais restrito que a matriz exigiria (owner-only
 hardcoded em `team.functions.ts`).
 
-**PENDENTE — decisão consciente de não deployar ainda**: diferente da
-correção de `account_id` (só amplia visibilidade de dados que já eram do
-convidado), este enforcement passa a **bloquear** ações antes permitidas.
-Existe um convidado real de teste (`tesoureiro_geral`) ativo na conta de
-produção; com a matriz padrão desse cargo (`members: view`, `campaigns: ALL`,
-`finances: ALL`, `reports: view`, `documents: view`), qualquer teste dele
-fora desses módulos passaria a ser bloqueado assim que isso for para o ar.
-Perguntei ao Bruno se pode deployar e ele não respondeu (sessão em
-background) — commits `f04b752`/`4800e2c`/`664ca20` prontos, build e
-`tsc --noEmit` limpos em cada um. Antes de deployar: confirmar com o Bruno,
-ou pelo menos verificar se o teste com esse usuário já terminou.
+**DEPLOYADA em produção 03-07** (após confirmação do Bruno): mesmo processo
+validado (build local, backup `/app/dist.bak`, tar+scp+`docker cp`, restart).
+Validado: logs limpos desde o restart; HTTP 200 em `/login`, `/dashboard`,
+`/equipe`, `/membros`; bundle do servidor no container contém
+`requirePermission` (20 arquivos). Conferido no banco que o cargo
+`tesoureiro_geral` (do convidado de teste ativo) **não tem override**
+customizado em `account_role_permissions` — os defaults do catálogo se
+aplicam: `members: view`, `campaigns: ALL`, `finances: ALL`, `reports: view`,
+`documents: view`; demais módulos (visitors, events, checkin, secretaria,
+whatsapp, small_groups, education, volunteer_shifts, settings) ficam
+bloqueados para esse cargo a partir de agora. Roles `secretario_geral` e
+`membro` JÁ tinham overrides customizados salvos (de teste anterior do
+Bruno em `/equipe`) — passam a valer de fato também.
 
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
