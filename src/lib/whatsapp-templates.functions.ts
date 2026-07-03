@@ -9,12 +9,14 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listWhatsappTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "whatsapp", "view");
     const { data, error } = await supabase
       .from("whatsapp_template_library")
       .select("*")
@@ -39,6 +41,7 @@ export const upsertWhatsappTemplate = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase: client } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "whatsapp", data.id ? "edit" : "create");
     const payload = {
       name: data.name.trim(),
       kind: data.kind.trim(),
@@ -70,6 +73,7 @@ export const deleteWhatsappTemplate = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase: client } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "whatsapp", "delete");
     const { error } = await client
       .from("whatsapp_template_library")
       .delete()
@@ -84,6 +88,7 @@ export const listWhatsappAutomationRules = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "whatsapp", "view");
     const { data, error } = await supabase
       .from("whatsapp_automation_rules")
       .select("*, template:whatsapp_template_library(name, content)")
@@ -110,6 +115,7 @@ export const upsertWhatsappAutomationRule = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase: client } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "whatsapp", data.id ? "edit" : "create");
     const payload = {
       name: data.name.trim(),
       trigger_type: data.trigger_type.trim(),
@@ -143,6 +149,7 @@ export const deleteWhatsappAutomationRule = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase: client } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "whatsapp", "delete");
     const { error } = await client
       .from("whatsapp_automation_rules")
       .delete()

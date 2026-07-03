@@ -9,11 +9,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listTithes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("tithes")
@@ -29,6 +31,7 @@ export const getTithesByMember = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ memberId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data: tithes, error } = await supabase
       .from("tithes")
@@ -54,6 +57,7 @@ export const upsertTithe = createServerFn({ method: "POST" })
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "finances", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload = {
       member_id: data.member_id,
@@ -85,6 +89,7 @@ export const deleteTithe = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "finances", "delete");
     const { supabase: client } = context;
     const { error } = await client
       .from("tithes")
@@ -107,6 +112,7 @@ export const getTithesReport = createServerFn({ method: "GET" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "finances", "view");
     const { supabase } = context;
     let query = supabase
       .from("tithes")

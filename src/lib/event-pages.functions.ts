@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 import QRCode from "qrcode";
 import { z } from "zod";
 
@@ -42,6 +43,7 @@ export const listEventPages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("event_pages")
@@ -73,6 +75,7 @@ export const saveEventPage = createServerFn({ method: "POST" })
   .inputValidator((input) => EventPageInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", data.id ? "edit" : "create");
     const { supabase } = context;
 
     let slug = data.slug && data.slug.length > 2 ? slugify(data.slug) : slugify(data.title);
@@ -141,6 +144,7 @@ export const deleteEventPage = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("event_pages")
@@ -156,6 +160,7 @@ export const listEventRegistrations = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ eventPageId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data: regs, error } = await supabase
       .from("event_registrations")
@@ -172,6 +177,7 @@ export const getRegistrationPayment = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ registrationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data: reg } = await supabase
       .from("event_registrations")

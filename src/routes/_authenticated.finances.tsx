@@ -21,6 +21,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 import { useMemo, useState } from "react";
 import {
   TrendingUp,
@@ -41,6 +42,7 @@ const getDonations = createServerFn({
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("donations")
@@ -58,6 +60,7 @@ const getMembersWithDonations = createServerFn({
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
+    await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("members")
@@ -74,6 +77,7 @@ function FinancesPage() {
     .middleware([requireSupabaseAuth])
     .handler(async ({ context }) => {
       const { accountId } = await requirePlanTier(context, "premium");
+      await requirePermission(context, "finances", "view");
       const { supabase } = context;
       const { data, error } = await supabase
         .from("donations")

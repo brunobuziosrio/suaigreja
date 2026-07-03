@@ -9,6 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const createEventInscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -26,6 +27,7 @@ export const createEventInscription = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "create");
 
     // Check event exists and has capacity
     const { data: event, error: eventErr } = await supabase
@@ -90,6 +92,7 @@ export const listEventInscriptions = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "view");
     const { data: inscriptions, error } = await supabase
       .from("event_inscriptions")
       .select("*")
@@ -113,6 +116,7 @@ export const generateQRCodeForInscription = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "view");
     const { data: inscription, error } = await supabase
       .from("event_inscriptions")
       .select("*, events(id, name)")
@@ -146,6 +150,7 @@ export const recordEventAttendance = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "edit");
 
     const { error } = await supabase
       .from("event_inscriptions")
@@ -172,6 +177,7 @@ export const generateEventCertificate = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "view");
     const { data: inscription, error: inscErr } = await supabase
       .from("event_inscriptions")
       .select("*, events(name, event_date)")
@@ -208,6 +214,7 @@ export const exportEventInscriptionsToCSV = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "view");
     const { data: inscriptions, error } = await supabase
       .from("event_inscriptions")
       .select("*")

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 const listSchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -14,6 +15,7 @@ export const listEvents = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "view");
     const { data: rows, error } = await supabase
       .from("events")
       .select("*")
@@ -45,6 +47,7 @@ export const upsertEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", data.id ? "edit" : "create");
 
     // Resolve location and type names (denormalize for public embed)
     const [{ data: loc, error: locErr }, { data: typ, error: typErr }] = await Promise.all([
@@ -91,6 +94,7 @@ export const deleteEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "events", "delete");
     const { error } = await supabase
       .from("events")
       .delete()

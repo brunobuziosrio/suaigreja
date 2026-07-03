@@ -7,6 +7,7 @@ import QRCode from "qrcode";
 import { buildPixBrCode } from "./pix-brcode";
 import { requirePlanTier } from "@/lib/plan-access";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 const MERCADOPAGO_BASE_URL = "https://api.mercadopago.com";
 
@@ -228,6 +229,7 @@ export const listMyDonationCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
+    await requirePermission(context, "campaigns", "view");
     const { data, error } = await supabase
       .from("donation_campaigns")
       .select("*")
@@ -262,6 +264,7 @@ export const upsertDonationCampaign = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
+    await requirePermission(context, "campaigns", data.id ? "edit" : "create");
     const row = { ...data, account_id: accountId };
     const { error } = data.id
       ? await supabase.from("donation_campaigns").update(row).eq("id", data.id)
@@ -275,6 +278,7 @@ export const deleteDonationCampaign = createServerFn({ method: "POST" })
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
+    await requirePermission(context, "campaigns", "delete");
     const { error } = await supabase.from("donation_campaigns").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -285,6 +289,7 @@ export const getDonationCampaignStats = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
+    await requirePermission(context, "campaigns", "view");
     const { data: campaigns, error: campaignsError } = await supabase
       .from("donation_campaigns")
       .select("id, title, goal_cents")
@@ -318,6 +323,7 @@ export const listDonationsByCampaign = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
+    await requirePermission(context, "campaigns", "view");
     const { data: rows, error } = await supabase
       .from("donations")
       .select("id, donor_name, amount_cents, status, paid_at, created_at")
@@ -335,6 +341,7 @@ export const getDonationsMonthlyReport = createServerFn({ method: "GET" })
   .inputValidator((input: { year: number }) => z.object({ year: z.number().int().min(2020).max(2100) }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "campaigns", "view");
     const { supabase } = context;
     const start = `${data.year}-01-01T00:00:00.000Z`;
     const end = `${data.year + 1}-01-01T00:00:00.000Z`;
