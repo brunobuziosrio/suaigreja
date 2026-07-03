@@ -35,7 +35,7 @@ export const MODULE_CATALOG: ModuleAccess[] = [
   { id: "campaigns", label: "Campanhas e contribuições", path: "/campanhas", minimumTier: "pro", status: "core", sellable: true },
   { id: "small_groups", label: "Células, grupos e pastorais", path: "/celulas", minimumTier: "premium", status: "ready", sellable: true },
   { id: "education", label: "Ensino e turmas", path: "/ebd", minimumTier: "premium", status: "ready", sellable: true },
-  { id: "documents", label: "Documentos", path: "/documentos", minimumTier: "premium", status: "beta", sellable: false },
+  { id: "documents", label: "Documentos", path: "/documentos", minimumTier: "premium", status: "beta", sellable: true },
   { id: "finances", label: "Financeiro", path: "/finances", minimumTier: "premium", status: "ready", sellable: true },
   { id: "volunteer_shifts", label: "Escalas", path: "/escalas", minimumTier: "premium", status: "ready", sellable: true },
   { id: "secretaria", label: "Secretaria Digital", path: "/secretaria", minimumTier: "pro", status: "beta", sellable: true },
