@@ -95,9 +95,14 @@ export const getSecretariaStats = createServerFn({ method: "GET" })
     };
   });
 
+const optionalUuid = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.string().uuid().optional(),
+);
+
 const upsertSchema = z.object({
-  id: z.string().uuid().optional().nullable().transform((v) => v || undefined),
-  member_id: z.string().uuid().optional().nullable().transform((v) => v || undefined),
+  id: optionalUuid,
+  member_id: optionalUuid,
   request_type: z.enum(REQUEST_TYPES),
   requester_name: z.string().min(1).max(160),
   requester_phone: z.string().max(40).optional().nullable(),

@@ -59,6 +59,7 @@ import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBoletimRouteImport } from './routes/_authenticated.boletim'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
+import { Route as AuthenticatedAcaoSocialRouteImport } from './routes/_authenticated.acao-social'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as NSlugPostIdRouteImport } from './routes/n.$slug.$postId'
 import { Route as ManifestSiteIdJsonRouteImport } from './routes/manifest.$siteId.json'
@@ -330,6 +331,11 @@ const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
   path: '/agenda',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAcaoSocialRoute = AuthenticatedAcaoSocialRouteImport.update({
+  id: '/acao-social',
+  path: '/acao-social',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -445,6 +451,7 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/login': typeof LoginRoute
   '/update-password': typeof UpdatePasswordRoute
+  '/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/boletim': typeof AuthenticatedBoletimRoute
@@ -515,6 +522,7 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugRoute
   '/login': typeof LoginRoute
   '/update-password': typeof UpdatePasswordRoute
+  '/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/boletim': typeof AuthenticatedBoletimRoute
@@ -587,6 +595,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/update-password': typeof UpdatePasswordRoute
+  '/_authenticated/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/boletim': typeof AuthenticatedBoletimRoute
@@ -659,6 +668,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/login'
     | '/update-password'
+    | '/acao-social'
     | '/agenda'
     | '/billing'
     | '/boletim'
@@ -729,6 +739,7 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/login'
     | '/update-password'
+    | '/acao-social'
     | '/agenda'
     | '/billing'
     | '/boletim'
@@ -800,6 +811,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/update-password'
+    | '/_authenticated/acao-social'
     | '/_authenticated/agenda'
     | '/_authenticated/billing'
     | '/_authenticated/boletim'
@@ -1250,6 +1262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAgendaRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/acao-social': {
+      id: '/_authenticated/acao-social'
+      path: '/acao-social'
+      fullPath: '/acao-social'
+      preLoaderRoute: typeof AuthenticatedAcaoSocialRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/admin'
@@ -1401,6 +1420,7 @@ const AuthenticatedMarketplaceRouteWithChildren =
   )
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAcaoSocialRoute: typeof AuthenticatedAcaoSocialRoute
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedBoletimRoute: typeof AuthenticatedBoletimRoute
@@ -1442,6 +1462,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAcaoSocialRoute: AuthenticatedAcaoSocialRoute,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedBoletimRoute: AuthenticatedBoletimRoute,
