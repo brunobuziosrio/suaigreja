@@ -743,6 +743,27 @@ simulando 80% do prazo decorrido com só 1% arrecadado): os dois alertas
 apareceram corretamente no card, com ícone/título/descrição certos. Zero
 erro de console. Dados de teste removidos depois.
 
+### Vínculo Familiar — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima terceira feature do backlog. Agrupa fiéis em núcleos familiares
+(chefe + dependentes) pra visitação pastoral e visão de família. **Sem
+tabela nova** — reaproveita `members.family_head_id`, uma coluna
+self-referencing que já existia no banco (visível em `types.ts`) mas
+nunca tinha sido usada por nenhum server function nem tela.
+
+`listFamilyGroups` agrupa em memória (head + dependentes, só mostra heads
+com pelo menos 1 dependente). `setMemberFamilyHead` vincula/desvincula,
+valida que o chefe existe na conta e que ninguém vira chefe de si mesmo.
+Rota `/familias`, novo item de menu em "Comunidade".
+
+Testado de ponta a ponta com dados reais da conta (sem criar registro de
+teste — só um vínculo temporário entre dois membros existentes): vinculei
+"Maria Santos [Teste] #1" como dependente de "João Ferreira dos Santos" →
+grupo apareceu certinho com foto/telefone do chefe e
+foto/aniversário/nome do dependente → removi o vínculo → grupo sumiu da
+lista (sem dependentes). Zero erro de console. Confirmado no banco que não
+sobrou nenhum `family_head_id` residual depois do teste.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
