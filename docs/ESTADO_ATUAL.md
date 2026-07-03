@@ -570,6 +570,41 @@ pra um membro (card passou a mostrar "Com Ana Costa [Teste] #13 desde
 03/07/2026") → devolvido → voltou a "Disponível". Zero erro de console em
 todo o fluxo. Item de teste removido depois.
 
+### Acompanhamento público de protocolo (Secretaria) — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Nona feature do backlog. O solicitante de um atendimento da Secretaria
+(batismo, casamento, catequese, etc) acompanha o status do próprio pedido
+pelo link do protocolo (`/protocolo/$id`), sem precisar ligar. Sem tabela
+nova — reaproveita `secretaria_requests` que já existia. `getPublicSecretariaStatus`
+expõe só os campos que o próprio solicitante já conhece (tipo, status,
+datas) — nunca `internal_notes`, `assignee_name`, `due_date`, contato ou
+`member_id`. Botão "copiar link de acompanhamento" na lista do Portal da
+Secretaria pra equipe compartilhar por WhatsApp/e-mail.
+
+**Bug real encontrado e corrigido nesta mudança** (pré-existente, não
+introduzido agora): o botão "Nova solicitação" do Portal da Secretaria
+estava **completamente quebrado** desde que o módulo foi criado (23-06) —
+o schema Zod validava `.uuid()` nos campos `id`/`member_id` **antes** de
+tratar string vazia, e o formulário sempre envia `""` num registro novo.
+Resultado: toda tentativa de criar uma solicitação nova falhava com "Invalid
+uuid". Corrigido com `z.preprocess()` convertendo `""`/`null` pra
+`undefined` antes da validação de formato — mesma classe de bug já
+registrada em [[fix_uuid_validation]], mas aplicada incorretamente aqui.
+Só descobri porque testei o fluxo de criação de verdade pra gerar o link
+de teste. Validado após a correção: criação → cópia do link → página
+pública mostra o pedido sem vazar campos internos → status avançado no
+admin → página pública recarregada mostra a timeline atualizada
+("Recebido" e "Em andamento" preenchidos). Zero erro de console.
+
+**Achado fora do escopo, não corrigido agora**: `secretaria_requests`,
+`secretaria_request_events` e `secretaria_request_attachments` nunca
+foram adicionadas ao `types.ts` manual — `tsc --noEmit` acusa dezenas de
+erros de tipo no arquivo inteiro (pré-existentes, não introduzidos nesta
+sessão). Não afeta runtime (`bun run build`/Vite não type-check, só
+transpila) mas deveria ser corrigido numa sessão futura adicionando as 3
+tabelas ao `types.ts` ou convertendo o arquivo pro padrão `as never` usado
+nas tabelas novas desta sessão.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
