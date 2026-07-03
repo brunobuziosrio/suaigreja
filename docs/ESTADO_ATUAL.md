@@ -473,9 +473,17 @@ número, tipo de documento, membro e data corretos, zero erro de console.
 Não deu pra testar o fluxo de emissão pela UI autenticada por causa do
 bloqueio do módulo. Registro de teste removido depois.
 
-**Pendente decisão do Bruno**: promover `documents` de `sellable: false`
-para `sellable: true` em `plan-access.ts` quando o módulo (documentos +
-certificados) estiver pronto pra clientes reais usarem.
+**RESOLVIDO no mesmo dia**: Bruno autorizou liberar o módulo. Alterado
+`documents.sellable` para `true` em `plan-access.ts` (mesmo padrão já usado
+por `whatsapp` e `secretaria`: beta + vendável), deployado, e testado o
+fluxo completo pela UI autenticada de verdade (login real via magic link):
+abrir "Emitir documento" → escolher modelo "Certificado de Batismo" →
+escolher membro → ativar "Emitir como certificado numerado" → emitir →
+número gerado (`0001/2026`) → clicar Imprimir → popup com QR Code e rótulo
+do certificado → extraído o link do QR → acessada a página pública
+`/cert/$id` → dados corretos. Zero erro de console em todo o fluxo.
+Registro de teste removido depois. `/documentos` agora é acessível a
+qualquer conta Premium (ou superior) normalmente.
 
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
