@@ -41,6 +41,7 @@ import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hu
 import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
 import { Route as AuthenticatedEventosRouteImport } from './routes/_authenticated.eventos'
 import { Route as AuthenticatedEscalasRouteImport } from './routes/_authenticated.escalas'
+import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated.equipe'
 import { Route as AuthenticatedEmbedRouteImport } from './routes/_authenticated.embed'
 import { Route as AuthenticatedEbdRouteImport } from './routes/_authenticated.ebd'
 import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authenticated.documentos'
@@ -232,6 +233,11 @@ const AuthenticatedEscalasRoute = AuthenticatedEscalasRouteImport.update({
   path: '/escalas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedEquipeRoute = AuthenticatedEquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedEmbedRoute = AuthenticatedEmbedRouteImport.update({
   id: '/embed',
   path: '/embed',
@@ -407,6 +413,7 @@ export interface FileRoutesByFullPath {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ebd': typeof AuthenticatedEbdRoute
   '/embed': typeof AuthenticatedEmbedRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
   '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
   '/finances': typeof AuthenticatedFinancesRoute
@@ -469,6 +476,7 @@ export interface FileRoutesByTo {
   '/documentos': typeof AuthenticatedDocumentosRoute
   '/ebd': typeof AuthenticatedEbdRoute
   '/embed': typeof AuthenticatedEmbedRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
   '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
   '/finances': typeof AuthenticatedFinancesRoute
@@ -533,6 +541,7 @@ export interface FileRoutesById {
   '/_authenticated/documentos': typeof AuthenticatedDocumentosRoute
   '/_authenticated/ebd': typeof AuthenticatedEbdRoute
   '/_authenticated/embed': typeof AuthenticatedEmbedRoute
+  '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
   '/_authenticated/escalas': typeof AuthenticatedEscalasRoute
   '/_authenticated/eventos': typeof AuthenticatedEventosRoute
   '/_authenticated/finances': typeof AuthenticatedFinancesRoute
@@ -597,6 +606,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/ebd'
     | '/embed'
+    | '/equipe'
     | '/escalas'
     | '/eventos'
     | '/finances'
@@ -659,6 +669,7 @@ export interface FileRouteTypes {
     | '/documentos'
     | '/ebd'
     | '/embed'
+    | '/equipe'
     | '/escalas'
     | '/eventos'
     | '/finances'
@@ -722,6 +733,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documentos'
     | '/_authenticated/ebd'
     | '/_authenticated/embed'
+    | '/_authenticated/equipe'
     | '/_authenticated/escalas'
     | '/_authenticated/eventos'
     | '/_authenticated/finances'
@@ -1025,6 +1037,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEscalasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/equipe': {
+      id: '/_authenticated/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof AuthenticatedEquipeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/embed': {
       id: '/_authenticated/embed'
       path: '/embed'
@@ -1256,6 +1275,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDocumentosRoute: typeof AuthenticatedDocumentosRoute
   AuthenticatedEbdRoute: typeof AuthenticatedEbdRoute
   AuthenticatedEmbedRoute: typeof AuthenticatedEmbedRoute
+  AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
   AuthenticatedEscalasRoute: typeof AuthenticatedEscalasRoute
   AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
   AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
@@ -1292,6 +1312,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDocumentosRoute: AuthenticatedDocumentosRoute,
   AuthenticatedEbdRoute: AuthenticatedEbdRoute,
   AuthenticatedEmbedRoute: AuthenticatedEmbedRoute,
+  AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
   AuthenticatedEscalasRoute: AuthenticatedEscalasRoute,
   AuthenticatedEventosRoute: AuthenticatedEventosRoute,
   AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,

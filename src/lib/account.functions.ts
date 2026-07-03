@@ -4,6 +4,7 @@ import { z } from "zod";
 import { RELIGION_PROFILES, type ReligionProfile } from "./religion-profiles";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountAccess } from "@/lib/plan-access";
+import { resolveAccountContext } from "@/lib/account-context.server";
 import { randomBytes } from "node:crypto";
 import { resolveTxt } from "node:dns/promises";
 
@@ -331,11 +332,13 @@ export const uploadAccountAsset = createServerFn({ method: "POST" })
 export const getMyAccount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { data, error } = await supabase
+    // Resolve a conta real: para o dono, accountId = userId (compatibilidade); para
+    // um membro convidado da equipe, accountId vem do vinculo em account_members.
+    const { accountId } = await resolveAccountContext(context.userId);
+    const { data, error } = await supabaseAdmin
       .from("accounts")
       .select("*")
-      .eq("id", userId)
+      .eq("id", accountId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     return data;

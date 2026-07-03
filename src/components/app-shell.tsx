@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { GlobalSearch } from "@/components/global-search";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
@@ -37,7 +38,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
           </div>
           <div className="flex min-w-0 items-center gap-1 sm:gap-3">
-            <span className="hidden text-sm text-muted-foreground sm:inline">{user?.email}</span>
+            <GlobalSearch />
+            <span className="hidden text-sm text-muted-foreground lg:inline">{user?.email}</span>
             <Button
               variant="ghost"
               size="sm"

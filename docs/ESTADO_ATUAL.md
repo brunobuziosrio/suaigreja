@@ -1,6 +1,6 @@
 # Estado atual do produto — implementado x pendente
 
-Atualizado em: 2026-07-01
+Atualizado em: 2026-07-02
 
 Este arquivo é um **mapa de continuidade entre IAs/sessões**. Ele responde a duas
 perguntas: **o que já existe no código** e **o que os documentos de planejamento
@@ -105,7 +105,7 @@ Instagram (`instagram.functions.ts`, callback), WhatsApp (Meta/UAZAPI).
 |-------------|---------------|--------|--------------------------|
 | **Domínio gerenciado — fase comercial** (registro/renovação Registro.br + cobrança do plano com domínio) | ROADMAP "Dom. gerenciado" | ❌ não iniciado (0 refs) | **Externa**: API de registrador, credenciais, preço. Decisão do Bruno. |
 | **IA Pastoral** (resumos, devocionais, roteiros, posts) | IDEIAS "Novos módulos" | ❌ não iniciado | **Externa**: provedor LLM + custo. Usar Claude (Anthropic) por padrão. |
-| **Permissões granulares por cargo** (matriz por módulo/verbo; perfis pastor, tesoureiro, secretário…) | IDEIAS "Permissões" | ❌ não iniciado | Hoje só há papel binário `admin` em `user_roles`. Alto valor p/ multiusuário. |
+| **Permissões granulares por cargo** (matriz por módulo/verbo; perfis pastor, tesoureiro, secretário…) | IDEIAS "Permissões" | ⚠️ **Fase 1 feita** (fundação + matriz visual); Fases 2–3 pendentes | Descoberto: hoje **1 login = 1 igreja** (`accounts.id = auth.uid()`, trigger cria conta por signup). Multiusuário exige convites (Fase 2) e reescrita de RLS/queries para membership (Fase 3, toca núcleo). |
 | **Autocadastro/pré-cadastro público de membro** | IDEIAS "Membros" | ❌ não iniciado | Existe form público de visitante, não de membro. |
 | **Importação em lote (CSV) de membros e lançamentos** | IDEIAS "Membros"/"Financeiro" | ❌ não iniciado | Só existe **exportação** CSV (relatórios/eventos). |
 | **Financeiro avançado** (livro caixa, balancete, DRE, conciliação, repasses por congregação) | IDEIAS "Financeiro" | ❌ não iniciado | `/finances` é básico (ready). |
@@ -153,8 +153,208 @@ Feito nesta sessão (commits no repo `app/`):
   + funções `listManagedDomainRequests`/`adminUpdateManagedDomainStatus` — **deployado e validado**.
 - Confirmado: migrations de domínio já aplicadas em produção; feature de domínio no ar.
 
-Polimento pendente menor: adicionar o link "Domínios" também no `app-sidebar.tsx`
-(hoje só há botão no cabeçalho de `/admin`).
+Polimento pendente menor resolvido após retomada: o link "Domínios" também foi
+adicionado ao grupo de Administração no `app-sidebar.tsx`.
+
+## 5.1. Registro de sessão — 2026-07-02
+
+Frente de **usabilidade/UX** (sem migration, sem tocar no núcleo vendável; build
+`bun run build` aprovado; smoke test em `vite dev`: `/login` e `/dashboard` = HTTP
+200, sem erros de SSR nos novos módulos):
+
+- **Navegação centralizada** (`src/lib/navigation.ts`): `primaryItems`,
+  `getNavGroups(terms)`, `adminItems` e `adminGroup` extraídos do `app-sidebar.tsx`
+  para fonte única, reutilizável e por tradição religiosa. `app-sidebar.tsx`
+  passou a consumir esse módulo (comportamento preservado).
+- **Busca global / paleta de ações** (`src/components/global-search.tsx`): abre com
+  `Ctrl+/` ou `Ctrl+K` (Cmd+K no Mac) e por botão na barra superior. Lista módulos
+  navegáveis respeitando o plano (`canAccessAccountPath`), ações rápidas (cadastrar
+  pessoa, criar evento, campanha Pix, solicitação da secretaria, WhatsApp) e o grupo
+  de Administração para admins. Título acessível (`sr-only`) para evitar warning do
+  Radix. Montada na topbar em `app-shell.tsx`.
+- **Painel Geral enriquecido** (`_authenticated.dashboard.tsx`): bloco "O que fazer
+  hoje" com alertas acionáveis calculados de dados já carregados (aniversariantes de
+  hoje, próximo evento, fichas incompletas < 80%, campanha Pix ausente) e estado
+  positivo quando não há pendências; card "Próximos eventos" com estado vazio
+  acionável. Sem novas chamadas de servidor.
+
+**Deployado em produção em 2026-07-02** junto com a Fase 1 abaixo (versões `@tanstack`
+conferidas idênticas local x container). Pós-deploy: `/`, `/dashboard`, `/equipe` = HTTP
+200, sem erros nos logs. Falta apenas a validação de hidratação no navegador real (F12).
+
+### Equipe e Permissões — Fase 1 (fundação), 2026-07-02
+
+Decisão do Bruno: encarar o projeto completo de multiusuário (Fases 1–3). Entregue a
+**Fase 1** (segura, isolável, NÃO altera login nem RLS das tabelas existentes; build
+`bun run build` aprovado):
+
+- **Achado arquitetural:** `accounts.id` é PK que referencia `auth.users(id)`; toda
+  função usa `account_id = userId`; `handle_new_user` cria uma conta por signup. Logo
+  **hoje 1 login = 1 igreja** — não há multiusuário por conta.
+- **Migration** `supabase/migrations/20260702120000_team_and_permissions.sql`:
+  tabelas `account_members` (vínculo usuário↔conta + convites) e
+  `account_role_permissions` (matriz JSONB de overrides por cargo); helpers
+  `is_account_member`/`is_account_owner` (SECURITY DEFINER); RLS nas tabelas novas;
+  backfill do dono como `owner`; trigger `accounts_owner_membership` p/ novas contas.
+  **Não altera** a RLS das tabelas existentes.
+- **Catálogo** `src/lib/permissions.ts`: módulos, verbos (ver/criar/editar/excluir/
+  gerenciar), `ROLE_CATALOG` (10 cargos práticos) e defaults por cargo + helpers.
+- **Resolvedor** `src/lib/account-context.server.ts` (`resolveAccountContext`): traduz
+  userId→conta/cargo via membership com fallback seguro para conta própria. Base p/ a
+  Fase 3 (parar de assumir `account_id = userId`).
+- **Funções** `src/lib/team.functions.ts`: `getTeamAndPermissions`,
+  `updateRolePermissions` (owner only, via RLS + checagem em código).
+- **UI** `src/routes/_authenticated.equipe.tsx` (`/equipe`): equipe da conta +
+  matriz visual editável (cargo × módulo × verbo). Item "Equipe e permissões" no menu.
+
+**Status de deploy:** migration **aplicada em produção** em 2026-07-02 (transação única,
+`ON_ERROR_STOP`; backup em `/opt/igreja/backups/pre_team_perms_20260702.dump`). Validado
+no banco: tabelas criadas, RLS + 4 políticas, `is_account_member` OK, 1 `owner` retro-
+inserido, trigger ativo. Código deployado (`docker cp` do dist; rollback em `/app/dist.bak`).
+
+**Fase 1 validada em produção** (navegador, logado): equipe carrega, matriz salva/recarrega.
+
+### Equipe e Permissões — Fase 2 (convites), 2026-07-02 — DEPLOYADA
+
+- **Migration** `20260702140000_member_invitations.sql`: `handle_new_user` agora é
+  **ciente de convites** — se o e-mail do novo signup tem convite pendente em
+  `account_members` (status `invited`, sem `user_id`), vincula à conta que convidou
+  (status `active`) e **não cria conta própria**; sem convite, cria conta como antes.
+  Aplicada em produção (confirmado `INVITE_AWARE_OK`).
+- **Funções** (`team.functions.ts`): `inviteMember` (owner; cria vínculo pendente +
+  `auth.admin.inviteUserByEmail`; e-mail já cadastrado → vincula direto),
+  `updateMemberRole`, `removeMember` (owner; protegem o cargo `owner`).
+  `getTeamAndPermissions` passou a derivar status real: convite enviado / aguardando
+  1º acesso (user criado, e-mail não confirmado) / ativo.
+- **UI** `/equipe`: formulário de convite (e-mail + cargo) e, por membro, troca de
+  cargo e remoção — tudo owner-only.
+
+**Correção crítica — envio de convite por LINK (não por e-mail):** no 1º teste o GoTrue
+retornou `500 Error sending invite email` / `535 Authentication Failed` — o **SMTP Zoho
+está com autenticação recusada** (afeta convites E, provavelmente, os e-mails de
+confirmação de signup, já que `MAILER_AUTOCONFIRM=false`). Solução aplicada para não
+depender do SMTP: `inviteMember` passou a usar `auth.admin.generateLink` (não envia
+e-mail, funciona mesmo com SMTP quebrado) e retorna o **link de acesso**; a UI mostra o
+link com **Copiar** e **Enviar no WhatsApp**. O convidado abre o link → `/update-password`
+(define a senha, sessão vinda do link) → entra na conta. Adicionado `generateInviteLink`
+(botão "Gerar link" por membro pendente) e status real na lista.
+- Deployado (`docker cp`; rollback `/app/dist.bak`); `/`, `/dashboard`, `/equipe`,
+  `/update-password` = 200. Usuários de teste e convites-fantasma limpos do banco.
+
+**Pendências desta feature:**
+1. **URGENTE (infra, decisão do Bruno):** corrigir o **SMTP Zoho** (senha de app / SMTP
+   habilitado) — hoje NENHUM e-mail transacional sai (convite, confirmação de signup,
+   recuperação). Enquanto isso, o convite por link contorna o problema.
+2. **Validar convite ponta-a-ponta** no navegador: convidar um e-mail, copiar o link,
+   abrir o link, definir senha, logar e confirmar que entra na MESMA conta com o cargo
+   (e não cria igreja nova). Limitação: convidar e-mail que já é dono de outra conta
+   vincula, mas `resolveAccountContext` ainda prefere a conta própria dele (falta
+   seletor de conta — tratar junto da Fase 3 / multi-conta).
+
+### Bug crítico encontrado e corrigido — trigger de signup ausente, 2026-07-02
+
+Durante o teste da Fase 2, descoberto que **`on_auth_user_created` (gatilho em
+`auth.users` que chama `handle_new_user`) não existia em produção** — só a função
+existia, sem o trigger. Provavelmente perdido em manutenção anterior do schema auth
+(coincide com a data de criação da conta original, 2026-06-06, mesma data de um backup
+`docker-compose.yml.bak-google-auth-20260606-124403`). **Efeito real: desde então,
+NENHUM novo cadastro (signup normal de igreja nova OU convite) criava conta/vínculo.**
+Confirmado: só existiam 2 usuários no banco inteiro.
+
+- **Corrigido em produção**: recriado o trigger (`CREATE OR REPLACE TRIGGER`, PG 15.8
+  suporta). Migration `20260702150000_restore_new_user_trigger.sql`.
+- Usuário de teste (`brunobuzios@hotmail.com`) vinculado manualmente (estava órfão:
+  sem conta, sem membership) como `tesoureiro_geral` ativo.
+- **Login testado e confirmado saudável** via API admin (senha definida via
+  `admin/users/{id}` + teste no `token?grant_type=password` = sucesso). O
+  "Invalid login credentials" reportado pelo Bruno foi isolado como senha divergente
+  (digitação/autofill em `/update-password`), não um bug do sistema.
+- **Nunca verificado se outras igrejas/usuários tentaram se cadastrar nesse período**
+  e ficaram sem conta — vale conferir `auth.users` vs `accounts` periodicamente até
+  termos alertas automáticos.
+### Equipe e Permissões — Fase 3 (enforcement, parcial), 2026-07-02 — DEPLOYADA
+
+**RLS 100% migrada** (introspecção ao vivo confirmou 0 políticas residuais): migration
+`20260702160000_membership_based_rls.sql` reescreveu, via bloco `DO` dinâmico (mais
+seguro que ~110 `CREATE POLICY` manuais), **todas** as políticas de tabelas de tenant de
+`account_id = auth.uid()` para `is_account_member(account_id, auth.uid())` — cobre dono
+E membro ativo. `accounts` tratada à parte: leitura por qualquer membro ativo
+(`is_account_member`), escrita só pelo dono (`is_account_owner`). Backup prévio
+`/opt/igreja/backups/pre_membership_rls_20260702.dump`.
+
+**Núcleo de identidade corrigido** (2 funções, alto impacto):
+- `getMyAccount` (`account.functions.ts`) passou a resolver a conta via
+  `resolveAccountContext` em vez de `id = userId` — resolve o travamento em
+  onboarding para convidados (dashboard, sidebar, branding, plano dependem disso).
+- `requirePlanTier` (`plan-access.ts`) idem — evita que um convidado tome erro de
+  "assinatura inativa" em qualquer módulo pago (é o gate usado por quase toda função).
+
+**Validado via API** (login real do convidado `tesoureiro_geral`): `accounts` via RLS
+retorna a conta certa (200); `members` filtrado pelo `account_id` real retorna 200;
+filtrado pelo próprio userId dele (o que o app ainda faz hoje) retorna `[]` — sem erro,
+mas vazio. Deploy: `/`, `/dashboard`, `/equipe` = 200, sem erros nos logs.
+
+**⚠️ Lacuna conhecida e deliberadamente não fechada nesta sessão (Fase 3b, pendente):**
+1. **~41 funções de módulo** (`members.functions.ts`, `events.functions.ts`,
+   `campaigns.functions.ts`, `donations`, `finances` etc.) ainda filtram
+   `.eq("account_id", userId)` com o **userId bruto** em vez do `accountId` resolvido.
+   Efeito real: um convidado loga, vê o dashboard, mas **cada módulo aparece vazio**
+   (não trava, não erra — só não mostra dados). Correção: aplicar
+   `resolveAccountContext` em cada função, módulo a módulo (recomendado em lotes
+   pequenos e revisáveis, não uma varredura única).
+2. **Permissões por verbo (a matriz de `/equipe`) ainda NÃO é aplicada nos dados.**
+   Hoje, uma vez que os itens acima forem corrigidos, **qualquer membro ativo** terá o
+   MESMO acesso do dono a todos os módulos (RLS não diferencia por cargo/verbo). A
+   matriz configurada pelo dono é honesta na intenção mas ainda não restringe nada de
+   fato. Para aplicar de verdade: checagem em código nas funções de servidor usando
+   `roleCan()`/`account_role_permissions` (catálogo já existe em `permissions.ts`),
+   análogo ao que `requirePlanTier` já faz para plano.
+
+## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
+
+1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
+   Conta confirmada saudável no banco (senha definida, e-mail confirmado, sem
+   bloqueio/exclusão) — **não foi causado por nenhuma mudança desta sessão** (RLS e
+   resolução de conta só afetam dados pós-login, não a checagem de senha do GoTrue).
+   A conta tem **duas identidades vinculadas**: Google OAuth e e-mail/senha (ambas
+   criadas em 2026-06-06) — hipótese mais provável é que o Bruno normalmente entra
+   via **"Continuar com Google"** e a senha manual está desatualizada/não é a usada
+   no dia a dia. Testar primeiro login via Google. Se precisar trocar a senha: SMTP
+   está quebrado (ver item 2), então usar link de recuperação gerado por
+   `auth.admin.generateLink({type:'recovery', email, options:{redirectTo:'/update-password'}})`
+   via API admin (não expor o token gerado em arquivos versionados — é credencial
+   de acesso). Observação: o `redirect_to` passado não fez efeito no teste desta
+   sessão (GoTrue redirecionou para a raiz do site mesmo estando na allow-list); se
+   acontecer de novo, navegar manualmente para `/update-password` na mesma aba após
+   clicar o link (a sessão de recuperação persiste).
+
+2. **SMTP Zoho quebrado** (`535 Authentication Failed`) — nenhum e-mail transacional
+   sai (convite, confirmação de signup, recuperação de senha). Ver
+   [[project_smtp_quebrado]] na memória. Ação: corrigir credencial/senha de app da
+   Zoho e reiniciar `supabase-auth`. Até lá, convites usam link manual (já
+   implementado) e recuperação de senha também precisa de link gerado manualmente.
+
+3. **Fase 3b (Equipe e Permissões) pendente** — ver seção "Fase 3 (enforcement,
+   parcial)" acima. Resumo do que falta:
+   - Trocar `.eq("account_id", userId)` bruto por `resolveAccountContext` nas ~41
+     funções de módulo (`members`, `events`, `campaigns`, `donations`, `finances`,
+     `visitors`, `checkin`, `secretaria`, `whatsapp`, `small-groups`, `ebd`,
+     `documents`, `volunteer-shifts`, `reports`, etc.) — fazer em lotes pequenos e
+     testáveis, não uma varredura única. Sem isso, um membro convidado loga e vê o
+     dashboard, mas cada módulo aparece **vazio** (não erra).
+   - Depois: aplicar a matriz de `/equipe` de fato (checagem por verbo em código,
+     usando `roleCan()`/`account_role_permissions`, mesmo padrão de `requirePlanTier`).
+     Hoje qualquer membro ativo tem acesso igual ao dono, a matriz ainda não restringe.
+
+4. **Convidado de teste ativo em produção**: `brunobuzios@hotmail.com` está vinculado
+   como `tesoureiro_geral` na conta real. Considerar remover em `/equipe` quando os
+   testes terminarem (ou manter se for um usuário real da equipe).
+
+5. **Backlog grande ainda não iniciado**: ver `IDEIAS_IMPLEMENTACOES.md` — a maioria
+   das ideias (financeiro avançado, multiunidade, IA Pastoral, importação CSV,
+   certificados, páginas de SEO comerciais etc.) não foi tocada nesta sessão. IA
+   Pastoral e domínio gerenciado comercial exigem decisão comercial/credencial do
+   Bruno antes de iniciar.
 
 ## 6. Próximos passos sugeridos (aguardando decisão do Bruno)
 Ordenados por valor x independência de terceiros:

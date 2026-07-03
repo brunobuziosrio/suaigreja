@@ -1,4 +1,5 @@
 import type { PlanTier } from "@/lib/billing-plans";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export type ModuleStatus = "core" | "beta" | "lab" | "ready";
 
@@ -130,10 +131,14 @@ export async function requirePlanTier(
   },
   minimumTier: PlanTier,
 ) {
+  // Resolve a conta real: para o dono, accountId = userId; para um membro da
+  // equipe convidado (Fase 2), accountId vem do vinculo em account_members.
+  const { accountId } = await resolveAccountContext(context.userId);
+
   const { data, error } = await context.supabase
     .from("accounts")
     .select("plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
-    .eq("id", context.userId)
+    .eq("id", accountId)
     .maybeSingle();
 
   if (error) throw new Error(error.message);

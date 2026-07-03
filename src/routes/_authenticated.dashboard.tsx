@@ -3,6 +3,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui/card";
 import {
   CalendarDays,
+  CalendarClock,
   MapPin,
   ListChecks,
   Users,
@@ -15,6 +16,8 @@ import {
   CheckCircle2,
   Circle,
   ArrowRight,
+  AlertTriangle,
+  Sparkles,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -83,6 +86,85 @@ function DashboardPage() {
   });
   const activeMembers = canUseMembers ? (members as any[]).filter((m) => m.status === "ativo").length : "Pro";
   const activeCampaigns = (campaigns as any[]).filter((c) => c.active).length;
+
+  const todayKey = useMemo(() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }, []);
+
+  const birthdaysToday = useMemo(() => {
+    const now = new Date();
+    return birthdays.filter((m: any) => {
+      const d = new Date(m.birth_date + "T00:00:00");
+      return d.getDate() === now.getDate();
+    });
+  }, [birthdays]);
+
+  const upcomingEvents = useMemo(
+    () => (events as any[]).filter((e) => (e.event_date ?? "") >= todayKey).slice(0, 5),
+    [events, todayKey],
+  );
+
+  const incompleteMembers = useMemo(() => {
+    if (!canUseMembers) return 0;
+    return (members as any[]).filter((m) => memberCompleteness(m) < 80).length;
+  }, [canUseMembers, members]);
+
+  const alerts = useMemo(() => {
+    const list: Array<{
+      key: string;
+      icon: typeof Cake;
+      tone: string;
+      title: string;
+      description: string;
+      href: string;
+      search?: Record<string, string>;
+    }> = [];
+    if (birthdaysToday.length > 0) {
+      list.push({
+        key: "birthdays-today",
+        icon: Cake,
+        tone: "text-pink-600 bg-pink-500/10",
+        title: `${birthdaysToday.length} aniversariante(s) hoje`,
+        description: "Envie uma mensagem de carinho pelo WhatsApp.",
+        href: canUseMembers ? "/membros" : "/billing",
+      });
+    }
+    if (upcomingEvents.length > 0) {
+      const next = upcomingEvents[0];
+      list.push({
+        key: "next-event",
+        icon: CalendarClock,
+        tone: "text-primary bg-primary/10",
+        title: next.event_date === todayKey ? "Evento hoje" : "Próximo evento",
+        description: `${next.type_name ?? "Evento"} - ${formatEventDate(next.event_date, next.start_time)}`,
+        href: "/agenda",
+      });
+    }
+    if (canUseMembers && incompleteMembers > 0) {
+      list.push({
+        key: "incomplete-members",
+        icon: AlertTriangle,
+        tone: "text-amber-600 bg-amber-500/10",
+        title: `${incompleteMembers} ficha(s) incompleta(s)`,
+        description: "Complete os cadastros para carteirinha e comunicação.",
+        href: "/membros",
+      });
+    }
+    if (activeCampaigns === 0) {
+      list.push({
+        key: "no-campaign",
+        icon: HandCoins,
+        tone: "text-emerald-700 bg-emerald-500/10",
+        title: "Nenhuma campanha Pix ativa",
+        description: "Ative uma campanha para organizar a arrecadação.",
+        href: "/hub",
+        search: { tab: "doacoes" },
+      });
+    }
+    return list;
+  }, [activeCampaigns, birthdaysToday, canUseMembers, incompleteMembers, todayKey, upcomingEvents]);
   const setupTasks = useMemo(
     () => [
       {
@@ -138,6 +220,38 @@ function DashboardPage() {
             Perfil: {profile?.label} - Plano trial ({trialDays} dias restantes)
           </p>
         </div>
+
+        <Card className="mb-6 p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold">O que fazer hoje</h2>
+          </div>
+          {alerts.length === 0 ? (
+            <div className="flex items-center gap-3 rounded-md bg-muted/40 p-4">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+              <p className="text-sm text-muted-foreground">
+                Tudo em dia por aqui. Sua {terms.institution} nao tem pendencias urgentes agora.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {alerts.map((alert) => (
+                <Link key={alert.key} to={alert.href as any} search={(alert.search ?? {}) as any}>
+                  <div className="group flex h-full items-start gap-3 rounded-md border bg-card p-3 transition-colors hover:border-primary/60 hover:bg-muted/30">
+                    <span className={`rounded-md p-2 ${alert.tone}`}>
+                      <alert.icon className="h-4 w-4" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-5">{alert.title}</p>
+                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{alert.description}</p>
+                    </div>
+                    <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
 
         <Card className="mb-6 overflow-hidden border-primary/20">
           <div className="flex flex-col gap-4 p-5 md:flex-row md:items-start md:justify-between">
@@ -308,6 +422,58 @@ function DashboardPage() {
           </Card>
         )}
 
+        <Card className="mt-6 p-6">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              <h2 className="font-semibold">Proximos eventos</h2>
+            </div>
+            <Link to="/agenda" className="text-xs font-medium text-primary hover:underline">
+              Ver agenda
+            </Link>
+          </div>
+          {upcomingEvents.length === 0 ? (
+            <div className="flex flex-col items-start gap-2 rounded-md bg-muted/40 p-4">
+              <p className="text-sm text-muted-foreground">
+                Nenhum evento agendado para os proximos dias deste mes.
+              </p>
+              <Link
+                to="/agenda"
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Publicar um evento
+              </Link>
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {upcomingEvents.map((e: any) => (
+                <li key={e.id} className="flex items-center gap-3 py-2.5">
+                  <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-md bg-primary/10 text-primary">
+                    <span className="text-sm font-semibold leading-none">
+                      {new Date(`${e.event_date}T00:00:00`).getDate()}
+                    </span>
+                    <span className="text-[10px] uppercase leading-none mt-0.5">
+                      {new Date(`${e.event_date}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" })}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">{e.type_name ?? "Evento"}</p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {e.location_name ?? "Local a definir"}
+                      {e.start_time ? ` - ${e.start_time}` : ""}
+                    </p>
+                  </div>
+                  {e.event_date === todayKey && (
+                    <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                      Hoje
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
         <div className="grid md:grid-cols-2 gap-4 mt-6">
           <SystemUpdatesCard updates={updates as any[]} />
           <SuggestionCard />
@@ -403,4 +569,30 @@ function SuggestionCard() {
       </div>
     </Card>
   );
+}
+
+// Campos relevantes para carteirinha, relatorios e comunicacao. Mantido em sincronia
+// com o indicador de completude exibido na tela de Membros.
+function memberCompleteness(member: any): number {
+  const fields = [
+    member.full_name,
+    member.phone,
+    member.birth_date,
+    member.cpf,
+    member.photo_url,
+    member.address_city,
+    member.address_state,
+    member.member_since,
+    member.congregation,
+    member.role,
+  ];
+  const filled = fields.filter((value) => value != null && String(value).trim() !== "").length;
+  return Math.round((filled / fields.length) * 100);
+}
+
+function formatEventDate(dateStr?: string | null, startTime?: string | null): string {
+  if (!dateStr) return "Data a definir";
+  const d = new Date(`${dateStr}T00:00:00`);
+  const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  return startTime ? `${label}, ${startTime}` : label;
 }

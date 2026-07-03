@@ -1,44 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { useState, type ComponentType } from "react";
-import {
-  BarChart3,
-  BookOpen,
-  BookOpenCheck,
-  CalendarDays,
-  CalendarHeart,
-  ChevronDown,
-  ClipboardList,
-  CircleDollarSign,
-  Code2,
-  FileText,
-  Globe,
-  GraduationCap,
-  HandHeart,
-  IdCard,
-  LayoutDashboard,
-  ListChecks,
-  MapPin,
-  Megaphone,
-  MessageCircle,
-  Package,
-  QrCode,
-  Radio,
-  Settings,
-  ShieldCheck,
-  Store,
-  TrendingUp,
-  UserCheck,
-  UserPlus,
-  Users,
-  Users2,
-  WalletCards,
-} from "lucide-react";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getIsAdmin } from "@/lib/admin.functions";
 import { getMyAccount } from "@/lib/account.functions";
 import { canAccessAccountPath } from "@/lib/plan-access";
 import { getReligionTerms } from "@/lib/religion-profiles";
+import { adminGroup, adminItems, getNavGroups, primaryItems, type NavItem } from "@/lib/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useBranding, BRANDING_DEFAULTS } from "@/hooks/use-branding";
 import {
@@ -56,81 +25,6 @@ import {
   SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-
-type NavItem = {
-  title: string;
-  url: string;
-  icon: ComponentType<{ className?: string }>;
-};
-
-const primaryItems: NavItem[] = [
-  { title: "Visão geral", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Relatórios", url: "/relatorios", icon: BarChart3 },
-];
-
-function getNavGroups(terms: ReturnType<typeof getReligionTerms>): Array<{ label: string; icon: NavItem["icon"]; items: NavItem[] }> {
-  return [
-  {
-    label: "Site e comunicação",
-    icon: Globe,
-    items: [
-      { title: terms.publicPage, url: "/hub", icon: Globe },
-      { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
-      { title: "Transmissões", url: "/transmissoes", icon: Radio },
-    ],
-  },
-  {
-    label: "Comunidade",
-    icon: Users,
-    items: [
-      { title: terms.people, url: "/membros", icon: IdCard },
-      { title: "Visitantes", url: "/visitantes", icon: UserPlus },
-      { title: terms.smallGroups, url: "/celulas", icon: Users2 },
-      { title: "Pedidos de oração", url: "/oracoes", icon: HandHeart },
-      { title: terms.secretaryPortal, url: "/secretaria", icon: ClipboardList },
-    ],
-  },
-  {
-    label: "Agenda e operação",
-    icon: CalendarDays,
-    items: [
-      { title: "Agenda", url: "/agenda", icon: CalendarDays },
-      { title: "Eventos", url: "/eventos", icon: CalendarHeart },
-      { title: "Check-in", url: "/checkin", icon: QrCode },
-      { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },
-      { title: "Locais", url: "/locations", icon: MapPin },
-      { title: "Tipos de evento", url: "/types", icon: ListChecks },
-    ],
-  },
-  {
-    label: "Ensino e conteúdo",
-    icon: BookOpenCheck,
-    items: [
-      { title: "Escola bíblica", url: "/ebd", icon: GraduationCap },
-      { title: "Devocionais", url: "/devocional", icon: BookOpen },
-      { title: "Documentos", url: "/documentos", icon: FileText },
-    ],
-  },
-  {
-    label: "Financeiro",
-    icon: CircleDollarSign,
-    items: [
-      { title: "Finanças", url: "/finances", icon: CircleDollarSign },
-      { title: terms.contributionCampaigns, url: "/campanhas", icon: TrendingUp },
-    ],
-  },
-  {
-    label: "Sistema e conta",
-    icon: Settings,
-    items: [
-      { title: "Configurações", url: "/settings", icon: Settings },
-      { title: "Integrações", url: "/embed", icon: Code2 },
-      { title: "Plugins e extras", url: "/marketplace", icon: Store },
-      { title: "Assinatura", url: "/billing", icon: WalletCards },
-    ],
-  },
-  ];
-}
 
 function NavGroup({
   label,
@@ -206,14 +100,6 @@ export function AppSidebar() {
   const navGroups = getNavGroups(terms);
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);
-
-  const adminItems: NavItem[] = [
-    { title: "Contas", url: "/admin", icon: Users },
-    { title: "Produtos", url: "/admin/products", icon: Package },
-    { title: "Atualizações", url: "/admin/feedback", icon: Megaphone },
-    { title: "Pagamentos", url: "/admin/payments", icon: WalletCards },
-    { title: "WhatsApp", url: "/admin/whatsapp", icon: MessageCircle },
-  ];
 
   return (
     <Sidebar collapsible="icon" aria-label="Navegação principal">
@@ -305,8 +191,8 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 <NavGroup
-                  label="Plataforma"
-                  icon={ShieldCheck}
+                  label={adminGroup.label}
+                  icon={adminGroup.icon}
                   items={adminItems}
                   currentPath={currentPath}
                 />
