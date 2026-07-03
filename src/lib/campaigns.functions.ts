@@ -13,14 +13,14 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("campaigns")
       .select(
         "id, name, description, goal_amount_cents, current_amount_cents, start_date, end_date, is_active, pix_key, sort_order, created_at, updated_at",
       )
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -43,8 +43,8 @@ export const upsertCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
     const payload = {
       name: data.name.trim(),
       description: data.description?.trim() || null,
@@ -60,13 +60,13 @@ export const upsertCampaign = createServerFn({ method: "POST" })
         .from("campaigns")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await client
       .from("campaigns")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -77,13 +77,13 @@ export const deleteCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
     const { error } = await client
       .from("campaigns")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -92,13 +92,13 @@ export const getCampaignStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ campaignId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: campaign, error: cErr } = await supabase
       .from("campaigns")
       .select("*")
       .eq("id", data.campaignId)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .single();
     if (cErr) throw new Error(cErr.message);
 
@@ -106,7 +106,7 @@ export const getCampaignStats = createServerFn({ method: "GET" })
       .from("donations")
       .select("amount_cents, status")
       .eq("campaign_id", data.campaignId)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (dErr) throw new Error(dErr.message);
 
     const totalDonated = (donations ?? [])

@@ -79,8 +79,8 @@ function normalizeStatus(status: unknown) {
 export const getWhatsappData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
     const [
       { data: settings },
@@ -91,12 +91,12 @@ export const getWhatsappData = createServerFn({ method: "GET" })
       { data: periodMessages },
     ] =
       await Promise.all([
-        supabase.from("whatsapp_settings").select("*").eq("account_id", userId).maybeSingle(),
+        supabase.from("whatsapp_settings").select("*").eq("account_id", accountId).maybeSingle(),
         supabase.from("whatsapp_packages").select("*").eq("active", true).order("sort_order"),
         supabase
           .from("whatsapp_credit_purchases")
           .select("id, package_id, message_count, amount_cents, status, paid_at, created_at")
-          .eq("account_id", userId)
+          .eq("account_id", accountId)
           .order("created_at", { ascending: false })
           .limit(20),
         supabase
@@ -104,14 +104,14 @@ export const getWhatsappData = createServerFn({ method: "GET" })
           .select(
             "id, kind, phone, recipient_name, content, status, scheduled_for, sent_at, delivered_at, read_at, provider_delivery_status, provider_status_at, error_message, cost_credits, credit_reserved_at, credit_refunded_at, created_at",
           )
-          .eq("account_id", userId)
+          .eq("account_id", accountId)
           .order("created_at", { ascending: false })
           .limit(100),
-        supabase.from("whatsapp_messages").select("status, kind").eq("account_id", userId),
+        supabase.from("whatsapp_messages").select("status, kind").eq("account_id", accountId),
         supabase
           .from("whatsapp_messages")
           .select("status, kind, cost_credits, credit_refunded_at, provider_delivery_status, created_at")
-          .eq("account_id", userId)
+          .eq("account_id", accountId)
           .gte("created_at", thirtyDaysAgo),
       ]);
 
@@ -162,8 +162,8 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ package_id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { userId, claims } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { claims } = context;
 
     const { data: pack, error: packageError } = await supabaseAdmin
       .from("whatsapp_packages")
@@ -177,7 +177,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
     const { data: purchase, error: purchaseError } = await supabaseAdmin
       .from("whatsapp_credit_purchases")
       .insert({
-        account_id: userId,
+        account_id: accountId,
         package_id: pack.id,
         message_count: pack.message_count,
         amount_cents: pack.price_cents,
@@ -223,12 +223,12 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
           document: { type: "CPF", number: "00000000000" },
         },
         metadata: JSON.stringify({
-          accountId: userId,
+          accountId,
           kind: "whatsapp_credits",
           purchaseId: purchase.id,
         }),
         traceable: false,
-        externalRef: `${userId}:whatsapp:${purchase.id}`,
+        externalRef: `${accountId}:whatsapp:${purchase.id}`,
         postbackUrl,
         paymentMethod: "PIX",
       }),
@@ -240,7 +240,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
         .from("whatsapp_credit_purchases")
         .update({ status: "failed" })
         .eq("id", purchase.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       throw new Error((raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.");
     }
 
@@ -252,7 +252,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
     const { data: tx, error: txError } = await supabaseAdmin
       .from("payment_transactions")
       .insert({
-        account_id: userId,
+        account_id: accountId,
         plan: null,
         kind: "whatsapp_credits",
         amount_cents: pack.price_cents,
@@ -272,7 +272,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
       .from("whatsapp_credit_purchases")
       .update({ transaction_id: tx.id })
       .eq("id", purchase.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (linkError) throw new Error(linkError.message);
 
     return {
@@ -287,11 +287,11 @@ export const upsertWhatsappSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => SettingsInput.parse(input))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { error } = await supabase
       .from("whatsapp_settings")
-      .upsert({ account_id: userId, ...data }, { onConflict: "account_id" });
+      .upsert({ account_id: accountId, ...data }, { onConflict: "account_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -300,13 +300,13 @@ export const deleteQueuedWhatsappMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: message } = await supabase
       .from("whatsapp_messages")
       .select("id, account_id, status, credit_refunded_at")
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("status", "queued")
       .maybeSingle();
 
@@ -315,7 +315,7 @@ export const deleteQueuedWhatsappMessage = createServerFn({ method: "POST" })
     if (!message.credit_refunded_at) {
       const refund = await refundWhatsappMessageCredits({
         supabase,
-        accountId: userId,
+        accountId,
         messageId: data.id,
         idempotencyKey: `refund:delete:${data.id}`,
         metadata: { reason: "queued_message_deleted" },
@@ -327,7 +327,7 @@ export const deleteQueuedWhatsappMessage = createServerFn({ method: "POST" })
       .from("whatsapp_messages")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("status", "queued");
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -347,27 +347,27 @@ export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
 
     const { data: settings } = await supabase
       .from("whatsapp_settings")
       .select("enabled")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
 
     if (!settings?.enabled) throw new Error("WhatsApp não está ativado nas configurações gerais.");
 
     const phone = normalizeWhatsappPhone(data.phone);
     if (phone.length < 10) throw new Error("Número de telefone inválido (mínimo 10 dígitos com DDD).");
-    if (await hasWhatsappOptedOut({ supabase, accountId: userId, phone })) {
+    if (await hasWhatsappOptedOut({ supabase, accountId, phone })) {
       throw new Error("Este número retirou o consentimento para receber WhatsApp.");
     }
 
     const messageId = createWhatsappMessageId();
     const reservation = await reserveWhatsappCredits({
       supabase,
-      accountId: userId,
+      accountId,
       messageId,
       costCredits: 1,
       idempotencyKey: `reserve:manual:${messageId}`,
@@ -383,7 +383,7 @@ export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
 
     const { error } = await supabase.from("whatsapp_messages").insert({
       id: messageId,
-      account_id: userId,
+      account_id: accountId,
       member_id: data.member_id ?? null,
       kind: data.kind,
       phone,
@@ -398,7 +398,7 @@ export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
     if (error) {
       await refundWhatsappMessageCredits({
         supabase,
-        accountId: userId,
+        accountId,
         messageId,
         idempotencyKey: `refund:insert_failed:${messageId}`,
         metadata: { error: error.message, source: "manual_enqueue" },

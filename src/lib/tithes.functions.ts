@@ -13,12 +13,12 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listTithes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("tithes")
       .select("*, members(full_name, email, phone)")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("contributed_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -28,12 +28,12 @@ export const getTithesByMember = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ memberId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: tithes, error } = await supabase
       .from("tithes")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("member_id", data.memberId)
       .order("contributed_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -53,8 +53,8 @@ export const upsertTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
     const payload = {
       member_id: data.member_id,
       amount_cents: data.amount_cents,
@@ -67,13 +67,13 @@ export const upsertTithe = createServerFn({ method: "POST" })
         .from("tithes")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await client
       .from("tithes")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -84,13 +84,13 @@ export const deleteTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
     const { error } = await client
       .from("tithes")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -106,12 +106,12 @@ export const getTithesReport = createServerFn({ method: "GET" })
       .parse(i)
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     let query = supabase
       .from("tithes")
       .select("*, members(full_name, email)")
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
 
     if (data.startDate) {
       query = query.gte("contributed_at", data.startDate);

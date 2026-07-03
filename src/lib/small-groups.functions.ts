@@ -6,12 +6,12 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listSmallGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("small_groups")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
@@ -36,11 +36,11 @@ export const upsertSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
-    const payload = { ...data, account_id: userId, updated_at: new Date().toISOString() };
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
+    const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
     if (data.id) {
-      const { error } = await supabase.from("small_groups").update(payload).eq("id", data.id).eq("account_id", userId);
+      const { error } = await supabase.from("small_groups").update(payload).eq("id", data.id).eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
@@ -53,9 +53,9 @@ export const deleteSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
-    const { error } = await supabase.from("small_groups").delete().eq("id", data.id).eq("account_id", userId);
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
+    const { error } = await supabase.from("small_groups").delete().eq("id", data.id).eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

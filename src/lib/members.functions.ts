@@ -7,12 +7,12 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("members")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("full_name", { ascending: true });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -48,8 +48,8 @@ export const upsertMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const payload = {
       full_name: data.full_name.trim(),
       photo_url: data.photo_url || null,
@@ -79,13 +79,13 @@ export const upsertMember = createServerFn({ method: "POST" })
         .from("members")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await supabase
       .from("members")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -96,13 +96,13 @@ export const deleteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { error } = await supabase
       .from("members")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

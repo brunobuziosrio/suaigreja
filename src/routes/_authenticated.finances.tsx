@@ -40,12 +40,12 @@ const getDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
+    const { accountId } = await requirePlanTier(context, "premium");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("donations")
       .select("*")
-      .eq("account_id", context.userId)
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -57,12 +57,12 @@ const getMembersWithDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
+    const { accountId } = await requirePlanTier(context, "premium");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("members")
       .select("*")
-      .eq("account_id", context.userId)
+      .eq("account_id", accountId)
       .order("full_name");
 
     if (error) throw new Error(error.message);
@@ -73,12 +73,12 @@ function FinancesPage() {
   const getDonationsData = createServerFn({ method: "GET" })
     .middleware([requireSupabaseAuth])
     .handler(async ({ context }) => {
-      await requirePlanTier(context, "premium");
+      const { accountId } = await requirePlanTier(context, "premium");
       const { supabase } = context;
       const { data, error } = await supabase
         .from("donations")
         .select("*")
-        .eq("account_id", context.userId)
+        .eq("account_id", accountId)
         .order("created_at", { ascending: false });
 
       if (error) throw new Error(error.message);

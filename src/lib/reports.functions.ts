@@ -21,8 +21,8 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { from, to } = monthBounds(data.year, data.month);
     const [
       { data: rows, error: rowsError },
@@ -32,11 +32,11 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
       supabase
         .from("ebd_attendance")
         .select("class_id, member_id, attendance_date, present")
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .gte("attendance_date", from)
         .lte("attendance_date", to),
-      supabase.from("ebd_classes").select("id, name").eq("account_id", userId),
-      supabase.from("members").select("id, full_name").eq("account_id", userId),
+      supabase.from("ebd_classes").select("id, name").eq("account_id", accountId),
+      supabase.from("members").select("id, full_name").eq("account_id", accountId),
     ]);
     if (rowsError) throw new Error(rowsError.message);
     if (classesError) throw new Error(classesError.message);
@@ -83,13 +83,13 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { from, to } = monthBounds(data.year, data.month);
     const { data: sessions, error: sessionsError } = await supabase
       .from("checkin_sessions")
       .select("id, title, session_date, start_time")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .gte("session_date", from)
       .lte("session_date", to)
       .order("session_date", { ascending: true });
@@ -100,7 +100,7 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
       const { data: e, error: entriesError } = await supabase
         .from("checkin_entries")
         .select("session_id, member_id, visitor_name, checked_in_at")
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .in("session_id", sessionIds);
       if (entriesError) throw new Error(entriesError.message);
       entries = e ?? [];
@@ -132,8 +132,8 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
 export const getSmallGroupsReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const [
       { data: groups, error: groupsError },
       { data: memberships, error: membershipsError },
@@ -141,11 +141,11 @@ export const getSmallGroupsReport = createServerFn({ method: "GET" })
       supabase
         .from("small_groups")
         .select("id, name, leader_name, leader_phone, neighborhood, weekday, start_time, capacity, active")
-        .eq("account_id", userId),
+        .eq("account_id", accountId),
       supabase
         .from("small_group_members")
         .select("group_id, member_id, role")
-        .eq("account_id", userId),
+        .eq("account_id", accountId),
     ]);
     if (groupsError) throw new Error(groupsError.message);
     if (membershipsError) throw new Error(membershipsError.message);

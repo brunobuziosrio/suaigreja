@@ -124,16 +124,22 @@ export function hasPlanTier(currentTier: PlanTier, minimumTier: PlanTier) {
   return TIER_RANK[currentTier] >= TIER_RANK[minimumTier];
 }
 
+export type PlanTierCheck = {
+  tier: PlanTier;
+  accountId: string;
+  role: string;
+};
+
 export async function requirePlanTier(
   context: {
     supabase: any;
     userId: string;
   },
   minimumTier: PlanTier,
-) {
+): Promise<PlanTierCheck> {
   // Resolve a conta real: para o dono, accountId = userId; para um membro da
   // equipe convidado (Fase 2), accountId vem do vinculo em account_members.
-  const { accountId } = await resolveAccountContext(context.userId);
+  const { accountId, role } = await resolveAccountContext(context.userId);
 
   const { data, error } = await context.supabase
     .from("accounts")
@@ -153,7 +159,7 @@ export async function requirePlanTier(
     throw new Error("Seu plano atual não permite usar este recurso.");
   }
 
-  return currentTier;
+  return { tier: currentTier, accountId, role };
 }
 
 export async function requireModuleAccess(
@@ -162,7 +168,7 @@ export async function requireModuleAccess(
     userId: string;
   },
   pathname: string,
-) {
+): Promise<PlanTierCheck> {
   const module = getModuleForPath(pathname);
   if (!module) return requirePlanTier(context, "essential");
   if (!isModuleEnabled(module)) {

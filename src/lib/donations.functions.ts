@@ -6,6 +6,7 @@ import { z } from "zod";
 import QRCode from "qrcode";
 import { buildPixBrCode } from "./pix-brcode";
 import { requirePlanTier } from "@/lib/plan-access";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 const MERCADOPAGO_BASE_URL = "https://api.mercadopago.com";
 
@@ -260,7 +261,8 @@ export const upsertDonationCampaign = createServerFn({ method: "POST" })
   .inputValidator((input) => CampaignInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const row = { ...data, account_id: userId };
+    const { accountId } = await resolveAccountContext(userId);
+    const row = { ...data, account_id: accountId };
     const { error } = data.id
       ? await supabase.from("donation_campaigns").update(row).eq("id", data.id)
       : await supabase.from("donation_campaigns").insert(row);
@@ -282,16 +284,17 @@ export const getDonationCampaignStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
     const { data: campaigns, error: campaignsError } = await supabase
       .from("donation_campaigns")
       .select("id, title, goal_cents")
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (campaignsError) throw new Error(campaignsError.message);
 
     const { data: donations, error: donationsError } = await supabase
       .from("donations")
       .select("campaign_id, amount_cents")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("status", "paid");
     if (donationsError) throw new Error(donationsError.message);
 
@@ -314,10 +317,11 @@ export const listDonationsByCampaign = createServerFn({ method: "GET" })
   .inputValidator((input: { campaignId: string }) => z.object({ campaignId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    const { accountId } = await resolveAccountContext(userId);
     const { data: rows, error } = await supabase
       .from("donations")
       .select("id, donor_name, amount_cents, status, paid_at, created_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("campaign_id", data.campaignId)
       .eq("status", "paid")
       .order("paid_at", { ascending: false })
@@ -330,14 +334,14 @@ export const getDonationsMonthlyReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { year: number }) => z.object({ year: z.number().int().min(2020).max(2100) }).parse(input))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const start = `${data.year}-01-01T00:00:00.000Z`;
     const end = `${data.year + 1}-01-01T00:00:00.000Z`;
     const { data: rows, error } = await supabase
       .from("donations")
       .select("amount_cents, paid_at, donor_name, campaign_id")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("status", "paid")
       .gte("paid_at", start)
       .lt("paid_at", end)

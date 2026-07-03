@@ -38,12 +38,12 @@ async function assertTemplateAllowed(
 export const listDocumentTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireModuleAccess(context, "/documentos");
-    const { supabase, userId } = context;
+    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("document_templates")
       .select("*")
-      .or(`is_global.eq.true,account_id.eq.${userId}`)
+      .or(`is_global.eq.true,account_id.eq.${accountId}`)
       .eq("active", true)
       .order("is_global", { ascending: false })
       .order("sort_order", { ascending: true });
@@ -54,12 +54,12 @@ export const listDocumentTemplates = createServerFn({ method: "GET" })
 export const listMemberDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireModuleAccess(context, "/documentos");
-    const { supabase, userId } = context;
+    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("member_documents")
       .select("*, members(full_name)")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("issued_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -78,10 +78,10 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => issueSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requireModuleAccess(context, "/documentos");
-    const { supabase, userId } = context;
-    await assertMemberBelongsToAccount(supabase, userId, data.member_id);
-    await assertTemplateAllowed(supabase, userId, data.template_id);
+    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { supabase } = context;
+    await assertMemberBelongsToAccount(supabase, accountId, data.member_id);
+    await assertTemplateAllowed(supabase, accountId, data.template_id);
     const payload = {
       template_id: data.template_id || null,
       member_id: data.member_id || null,
@@ -94,7 +94,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
         .from("member_documents")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .select("id")
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -103,7 +103,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabase
       .from("member_documents")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -114,13 +114,13 @@ export const deleteMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requireModuleAccess(context, "/documentos");
-    const { supabase, userId } = context;
+    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { supabase } = context;
     const { data: deleted, error } = await supabase
       .from("member_documents")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .select("id")
       .maybeSingle();
     if (error) throw new Error(error.message);

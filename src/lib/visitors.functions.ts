@@ -58,12 +58,12 @@ export const deleteVisitor = createServerFn({ method: "POST" })
 export const getVisitorSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data } = await supabase
       .from("accounts")
       .select("site_id, custom_slug, visitor_whatsapp, visitor_welcome_message, brand_title, primary_color")
-      .eq("id", userId)
+      .eq("id", accountId)
       .single();
     return data;
   });
@@ -77,15 +77,15 @@ export const saveVisitorSettings = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { error } = await supabase
       .from("accounts")
       .update({
         visitor_whatsapp: data.visitor_whatsapp || null,
         visitor_welcome_message: data.visitor_welcome_message || null,
       })
-      .eq("id", userId);
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

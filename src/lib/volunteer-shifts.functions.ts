@@ -13,12 +13,12 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listVolunteerSchedules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("volunteer_schedules")
       .select("id, name, description, volunteer_type, is_active, notes, created_at, updated_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -37,8 +37,8 @@ export const upsertVolunteerSchedule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => scheduleSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase: client } = context;
     const payload = {
       name: data.name.trim(),
       description: data.description?.trim() || null,
@@ -51,13 +51,13 @@ export const upsertVolunteerSchedule = createServerFn({ method: "POST" })
         .from("volunteer_schedules")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await client
       .from("volunteer_schedules")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -68,13 +68,13 @@ export const deleteVolunteerSchedule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_schedules")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -83,13 +83,13 @@ export const listVolunteerShifts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ scheduleId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data: shifts, error } = await supabase
       .from("volunteer_shifts")
       .select("*, members(full_name, phone, email), schedule:volunteer_schedules(name)")
       .eq("schedule_id", data.scheduleId)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("shift_date", { ascending: true })
       .order("shift_start_time", { ascending: true });
     if (error) throw new Error(error.message);
@@ -112,8 +112,8 @@ export const upsertVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => shiftSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase: client } = context;
     const payload = {
       schedule_id: data.schedule_id,
       member_id: data.member_id,
@@ -129,13 +129,13 @@ export const upsertVolunteerShift = createServerFn({ method: "POST" })
         .from("volunteer_shifts")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await client
       .from("volunteer_shifts")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -146,13 +146,13 @@ export const deleteVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_shifts")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -161,8 +161,8 @@ export const confirmVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_shifts")
       .update({
@@ -170,7 +170,7 @@ export const confirmVolunteerShift = createServerFn({ method: "POST" })
         confirmed_at: new Date().toISOString(),
       } as any)
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -184,8 +184,8 @@ export const requestVolunteerReplacement = createServerFn({ method: "POST" })
     }).parse(i)
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase: client } = context;
     const { error } = await client
       .from("volunteer_shifts")
       .update({
@@ -194,7 +194,7 @@ export const requestVolunteerReplacement = createServerFn({ method: "POST" })
         notes: data.reason || "Solicitou substituição",
       } as any)
       .eq("id", data.shiftId)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

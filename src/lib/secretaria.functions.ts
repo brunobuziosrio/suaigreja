@@ -61,12 +61,12 @@ async function assertMemberBelongsToAccount(
 export const listSecretariaRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("secretaria_requests")
       .select(SELECT_COLUMNS)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -75,12 +75,12 @@ export const listSecretariaRequests = createServerFn({ method: "GET" })
 export const getSecretariaStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("secretaria_requests")
       .select("status")
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     const rows = data ?? [];
     return {
@@ -113,9 +113,9 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
-    await assertMemberBelongsToAccount(client, userId, data.member_id);
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
+    await assertMemberBelongsToAccount(client, accountId, data.member_id);
     const payload = {
       member_id: data.member_id || null,
       request_type: data.request_type,
@@ -136,7 +136,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
         .from("secretaria_requests")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .select("id")
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -145,7 +145,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await client
       .from("secretaria_requests")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -158,13 +158,13 @@ export const updateSecretariaStatus = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), status: z.enum(STATUSES) }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
     const { data: updated, error } = await client
       .from("secretaria_requests")
       .update({ status: data.status } as any)
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .select("id")
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -176,13 +176,13 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: request, error: requestError } = await supabase
       .from("secretaria_requests")
       .select("id")
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
     if (requestError) throw new Error(requestError.message);
     if (!request) throw new Error("Solicitação não encontrada nesta igreja.");
@@ -190,7 +190,7 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
     const { data: events, error } = await supabase
       .from("secretaria_request_events")
       .select("id, event_type, from_status, to_status, metadata, created_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("request_id", data.id)
       .order("created_at", { ascending: false })
       .limit(50);
@@ -202,13 +202,13 @@ export const listSecretariaAttachments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ request_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: request, error: requestError } = await supabase
       .from("secretaria_requests")
       .select("id")
       .eq("id", data.request_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
     if (requestError) throw new Error(requestError.message);
     if (!request) throw new Error("Solicitação não encontrada nesta igreja.");
@@ -216,7 +216,7 @@ export const listSecretariaAttachments = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase
       .from("secretaria_request_attachments")
       .select("id, file_name, content_type, file_size, created_at")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("request_id", data.request_id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -234,13 +234,13 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => attachmentSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: request, error: requestError } = await supabase
       .from("secretaria_requests")
       .select("id")
       .eq("id", data.request_id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
     if (requestError) throw new Error(requestError.message);
     if (!request) throw new Error("Solicitação não encontrada nesta igreja.");
@@ -251,7 +251,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
     }
 
     const cleanName = data.file_name.replace(/[^\w.\- ]+/g, "_").slice(0, 180);
-    const path = `${userId}/${data.request_id}/${randomUUID()}-${cleanName}`;
+    const path = `${accountId}/${data.request_id}/${randomUUID()}-${cleanName}`;
     const contentType = data.content_type || "application/octet-stream";
     const { error: uploadError } = await supabaseAdmin.storage
       .from("secretaria-attachments")
@@ -261,7 +261,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
     const { data: row, error } = await supabase
       .from("secretaria_request_attachments")
       .insert({
-        account_id: userId,
+        account_id: accountId,
         request_id: data.request_id,
         file_name: cleanName,
         file_path: path,
@@ -281,13 +281,13 @@ export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "P
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: attachment, error } = await supabase
       .from("secretaria_request_attachments")
       .select("file_path")
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!attachment) throw new Error("Anexo não encontrado nesta igreja.");
@@ -305,13 +305,13 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: attachment, error: fetchError } = await supabase
       .from("secretaria_request_attachments")
       .select("id, file_path")
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .maybeSingle();
     if (fetchError) throw new Error(fetchError.message);
     if (!attachment) throw new Error("Anexo não encontrado nesta igreja.");
@@ -320,7 +320,7 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
       .from("secretaria_request_attachments")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     await supabaseAdmin.storage
       .from("secretaria-attachments")
@@ -332,13 +332,13 @@ export const deleteSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase: client, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase: client } = context;
     const { data: deleted, error } = await client
       .from("secretaria_requests")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .select("id")
       .maybeSingle();
     if (error) throw new Error(error.message);

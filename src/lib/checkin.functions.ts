@@ -7,12 +7,12 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listCheckinSessions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("checkin_sessions")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("session_date", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -22,12 +22,12 @@ export const listCheckinEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { session_id: string }) => z.object({ session_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("checkin_entries")
       .select("*, members(full_name, photo_url)")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("session_id", data.session_id)
       .order("checked_in_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -47,11 +47,11 @@ export const upsertCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
-    const payload = { ...data, account_id: userId, updated_at: new Date().toISOString() };
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
+    const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
     if (data.id) {
-      const { error } = await supabase.from("checkin_sessions").update(payload).eq("id", data.id).eq("account_id", userId);
+      const { error } = await supabase.from("checkin_sessions").update(payload).eq("id", data.id).eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
@@ -64,9 +64,9 @@ export const deleteCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
-    const { supabase, userId } = context;
-    const { error } = await supabase.from("checkin_sessions").delete().eq("id", data.id).eq("account_id", userId);
+    const { accountId } = await requirePlanTier(context, "pro");
+    const { supabase } = context;
+    const { error } = await supabase.from("checkin_sessions").delete().eq("id", data.id).eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

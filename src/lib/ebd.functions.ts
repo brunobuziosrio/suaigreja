@@ -6,12 +6,12 @@ import { requirePlanTier } from "@/lib/plan-access";
 export const listEbdClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data, error } = await supabase
       .from("ebd_classes")
       .select("*")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
     if (error) throw new Error(error.message);
@@ -33,8 +33,8 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => classSchema.parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const payload = {
       name: data.name.trim(),
       description: data.description?.trim() || null,
@@ -49,13 +49,13 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
         .from("ebd_classes")
         .update(payload as any)
         .eq("id", data.id)
-        .eq("account_id", userId);
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
     const { data: row, error } = await supabase
       .from("ebd_classes")
-      .insert({ ...payload, account_id: userId } as any)
+      .insert({ ...payload, account_id: accountId } as any)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -66,13 +66,13 @@ export const deleteEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { error } = await supabase
       .from("ebd_classes")
       .delete()
       .eq("id", data.id)
-      .eq("account_id", userId);
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -81,12 +81,12 @@ export const listEnrollments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ class_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("ebd_enrollments")
       .select("*, members(id, full_name, photo_url)")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("class_id", data.class_id);
     if (error) throw new Error(error.message);
     return rows ?? [];
@@ -102,11 +102,11 @@ export const setEnrollment = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     if (data.enroll) {
       const { error } = await supabase.from("ebd_enrollments").insert({
-        account_id: userId,
+        account_id: accountId,
         class_id: data.class_id,
         member_id: data.member_id,
       } as any);
@@ -115,7 +115,7 @@ export const setEnrollment = createServerFn({ method: "POST" })
       const { error } = await supabase
         .from("ebd_enrollments")
         .delete()
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .eq("class_id", data.class_id)
         .eq("member_id", data.member_id);
       if (error) throw new Error(error.message);
@@ -136,17 +136,17 @@ export const recordAttendance = createServerFn({ method: "POST" })
     }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     // upsert each entry
     for (const e of data.entries) {
       await supabase.from("ebd_attendance").delete()
-        .eq("account_id", userId)
+        .eq("account_id", accountId)
         .eq("class_id", data.class_id)
         .eq("member_id", e.member_id)
         .eq("attendance_date", data.attendance_date);
       const { error } = await supabase.from("ebd_attendance").insert({
-        account_id: userId,
+        account_id: accountId,
         class_id: data.class_id,
         member_id: e.member_id,
         attendance_date: data.attendance_date,
@@ -160,15 +160,15 @@ export const recordAttendance = createServerFn({ method: "POST" })
 export const getAttendanceStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const since = new Date();
     since.setDate(since.getDate() - 60);
     const sinceStr = since.toISOString().slice(0, 10);
     const { data, error } = await supabase
       .from("ebd_attendance")
       .select("present, attendance_date")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .gte("attendance_date", sinceStr);
     if (error) throw new Error(error.message);
     const total = data?.length ?? 0;
@@ -187,12 +187,12 @@ export const getAttendanceForDate = createServerFn({ method: "GET" })
     attendance_date: z.string(),
   }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "premium");
-    const { supabase, userId } = context;
+    const { accountId } = await requirePlanTier(context, "premium");
+    const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("ebd_attendance")
       .select("member_id, present")
-      .eq("account_id", userId)
+      .eq("account_id", accountId)
       .eq("class_id", data.class_id)
       .eq("attendance_date", data.attendance_date);
     if (error) throw new Error(error.message);
