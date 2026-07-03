@@ -415,10 +415,17 @@ existente (atualiza em vez de duplicar), relatório linha a linha. UI em
 
 Parser validado com testes isolados (vírgula dentro de aspas, Excel BR com
 BOM, acentos em cabeçalho, linha vazia final) — todos passaram. Build e
-`tsc --noEmit` limpos. **NÃO testado em navegador com login real** (sem
-credenciais nesta sessão) e **NÃO deployado** — só commitado no git local.
-Antes de deployar: testar o fluxo completo (baixar modelo, importar,
-conferir dedup) logado de verdade.
+`tsc --noEmit` limpos.
+
+**DEPLOYADA e testada de ponta a ponta em produção 03-07** (login real, sem
+usar a senha do Bruno): gerado magic link via API admin do GoTrue
+(`/admin/generate_link`, `type=magiclink`), autenticado via Playwright
+headless, navegado até `/membros` logado como o dono de verdade. Testado
+upload de CSV com 2 fiéis fictícios: total foi de 31→33, toast "2 criado(s),
+0 atualizado(s)", painel de resultado mostrou o relatório, cards dos novos
+fiéis com cargo/telefone/CPF corretos e completude de ficha calculada certo
+(40% e 30%), zero erro de console. Registros de teste removidos depois —
+voltou a 31 fiéis reais, nada tocado.
 
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
