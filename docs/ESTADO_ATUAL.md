@@ -384,6 +384,24 @@ bloqueados para esse cargo a partir de agora. Roles `secretario_geral` e
 `membro` JÁ tinham overrides customizados salvos (de teste anterior do
 Bruno em `/equipe`) — passam a valer de fato também.
 
+### SMTP Zoho — CORRIGIDO, 2026-07-03
+
+Causa raiz: `GOTRUE_SMTP_PASS` (`/opt/igreja/supabase-stack/.env`) estava com a
+senha normal da conta Zoho em vez de uma senha específica de aplicativo
+(obrigatória com 2FA ativo). Bruno gerou a senha de app em accounts.zoho.com →
+Segurança → "Palavras-passe específicas de aplicações". Atualizado o `.env`
+(backup salvo) e recriado o container: `docker compose up -d --force-recreate
+auth`. Validado com uma chamada real a `POST /invite` (GoTrue admin API) — voltou
+`200 OK` com `confirmation_sent_at` preenchido, sem `535` nos logs. Usuário de
+teste removido depois. Ver [[project_smtp_quebrado]] na memória.
+
+**Efeito:** convite por e-mail, confirmação de signup e recuperação de senha
+devem funcionar via e-mail normal agora. O contorno por link manual
+(`generateLink`, Fase 2) continua disponível como alternativa.
+
+Também nesta sessão: removido o vínculo de teste `brunobuzios@hotmail.com`
+(`tesoureiro_geral`) da conta real — sobrou só o dono como membro.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
