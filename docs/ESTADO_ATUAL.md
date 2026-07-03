@@ -506,6 +506,31 @@ aspas duplicadas porque o texto salvo na conta já inclui aspas — mesmo
 comportamento já existente na página pública do hub (`$slug.tsx`), não
 introduzido por esta feature.
 
+### Central de Decisões e Acolhimento — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Sexta feature do backlog. Formulário público em `/dec/$siteId` (2 passos:
+escolher o que precisa — aceitar Jesus, voltar pra igreja, conversar,
+batismo, célula, aconselhamento — depois preencher contato) e painel
+administrativo `/decisoes` (abas por status: novos/em contato/concluídos,
+com link direto de WhatsApp e anotação interna por caso).
+
+Migration cria a tabela `decisions` **já com RLS baseada em membership**
+(`is_account_member`) desde a criação — não repete o erro histórico de
+`account_id = auth.uid()` que exigiu a correção em massa da Fase 3b nesta
+mesma sessão. Inserção pública restrita a contas reais (mesmo padrão de
+`visitors`/`prayer_requests`). Gate de acesso administrativo:
+`requirePlanTier("pro")`, mesmo padrão de `visitors`/`prayer` — não entrou
+no catálogo de 15 módulos da matriz de permissões por verbo (assim como
+Pedidos de Oração já não entrava).
+
+Testado de ponta a ponta com dados reais: preenchido o formulário público
+de verdade (sem login, como um visitante real faria) escolhendo "Quero me
+batizar", confirmada a mensagem de sucesso; login real como dono, conferido
+que o pedido apareceu no painel com nome/telefone/mensagem/selo do tipo
+corretos; movido de "Novos" pra "Em contato" e confirmado que migrou de
+aba e os contadores atualizaram. Zero erro de console em todo o fluxo.
+Registro de teste removido depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
