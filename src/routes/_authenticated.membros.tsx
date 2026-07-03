@@ -3,10 +3,11 @@ import { AppShell } from "@/components/app-shell";
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { listMembers, upsertMember, deleteMember } from "@/lib/members.functions";
+import { listMembers, upsertMember, deleteMember, importMembersCsv } from "@/lib/members.functions";
 import { getMyAccount } from "@/lib/account.functions";
 import { getReligionTerms } from "@/lib/religion-profiles";
 import { supabase } from "@/integrations/supabase/client";
+import { buildCsv } from "@/lib/csv";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,9 @@ import {
   UserCheck,
   Cake,
   AlertCircle,
+  FileSpreadsheet,
+  Download,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageCropDialog } from "@/components/image-crop-dialog";
@@ -73,6 +77,30 @@ const empty: Form = {
 
 const ROLES = ["membro", "visitante", "lider", "diacono", "obreiro", "pastor"];
 const STATUS = ["ativo", "inativo", "transferido", "falecido"];
+
+const CSV_TEMPLATE_HEADERS = [
+  "nome", "telefone", "email", "nascimento", "sexo", "estado_civil", "cpf",
+  "funcao", "membro_desde", "status", "cidade", "estado", "congregacao",
+  "dizimista", "observacoes",
+];
+const CSV_TEMPLATE_SAMPLE_ROW = [
+  "João da Silva", "(11) 91234-5678", "joao@exemplo.com", "1985-04-12",
+  "masculino", "casado", "123.456.789-00", "membro", "2020-01-15", "ativo",
+  "São Paulo", "SP", "Sede", "sim", "Exemplo de observação",
+];
+
+function downloadMembersCsvTemplate() {
+  const csv = buildCsv(CSV_TEMPLATE_HEADERS, [CSV_TEMPLATE_SAMPLE_ROW]);
+  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "modelo-importacao-membros.csv";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+type ImportResult = { total: number; created: number; updated: number; errors: { row: number; message: string }[] };
 
 function capitalize(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -121,6 +149,30 @@ function MembersPage() {
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+
+  const [importOpen, setImportOpen] = useState(false);
+  const [importResult, setImportResult] = useState<ImportResult | null>(null);
+  const csvFileInput = useRef<HTMLInputElement>(null);
+  const runImport = useServerFn(importMembersCsv);
+  const importMut = useMutation({
+    mutationFn: (csv: string) => runImport({ data: { csv } }),
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["members"] });
+      setImportResult(result);
+      if (result.errors.length === 0) {
+        toast.success(`${result.created} criado(s), ${result.updated} atualizado(s)`);
+      }
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function handleCsvFile(file: File) {
+    setImportResult(null);
+    const reader = new FileReader();
+    reader.onload = () => importMut.mutate(String(reader.result));
+    reader.onerror = () => toast.error("Não foi possível ler o arquivo.");
+    reader.readAsText(file, "utf-8");
+  }
 
   const upsertMut = useMutation({
     mutationFn: (input: Form) => save({
@@ -216,6 +268,70 @@ function MembersPage() {
               {terms.peopleDescription}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+          <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) setImportResult(null); }}>
+            <DialogTrigger asChild>
+              <Button variant="outline"><FileSpreadsheet className="h-4 w-4 mr-2" />Importar CSV</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Importar {terms.people} por CSV</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Cadastre vários {terms.people.toLowerCase()} de uma vez a partir de uma planilha
+                  exportada de outro sistema. Registros com o mesmo CPF ou e-mail já cadastrado são
+                  atualizados em vez de duplicados.
+                </p>
+                <Button type="button" variant="outline" size="sm" onClick={downloadMembersCsvTemplate}>
+                  <Download className="h-3.5 w-3.5 mr-1.5" />Baixar modelo CSV
+                </Button>
+                <input
+                  ref={csvFileInput}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCsvFile(f); e.target.value = ""; }}
+                />
+                <Button
+                  type="button"
+                  className="w-full"
+                  disabled={importMut.isPending}
+                  onClick={() => csvFileInput.current?.click()}
+                >
+                  {importMut.isPending ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Importando…</>
+                  ) : (
+                    <><Upload className="h-4 w-4 mr-2" />Escolher arquivo CSV</>
+                  )}
+                </Button>
+
+                {importResult && (
+                  <div className="rounded-md border p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      {importResult.created} criado(s), {importResult.updated} atualizado(s) de {importResult.total} linha(s)
+                    </div>
+                    {importResult.errors.length > 0 && (
+                      <div className="max-h-48 overflow-y-auto rounded border bg-amber-50 dark:bg-amber-950/20 p-2 text-xs space-y-1">
+                        <p className="font-medium text-amber-800 dark:text-amber-400">
+                          {importResult.errors.length} aviso(s):
+                        </p>
+                        {importResult.errors.map((err, idx) => (
+                          <p key={idx} className="text-amber-700 dark:text-amber-500">
+                            Linha {err.row}: {err.message}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setImportOpen(false)}>Fechar</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-2" />Novo {terms.person}</Button>
@@ -361,6 +477,7 @@ function MembersPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
