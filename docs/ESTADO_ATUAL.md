@@ -623,6 +623,48 @@ entrega → apareceu no histórico da família e o contador "entregas este mês"
 foi de 0 para 1 corretamente. Zero erro de console. Dados de teste removidos
 depois (delete em cascata da família apagou a entrega junto).
 
+### Bloqueio de indisponibilidade (Escalas) — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima primeira feature do backlog. Botão "Bloqueios de agenda" em
+`/escalas`: cadastra período em que um voluntário não pode servir (com
+motivo opcional). Ao tentar adicionar/editar um turno pra esse voluntário
+dentro do período bloqueado, o backend rejeita com mensagem citando a data
+e o motivo — não deixa escalar por engano quem já avisou que não pode.
+
+Migration cria `volunteer_unavailability` já com RLS por membership desde
+o início. `assertMemberAvailable()` roda dentro de `upsertVolunteerShift`
+antes de gravar.
+
+**Bugs reais encontrados e corrigidos nesta mudança** (mesma classe do bug
+da Secretaria, pré-existentes, não introduzidos agora): o mesmo padrão
+Zod quebrado (`.optional().nullable().transform()` não intercepta string
+vazia antes de `.uuid()`) também quebrava a criação de registro novo em
+**Campanhas de contribuição**, **Dízimos**, **Modelos/automações de
+WhatsApp** e **Escalas/turnos de voluntários** — encontrado ao auditar o
+código atrás do mesmo padrão. Corrigido nos 4 arquivos com `z.preprocess`.
+Validado ao vivo pra Escalas (criar escala nova voltou a funcionar); os
+outros 3 não foram testados individualmente nesta sessão (correção
+mecânica idêntica à já validada) — vale conferir na próxima sessão que
+mexer neles.
+
+Testado de ponta a ponta com login real: criada escala → cadastrado
+bloqueio pra um voluntário (10 dias à frente, motivo "Viagem em família")
+→ tentativa de escalar ele nesse dia exato → **bloqueado com a mensagem
+certa** ("Este voluntário marcou indisponibilidade em 13/07/2026 (Viagem
+em família)...") → trocada a data pra uma livre (20 dias à frente) →
+turno criado normalmente. Zero erro de console. Dados de teste removidos
+depois.
+
+**Achado maior, fora do escopo, registrado como tarefa pendente**: ao
+corrigir esses arquivos, ficou claro que a lacuna do `types.ts` (tabelas
+que existem no banco mas nunca foram declaradas no arquivo de tipos
+manual) é bem maior do que os 3 casos vistos antes nesta sessão — afeta
+praticamente todo o arquivo `campaigns`/`tithes`/`volunteer-shifts`/
+`whatsapp-templates`.functions.ts (`tsc --noEmit` acusa dezenas de erros
+em cada). Não afeta runtime, mas merece uma sessão dedicada só pra isso:
+regenerar `types.ts` com todas as tabelas ou converter esses arquivos pro
+padrão `as never`.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
