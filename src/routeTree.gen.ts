@@ -16,6 +16,7 @@ import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as VSiteIdRouteImport } from './routes/v.$siteId'
 import { Route as ReciboDonationIdRouteImport } from './routes/recibo.$donationId'
+import { Route as ProtocoloIdRouteImport } from './routes/protocolo.$id'
 import { Route as OSiteIdRouteImport } from './routes/o.$siteId'
 import { Route as NSlugRouteImport } from './routes/n.$slug'
 import { Route as EventosSlugRouteImport } from './routes/eventos.$slug'
@@ -110,6 +111,11 @@ const VSiteIdRoute = VSiteIdRouteImport.update({
 const ReciboDonationIdRoute = ReciboDonationIdRouteImport.update({
   id: '/recibo/$donationId',
   path: '/recibo/$donationId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProtocoloIdRoute = ProtocoloIdRouteImport.update({
+  id: '/protocolo/$id',
+  path: '/protocolo/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OSiteIdRoute = OSiteIdRouteImport.update({
@@ -481,6 +487,7 @@ export interface FileRoutesByFullPath {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
@@ -550,6 +557,7 @@ export interface FileRoutesByTo {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
@@ -621,6 +629,7 @@ export interface FileRoutesById {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
@@ -692,6 +701,7 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
     | '/admin/domains'
@@ -761,6 +771,7 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
     | '/admin/domains'
@@ -831,6 +842,7 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
     | '/_authenticated/admin/domains'
@@ -871,6 +883,7 @@ export interface RootRouteChildren {
   EventosSlugRoute: typeof EventosSlugRoute
   NSlugRoute: typeof NSlugRouteWithChildren
   OSiteIdRoute: typeof OSiteIdRoute
+  ProtocoloIdRoute: typeof ProtocoloIdRoute
   ReciboDonationIdRoute: typeof ReciboDonationIdRoute
   VSiteIdRoute: typeof VSiteIdRoute
   ApiPublicAtivopayWebhookRoute: typeof ApiPublicAtivopayWebhookRoute
@@ -934,6 +947,13 @@ declare module '@tanstack/react-router' {
       path: '/recibo/$donationId'
       fullPath: '/recibo/$donationId'
       preLoaderRoute: typeof ReciboDonationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/protocolo/$id': {
+      id: '/protocolo/$id'
+      path: '/protocolo/$id'
+      fullPath: '/protocolo/$id'
+      preLoaderRoute: typeof ProtocoloIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/o/$siteId': {
@@ -1493,6 +1513,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventosSlugRoute: EventosSlugRoute,
   NSlugRoute: NSlugRouteWithChildren,
   OSiteIdRoute: OSiteIdRoute,
+  ProtocoloIdRoute: ProtocoloIdRoute,
   ReciboDonationIdRoute: ReciboDonationIdRoute,
   VSiteIdRoute: VSiteIdRoute,
   ApiPublicAtivopayWebhookRoute: ApiPublicAtivopayWebhookRoute,

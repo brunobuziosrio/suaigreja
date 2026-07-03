@@ -338,6 +338,32 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// --------- PUBLIC (acompanhamento de protocolo pelo solicitante) ---------
+// Expõe apenas os campos que o próprio solicitante já conhece/precisa
+// saber. Nunca retorna internal_notes, assignee_name, due_date, contato
+// ou member_id — esses são de uso exclusivo da equipe.
+
+export const getPublicSecretariaStatus = createServerFn({ method: "GET" })
+  .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data }) => {
+    const { data: request, error } = await supabaseAdmin
+      .from("secretaria_requests" as never)
+      .select("id, account_id, request_type, requester_name, status, preferred_date, scheduled_at, created_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!request) return null;
+
+    const { data: account } = await supabaseAdmin
+      .from("accounts")
+      .select("brand_title")
+      .eq("id", (request as any).account_id)
+      .maybeSingle();
+
+    const { id: _id, account_id: _accountId, ...publicFields } = request as any;
+    return { ...publicFields, churchName: account?.brand_title ?? "Igreja" };
+  });
+
 export const deleteSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))

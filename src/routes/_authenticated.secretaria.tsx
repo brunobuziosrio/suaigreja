@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, ClipboardList, Paperclip, Download, Upload } from "lucide-react";
+import { Plus, Edit2, Trash2, ClipboardList, Paperclip, Download, Upload, Link2 } from "lucide-react";
 import {
   listSecretariaRequests,
   getSecretariaStats,
@@ -460,6 +460,17 @@ function SecretariaPage() {
                         )}
                       </TableCell>
                       <TableCell className="space-x-2 text-right">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          title="Copiar link de acompanhamento pro solicitante"
+                          onClick={() => {
+                            navigator.clipboard.writeText(`${window.location.origin}/protocolo/${req.id}`);
+                            toast.success("Link de acompanhamento copiado");
+                          }}
+                        >
+                          <Link2 className="h-4 w-4" />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => openEdit(req)}>
                           <Edit2 className="h-4 w-4" />
                         </Button>
