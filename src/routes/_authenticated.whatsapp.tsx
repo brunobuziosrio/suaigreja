@@ -815,7 +815,7 @@ function CreditPackages({
                       currency: "BRL",
                     }).format(purchase.amount_cents / 100)}
                   </span>
-                  <Badge variant={purchase.status === "paid" ? "default" : "secondary"}>
+                  <Badge variant={purchase.status === "paid" ? "default" : "neutral"}>
                     {purchase.status === "paid" ? "Pago" : purchase.status}
                   </Badge>
                 </div>

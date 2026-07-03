@@ -62,7 +62,7 @@ function MarketplacePage() {
                 )}
                 {p.badge && (
                   <div className="absolute top-2 right-2">
-                    <Badge variant="secondary">{p.badge}</Badge>
+                    <Badge variant="neutral">{p.badge}</Badge>
                   </div>
                 )}
               </div>

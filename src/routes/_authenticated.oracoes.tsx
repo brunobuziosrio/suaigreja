@@ -73,7 +73,7 @@ function PrayersPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-medium">{p.is_anonymous ? "Anônimo" : p.name}</span>
-                      {p.is_anonymous && <Badge variant="secondary">anônimo</Badge>}
+                      {p.is_anonymous && <Badge variant="neutral">anônimo</Badge>}
                       <span className="text-xs text-muted-foreground">
                         {new Date(p.created_at).toLocaleString("pt-BR")}
                       </span>

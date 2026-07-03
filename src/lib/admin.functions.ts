@@ -517,9 +517,10 @@ export const deleteTestData = createServerFn({ method: "POST" })
         .from(table as any)
         .delete()
         .eq("account_id", accountId)
-        .eq("is_test_data", true);
+        .eq("is_test_data", true)
+        .select("id" as any);
 
-      deletions[table as keyof typeof deletions] = deleted ? deleted.length : 0;
+      deletions[table as keyof typeof deletions] = Array.isArray(deleted) ? deleted.length : 0;
     }
 
     return {
@@ -539,7 +540,7 @@ export const countTestData = createServerFn({ method: "GET" })
 
     for (const table of tables) {
       const { count } = await supabaseAdmin
-        .from(table)
+        .from(table as any)
         .select("*", { count: "exact", head: true })
         .eq("account_id", accountId)
         .eq("is_test_data", true);

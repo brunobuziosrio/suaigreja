@@ -173,7 +173,7 @@ function TestDataPage() {
                       <p className="text-xs text-muted-foreground mt-1">{account.email}</p>
                       <p className="text-xs text-muted-foreground font-mono">{account.site_id}</p>
                     </div>
-                    <Badge variant={account.subscription_status === "active" ? "default" : "secondary"}>
+                    <Badge variant={account.subscription_status === "active" ? "default" : "neutral"}>
                       {account.subscription_status}
                     </Badge>
                   </div>

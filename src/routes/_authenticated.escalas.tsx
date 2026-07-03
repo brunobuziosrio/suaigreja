@@ -79,7 +79,7 @@ type Shift = {
   confirmed: boolean;
   confirmed_at: string | null;
   notes: string | null;
-  members?: { full_name: string; phone: string; email: string };
+  members?: { full_name: string; phone: string | null; email: string | null };
 };
 
 const VOLUNTEER_TYPES = [

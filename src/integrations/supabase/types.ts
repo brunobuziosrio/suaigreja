@@ -14,6 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_members: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          invited_by: string | null
+          invited_email: string | null
+          role: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          invited_by?: string | null
+          invited_email?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_members_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_role_permissions: {
+        Row: {
+          account_id: string
+          permissions: Json
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          permissions?: Json
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          permissions?: Json
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_role_permissions_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accounts: {
         Row: {
           brand_empty_message: string
@@ -41,17 +112,6 @@ export type Database = {
           custom_domain_status: string
           custom_domain_verification_token: string | null
           custom_domain_verified_at: string | null
-          managed_domain_holder_address: string | null
-          managed_domain_holder_document: string | null
-          managed_domain_holder_email: string | null
-          managed_domain_holder_name: string | null
-          managed_domain_holder_phone: string | null
-          managed_domain_notes: string | null
-          managed_domain_requested_at: string | null
-          managed_domain_requested_name: string | null
-          managed_domain_status: string
-          managed_domain_updated_at: string | null
-          plan_tier: string
           custom_slug: string | null
           donations_fixed_image_url: string | null
           force_show_type: boolean
@@ -72,12 +132,23 @@ export type Database = {
           instagram_columns: number
           instagram_post_count: number
           live_url: string | null
+          managed_domain_holder_address: string | null
+          managed_domain_holder_document: string | null
+          managed_domain_holder_email: string | null
+          managed_domain_holder_name: string | null
+          managed_domain_holder_phone: string | null
+          managed_domain_notes: string | null
+          managed_domain_requested_at: string | null
+          managed_domain_requested_name: string | null
+          managed_domain_status: string
+          managed_domain_updated_at: string | null
           media_audio_url: string | null
           media_show_audio: boolean
           media_show_youtube: boolean
           media_youtube_url: string | null
           onboarded: boolean
           pix_key: string | null
+          plan_tier: string
           primary_color: string
           religion_profile: Database["public"]["Enums"]["religion_profile"]
           show_end_time: boolean
@@ -125,17 +196,6 @@ export type Database = {
           custom_domain_status?: string
           custom_domain_verification_token?: string | null
           custom_domain_verified_at?: string | null
-          managed_domain_holder_address?: string | null
-          managed_domain_holder_document?: string | null
-          managed_domain_holder_email?: string | null
-          managed_domain_holder_name?: string | null
-          managed_domain_holder_phone?: string | null
-          managed_domain_notes?: string | null
-          managed_domain_requested_at?: string | null
-          managed_domain_requested_name?: string | null
-          managed_domain_status?: string
-          managed_domain_updated_at?: string | null
-          plan_tier?: string
           custom_slug?: string | null
           donations_fixed_image_url?: string | null
           force_show_type?: boolean
@@ -156,12 +216,23 @@ export type Database = {
           instagram_columns?: number
           instagram_post_count?: number
           live_url?: string | null
+          managed_domain_holder_address?: string | null
+          managed_domain_holder_document?: string | null
+          managed_domain_holder_email?: string | null
+          managed_domain_holder_name?: string | null
+          managed_domain_holder_phone?: string | null
+          managed_domain_notes?: string | null
+          managed_domain_requested_at?: string | null
+          managed_domain_requested_name?: string | null
+          managed_domain_status?: string
+          managed_domain_updated_at?: string | null
           media_audio_url?: string | null
           media_show_audio?: boolean
           media_show_youtube?: boolean
           media_youtube_url?: string | null
           onboarded?: boolean
           pix_key?: string | null
+          plan_tier?: string
           primary_color?: string
           religion_profile?: Database["public"]["Enums"]["religion_profile"]
           show_end_time?: boolean
@@ -209,17 +280,6 @@ export type Database = {
           custom_domain_status?: string
           custom_domain_verification_token?: string | null
           custom_domain_verified_at?: string | null
-          managed_domain_holder_address?: string | null
-          managed_domain_holder_document?: string | null
-          managed_domain_holder_email?: string | null
-          managed_domain_holder_name?: string | null
-          managed_domain_holder_phone?: string | null
-          managed_domain_notes?: string | null
-          managed_domain_requested_at?: string | null
-          managed_domain_requested_name?: string | null
-          managed_domain_status?: string
-          managed_domain_updated_at?: string | null
-          plan_tier?: string
           custom_slug?: string | null
           donations_fixed_image_url?: string | null
           force_show_type?: boolean
@@ -240,12 +300,23 @@ export type Database = {
           instagram_columns?: number
           instagram_post_count?: number
           live_url?: string | null
+          managed_domain_holder_address?: string | null
+          managed_domain_holder_document?: string | null
+          managed_domain_holder_email?: string | null
+          managed_domain_holder_name?: string | null
+          managed_domain_holder_phone?: string | null
+          managed_domain_notes?: string | null
+          managed_domain_requested_at?: string | null
+          managed_domain_requested_name?: string | null
+          managed_domain_status?: string
+          managed_domain_updated_at?: string | null
           media_audio_url?: string | null
           media_show_audio?: boolean
           media_show_youtube?: boolean
           media_youtube_url?: string | null
           onboarded?: boolean
           pix_key?: string | null
+          plan_tier?: string
           primary_color?: string
           religion_profile?: Database["public"]["Enums"]["religion_profile"]
           show_end_time?: boolean
@@ -268,6 +339,134 @@ export type Database = {
           weekly_verse_ref?: string | null
         }
         Relationships: []
+      }
+      assets: {
+        Row: {
+          account_id: string
+          acquired_at: string | null
+          category: string
+          created_at: string
+          holder_member_id: string | null
+          id: string
+          loaned_at: string | null
+          location_id: string | null
+          name: string
+          notes: string | null
+          photo_url: string | null
+          serial_or_invoice: string | null
+          status: string
+          updated_at: string
+          value_cents: number | null
+        }
+        Insert: {
+          account_id: string
+          acquired_at?: string | null
+          category?: string
+          created_at?: string
+          holder_member_id?: string | null
+          id?: string
+          loaned_at?: string | null
+          location_id?: string | null
+          name: string
+          notes?: string | null
+          photo_url?: string | null
+          serial_or_invoice?: string | null
+          status?: string
+          updated_at?: string
+          value_cents?: number | null
+        }
+        Update: {
+          account_id?: string
+          acquired_at?: string | null
+          category?: string
+          created_at?: string
+          holder_member_id?: string | null
+          id?: string
+          loaned_at?: string | null
+          location_id?: string | null
+          name?: string
+          notes?: string | null
+          photo_url?: string | null
+          serial_or_invoice?: string | null
+          status?: string
+          updated_at?: string
+          value_cents?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assets_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_holder_member_id_fkey"
+            columns: ["holder_member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "assets_location_id_fkey"
+            columns: ["location_id"]
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          account_id: string
+          created_at: string
+          current_amount_cents: number
+          description: string | null
+          end_date: string | null
+          goal_amount_cents: number
+          id: string
+          is_active: boolean
+          name: string
+          pix_key: string | null
+          sort_order: number
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          current_amount_cents?: number
+          description?: string | null
+          end_date?: string | null
+          goal_amount_cents: number
+          id?: string
+          is_active?: boolean
+          name: string
+          pix_key?: string | null
+          sort_order?: number
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          current_amount_cents?: number
+          description?: string | null
+          end_date?: string | null
+          goal_amount_cents?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          pix_key?: string | null
+          sort_order?: number
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       celebration_types: {
         Row: {
@@ -307,7 +506,6 @@ export type Database = {
           {
             foreignKeyName: "celebration_types_account_id_fkey"
             columns: ["account_id"]
-            isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
@@ -378,6 +576,98 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      data_subject_requests: {
+        Row: {
+          account_id: string
+          completed_at: string | null
+          created_at: string
+          description: string
+          id: string
+          received_at: string
+          request_type: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          account_id: string
+          completed_at?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          received_at?: string
+          request_type: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          completed_at?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          received_at?: string
+          request_type?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "data_subject_requests_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decisions: {
+        Row: {
+          account_id: string
+          assignee_note: string | null
+          created_at: string
+          email: string | null
+          id: string
+          kind: string
+          message: string | null
+          name: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          assignee_note?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          kind: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          assignee_note?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          kind?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       devotionals: {
         Row: {
@@ -522,6 +812,7 @@ export type Database = {
           donor_name: string | null
           donor_phone: string | null
           id: string
+          is_test_data: boolean
           member_id: string | null
           mercadopago_payment_id: string | null
           paid_at: string | null
@@ -541,6 +832,7 @@ export type Database = {
           donor_name?: string | null
           donor_phone?: string | null
           id?: string
+          is_test_data?: boolean
           member_id?: string | null
           mercadopago_payment_id?: string | null
           paid_at?: string | null
@@ -560,6 +852,7 @@ export type Database = {
           donor_name?: string | null
           donor_phone?: string | null
           id?: string
+          is_test_data?: boolean
           member_id?: string | null
           mercadopago_payment_id?: string | null
           paid_at?: string | null
@@ -571,16 +864,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "donations_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "donations_campaign_id_fkey"
             columns: ["campaign_id"]
-            isOneToOne: false
             referencedRelation: "donation_campaigns"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "donations_member_id_fkey"
             columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -593,6 +890,7 @@ export type Database = {
           class_id: string
           created_at: string
           id: string
+          is_test_data: boolean
           member_id: string
           present: boolean
         }
@@ -602,6 +900,7 @@ export type Database = {
           class_id: string
           created_at?: string
           id?: string
+          is_test_data?: boolean
           member_id: string
           present?: boolean
         }
@@ -611,6 +910,7 @@ export type Database = {
           class_id?: string
           created_at?: string
           id?: string
+          is_test_data?: boolean
           member_id?: string
           present?: boolean
         }
@@ -618,14 +918,12 @@ export type Database = {
           {
             foreignKeyName: "ebd_attendance_class_id_fkey"
             columns: ["class_id"]
-            isOneToOne: false
             referencedRelation: "ebd_classes"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "ebd_attendance_member_id_fkey"
             columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
@@ -639,6 +937,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_test_data: boolean
           name: string
           sort_order: number
           start_time: string | null
@@ -653,6 +952,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_test_data?: boolean
           name: string
           sort_order?: number
           start_time?: string | null
@@ -667,6 +967,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_test_data?: boolean
           name?: string
           sort_order?: number
           start_time?: string | null
@@ -684,6 +985,7 @@ export type Database = {
           created_at: string
           enrolled_at: string
           id: string
+          is_test_data: boolean
           member_id: string
         }
         Insert: {
@@ -693,6 +995,7 @@ export type Database = {
           created_at?: string
           enrolled_at?: string
           id?: string
+          is_test_data?: boolean
           member_id: string
         }
         Update: {
@@ -702,21 +1005,194 @@ export type Database = {
           created_at?: string
           enrolled_at?: string
           id?: string
+          is_test_data?: boolean
           member_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "ebd_enrollments_class_id_fkey"
             columns: ["class_id"]
-            isOneToOne: false
             referencedRelation: "ebd_classes"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "ebd_enrollments_member_id_fkey"
             columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_attendance: {
+        Row: {
+          account_id: string
+          attended: boolean
+          checked_in_at: string | null
+          created_at: string
+          event_id: string
+          id: string
+          member_id: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          attended?: boolean
+          checked_in_at?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          member_id: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          attended?: boolean
+          checked_in_at?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_attendance_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_attendance_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_certificates: {
+        Row: {
+          account_id: string
+          certificate_number: string
+          created_at: string
+          event_id: string
+          file_url: string | null
+          id: string
+          inscription_id: string
+          issued_at: string
+          participant_name: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          certificate_number: string
+          created_at?: string
+          event_id: string
+          file_url?: string | null
+          id?: string
+          inscription_id: string
+          issued_at?: string
+          participant_name: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          certificate_number?: string
+          created_at?: string
+          event_id?: string
+          file_url?: string | null
+          id?: string
+          inscription_id?: string
+          issued_at?: string
+          participant_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_certificates_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_certificates_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_certificates_inscription_id_fkey"
+            columns: ["inscription_id"]
+            referencedRelation: "event_inscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_inscriptions: {
+        Row: {
+          account_id: string
+          attendance_count: number
+          checked_in: boolean | null
+          checked_in_at: string | null
+          created_at: string
+          email: string
+          event_id: string
+          full_name: string
+          id: string
+          inscribed_at: string
+          phone: string
+          status: string
+          total_price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          attendance_count?: number
+          checked_in?: boolean | null
+          checked_in_at?: string | null
+          created_at?: string
+          email: string
+          event_id: string
+          full_name: string
+          id?: string
+          inscribed_at?: string
+          phone: string
+          status?: string
+          total_price_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          attendance_count?: number
+          checked_in?: boolean | null
+          checked_in_at?: string | null
+          created_at?: string
+          email?: string
+          event_id?: string
+          full_name?: string
+          id?: string
+          inscribed_at?: string
+          phone?: string
+          status?: string
+          total_price_cents?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_inscriptions_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_inscriptions_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
             referencedColumns: ["id"]
           },
         ]
@@ -787,6 +1263,67 @@ export type Database = {
         }
         Relationships: []
       }
+      event_promo_codes: {
+        Row: {
+          account_id: string
+          code: string
+          created_at: string
+          discount_fixed_cents: number | null
+          discount_percent: number | null
+          event_id: string
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          updated_at: string
+          used_count: number | null
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          account_id: string
+          code: string
+          created_at?: string
+          discount_fixed_cents?: number | null
+          discount_percent?: number | null
+          event_id: string
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          updated_at?: string
+          used_count?: number | null
+          valid_from?: string
+          valid_until: string
+        }
+        Update: {
+          account_id?: string
+          code?: string
+          created_at?: string
+          discount_fixed_cents?: number | null
+          discount_percent?: number | null
+          event_id?: string
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          updated_at?: string
+          used_count?: number | null
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_promo_codes_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_promo_codes_event_id_fkey"
+            columns: ["event_id"]
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_registrations: {
         Row: {
           account_id: string
@@ -837,7 +1374,6 @@ export type Database = {
           {
             foreignKeyName: "event_registrations_event_page_id_fkey"
             columns: ["event_page_id"]
-            isOneToOne: false
             referencedRelation: "event_pages"
             referencedColumns: ["id"]
           },
@@ -846,15 +1382,23 @@ export type Database = {
       events: {
         Row: {
           account_id: string
+          certificate_template: string | null
           created_at: string
+          current_inscriptions: number | null
           description: string | null
           end_time: string | null
           event_date: string
           id: string
           is_live: boolean
+          is_test_data: boolean
           live_url: string | null
           location_id: string | null
           location_name: string
+          max_inscriptions: number | null
+          price_cents: number | null
+          promotional_price_cents: number | null
+          promotional_until: string | null
+          requires_checkin: boolean | null
           show_type: boolean
           start_time: string
           type_id: string | null
@@ -863,15 +1407,23 @@ export type Database = {
         }
         Insert: {
           account_id: string
+          certificate_template?: string | null
           created_at?: string
+          current_inscriptions?: number | null
           description?: string | null
           end_time?: string | null
           event_date: string
           id?: string
           is_live?: boolean
+          is_test_data?: boolean
           live_url?: string | null
           location_id?: string | null
           location_name: string
+          max_inscriptions?: number | null
+          price_cents?: number | null
+          promotional_price_cents?: number | null
+          promotional_until?: string | null
+          requires_checkin?: boolean | null
           show_type?: boolean
           start_time: string
           type_id?: string | null
@@ -880,15 +1432,23 @@ export type Database = {
         }
         Update: {
           account_id?: string
+          certificate_template?: string | null
           created_at?: string
+          current_inscriptions?: number | null
           description?: string | null
           end_time?: string | null
           event_date?: string
           id?: string
           is_live?: boolean
+          is_test_data?: boolean
           live_url?: string | null
           location_id?: string | null
           location_name?: string
+          max_inscriptions?: number | null
+          price_cents?: number | null
+          promotional_price_cents?: number | null
+          promotional_until?: string | null
+          requires_checkin?: boolean | null
           show_type?: boolean
           start_time?: string
           type_id?: string | null
@@ -899,21 +1459,18 @@ export type Database = {
           {
             foreignKeyName: "events_account_id_fkey"
             columns: ["account_id"]
-            isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_location_id_fkey"
             columns: ["location_id"]
-            isOneToOne: false
             referencedRelation: "locations"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "events_type_id_fkey"
             columns: ["type_id"]
-            isOneToOne: false
             referencedRelation: "celebration_types"
             referencedColumns: ["id"]
           },
@@ -951,7 +1508,6 @@ export type Database = {
           {
             foreignKeyName: "feature_suggestions_account_id_fkey"
             columns: ["account_id"]
-            isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
@@ -992,7 +1548,129 @@ export type Database = {
           {
             foreignKeyName: "instagram_connections_account_id_fkey"
             columns: ["account_id"]
-            isOneToOne: true
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgpd_audit_logs: {
+        Row: {
+          account_id: string
+          action: string
+          description: string | null
+          id: string
+          resource_id: string | null
+          resource_type: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          action: string
+          description?: string | null
+          id?: string
+          resource_id?: string | null
+          resource_type: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          action?: string
+          description?: string | null
+          id?: string
+          resource_id?: string | null
+          resource_type?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_audit_logs_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgpd_consent_records: {
+        Row: {
+          accepted: boolean
+          account_id: string
+          consent_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          recorded_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          accepted: boolean
+          account_id: string
+          consent_type: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          recorded_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          accepted?: boolean
+          account_id?: string
+          consent_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          recorded_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_consent_records_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lgpd_deletion_requests: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          processed_at: string | null
+          reason: string | null
+          requested_at: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          reason?: string | null
+          requested_at?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          processed_at?: string | null
+          reason?: string | null
+          requested_at?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lgpd_deletion_requests_account_id_fkey"
+            columns: ["account_id"]
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
@@ -1033,7 +1711,6 @@ export type Database = {
           {
             foreignKeyName: "live_stream_overrides_live_stream_id_fkey"
             columns: ["live_stream_id"]
-            isOneToOne: false
             referencedRelation: "live_streams"
             referencedColumns: ["id"]
           },
@@ -1173,7 +1850,6 @@ export type Database = {
           {
             foreignKeyName: "locations_account_id_fkey"
             columns: ["account_id"]
-            isOneToOne: false
             referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
@@ -1220,14 +1896,12 @@ export type Database = {
           {
             foreignKeyName: "member_documents_member_id_fkey"
             columns: ["member_id"]
-            isOneToOne: false
             referencedRelation: "members"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "member_documents_template_id_fkey"
             columns: ["template_id"]
-            isOneToOne: false
             referencedRelation: "document_templates"
             referencedColumns: ["id"]
           },
@@ -1245,18 +1919,25 @@ export type Database = {
           cpf: string | null
           created_at: string
           email: string | null
+          family_head_id: string | null
           full_name: string
           gender: string | null
           id: string
+          is_test_data: boolean
           is_tither: boolean
+          last_event_attendance: string | null
           marital_status: string | null
           member_since: string | null
+          ministry: string | null
+          neighborhood: string | null
           notes: string | null
+          pastoral: string | null
           phone: string | null
           photo_url: string | null
           role: string
           status: string
           updated_at: string
+          whatsapp_consent: boolean
         }
         Insert: {
           account_id: string
@@ -1269,18 +1950,25 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           email?: string | null
+          family_head_id?: string | null
           full_name: string
           gender?: string | null
           id?: string
+          is_test_data?: boolean
           is_tither?: boolean
+          last_event_attendance?: string | null
           marital_status?: string | null
           member_since?: string | null
+          ministry?: string | null
+          neighborhood?: string | null
           notes?: string | null
+          pastoral?: string | null
           phone?: string | null
           photo_url?: string | null
           role?: string
           status?: string
           updated_at?: string
+          whatsapp_consent?: boolean
         }
         Update: {
           account_id?: string
@@ -1293,20 +1981,34 @@ export type Database = {
           cpf?: string | null
           created_at?: string
           email?: string | null
+          family_head_id?: string | null
           full_name?: string
           gender?: string | null
           id?: string
+          is_test_data?: boolean
           is_tither?: boolean
+          last_event_attendance?: string | null
           marital_status?: string | null
           member_since?: string | null
+          ministry?: string | null
+          neighborhood?: string | null
           notes?: string | null
+          pastoral?: string | null
           phone?: string | null
           photo_url?: string | null
           role?: string
           status?: string
           updated_at?: string
+          whatsapp_consent?: boolean
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "members_family_head_id_fkey"
+            columns: ["family_head_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mercadopago_connections: {
         Row: {
@@ -1334,8 +2036,59 @@ export type Database = {
           {
             foreignKeyName: "mercadopago_connections_account_id_fkey"
             columns: ["account_id"]
-            isOneToOne: true
             referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ministry_assignments: {
+        Row: {
+          account_id: string
+          active: boolean
+          created_at: string
+          end_date: string | null
+          id: string
+          member_id: string
+          ministry: string
+          role: string | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          active?: boolean
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          member_id: string
+          ministry: string
+          role?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          active?: boolean
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          member_id?: string
+          ministry?: string
+          role?: string | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ministry_assignments_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ministry_assignments_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
             referencedColumns: ["id"]
           },
         ]
@@ -1441,7 +2194,6 @@ export type Database = {
           {
             foreignKeyName: "payment_transactions_product_id_fkey"
             columns: ["product_id"]
-            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -1530,7 +2282,6 @@ export type Database = {
           {
             foreignKeyName: "prayer_interactions_prayer_request_id_fkey"
             columns: ["prayer_request_id"]
-            isOneToOne: false
             referencedRelation: "prayer_requests"
             referencedColumns: ["id"]
           },
@@ -1578,6 +2329,43 @@ export type Database = {
         }
         Relationships: []
       }
+      privacy_policies: {
+        Row: {
+          account_id: string
+          content: string
+          created_at: string
+          effective_date: string
+          id: string
+          is_current: boolean
+          version: string
+        }
+        Insert: {
+          account_id: string
+          content: string
+          created_at?: string
+          effective_date: string
+          id?: string
+          is_current?: boolean
+          version: string
+        }
+        Update: {
+          account_id?: string
+          content?: string
+          created_at?: string
+          effective_date?: string
+          id?: string
+          is_current?: boolean
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_policies_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_purchases: {
         Row: {
           account_id: string
@@ -1616,14 +2404,12 @@ export type Database = {
           {
             foreignKeyName: "product_purchases_product_id_fkey"
             columns: ["product_id"]
-            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "product_purchases_transaction_id_fkey"
             columns: ["transaction_id"]
-            isOneToOne: false
             referencedRelation: "payment_transactions"
             referencedColumns: ["id"]
           },
@@ -1682,6 +2468,235 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      room_reservations: {
+        Row: {
+          account_id: string
+          created_at: string
+          end_at: string
+          id: string
+          location_id: string | null
+          member_id: string | null
+          notes: string | null
+          requester_name: string
+          requester_phone: string | null
+          start_at: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          end_at: string
+          id?: string
+          location_id?: string | null
+          member_id?: string | null
+          notes?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          start_at: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          end_at?: string
+          id?: string
+          location_id?: string | null
+          member_id?: string | null
+          notes?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          start_at?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_reservations_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_reservations_location_id_fkey"
+            columns: ["location_id"]
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "room_reservations_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      secretaria_request_attachments: {
+        Row: {
+          account_id: string
+          content_type: string | null
+          created_at: string
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          request_id: string
+        }
+        Insert: {
+          account_id: string
+          content_type?: string | null
+          created_at?: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          id?: string
+          request_id: string
+        }
+        Update: {
+          account_id?: string
+          content_type?: string | null
+          created_at?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secretaria_request_attachments_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secretaria_request_attachments_request_id_fkey"
+            columns: ["request_id"]
+            referencedRelation: "secretaria_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      secretaria_request_events: {
+        Row: {
+          account_id: string
+          actor_id: string | null
+          created_at: string
+          event_type: string
+          from_status: string | null
+          id: string
+          metadata: Json
+          request_id: string | null
+          to_status: string | null
+        }
+        Insert: {
+          account_id: string
+          actor_id?: string | null
+          created_at?: string
+          event_type: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          request_id?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          account_id?: string
+          actor_id?: string | null
+          created_at?: string
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json
+          request_id?: string | null
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secretaria_request_events_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      secretaria_requests: {
+        Row: {
+          account_id: string
+          assignee_name: string | null
+          created_at: string
+          details: string | null
+          due_date: string | null
+          id: string
+          internal_notes: string | null
+          member_id: string | null
+          preferred_date: string | null
+          priority: string
+          request_type: string
+          requester_email: string | null
+          requester_name: string
+          requester_phone: string | null
+          scheduled_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          assignee_name?: string | null
+          created_at?: string
+          details?: string | null
+          due_date?: string | null
+          id?: string
+          internal_notes?: string | null
+          member_id?: string | null
+          preferred_date?: string | null
+          priority?: string
+          request_type: string
+          requester_email?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          assignee_name?: string | null
+          created_at?: string
+          details?: string | null
+          due_date?: string | null
+          id?: string
+          internal_notes?: string | null
+          member_id?: string | null
+          preferred_date?: string | null
+          priority?: string
+          request_type?: string
+          requester_email?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          scheduled_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "secretaria_requests_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "secretaria_requests_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       small_group_members: {
         Row: {
@@ -1767,6 +2782,104 @@ export type Database = {
         }
         Relationships: []
       }
+      social_deliveries: {
+        Row: {
+          account_id: string
+          created_at: string
+          delivered_at: string
+          delivered_by: string | null
+          family_id: string
+          id: string
+          items: string
+          notes: string | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          delivered_at?: string
+          delivered_by?: string | null
+          family_id: string
+          id?: string
+          items: string
+          notes?: string | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          delivered_at?: string
+          delivered_by?: string | null
+          family_id?: string
+          id?: string
+          items?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_deliveries_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_deliveries_family_id_fkey"
+            columns: ["family_id"]
+            referencedRelation: "social_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_families: {
+        Row: {
+          account_id: string
+          address: string | null
+          created_at: string
+          family_name: string
+          family_size: number | null
+          id: string
+          needs: string | null
+          notes: string | null
+          phone: string | null
+          responsible_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          address?: string | null
+          created_at?: string
+          family_name: string
+          family_size?: number | null
+          id?: string
+          needs?: string | null
+          notes?: string | null
+          phone?: string | null
+          responsible_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          address?: string | null
+          created_at?: string
+          family_name?: string
+          family_size?: number | null
+          id?: string
+          needs?: string | null
+          notes?: string | null
+          phone?: string | null
+          responsible_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_families_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_updates: {
         Row: {
           content: string
@@ -1793,6 +2906,55 @@ export type Database = {
           version?: string | null
         }
         Relationships: []
+      }
+      tithes: {
+        Row: {
+          account_id: string
+          amount_cents: number
+          contributed_at: string
+          created_at: string
+          id: string
+          member_id: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount_cents: number
+          contributed_at?: string
+          created_at?: string
+          id?: string
+          member_id: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount_cents?: number
+          contributed_at?: string
+          created_at?: string
+          id?: string
+          member_id?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tithes_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tithes_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -1869,6 +3031,266 @@ export type Database = {
         }
         Relationships: []
       }
+      volunteer_schedules: {
+        Row: {
+          account_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          notes: string | null
+          updated_at: string
+          volunteer_type: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          notes?: string | null
+          updated_at?: string
+          volunteer_type: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          notes?: string | null
+          updated_at?: string
+          volunteer_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_schedules_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_shifts: {
+        Row: {
+          account_id: string
+          confirmed: boolean
+          confirmed_at: string | null
+          created_at: string
+          id: string
+          member_id: string
+          notes: string | null
+          schedule_id: string
+          shift_date: string
+          shift_end_time: string | null
+          shift_start_time: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          confirmed?: boolean
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          member_id: string
+          notes?: string | null
+          schedule_id: string
+          shift_date: string
+          shift_end_time?: string | null
+          shift_start_time: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          confirmed?: boolean
+          confirmed_at?: string | null
+          created_at?: string
+          id?: string
+          member_id?: string
+          notes?: string | null
+          schedule_id?: string
+          shift_date?: string
+          shift_end_time?: string | null
+          shift_start_time?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_shifts_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_shifts_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_shifts_schedule_id_fkey"
+            columns: ["schedule_id"]
+            referencedRelation: "volunteer_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      volunteer_unavailability: {
+        Row: {
+          account_id: string
+          created_at: string
+          end_date: string
+          id: string
+          member_id: string
+          reason: string | null
+          start_date: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          end_date: string
+          id?: string
+          member_id: string
+          reason?: string | null
+          start_date: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          end_date?: string
+          id?: string
+          member_id?: string
+          reason?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "volunteer_unavailability_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "volunteer_unavailability_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_automation_rules: {
+        Row: {
+          account_id: string
+          created_at: string
+          custom_content: string | null
+          days_offset: number | null
+          filters: Json | null
+          id: string
+          is_active: boolean
+          name: string
+          send_hour_brt: number | null
+          template_id: string | null
+          trigger_type: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          custom_content?: string | null
+          days_offset?: number | null
+          filters?: Json | null
+          id?: string
+          is_active?: boolean
+          name: string
+          send_hour_brt?: number | null
+          template_id?: string | null
+          trigger_type: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          custom_content?: string | null
+          days_offset?: number | null
+          filters?: Json | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          send_hour_brt?: number | null
+          template_id?: string | null
+          trigger_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_automation_rules_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_automation_rules_template_id_fkey"
+            columns: ["template_id"]
+            referencedRelation: "whatsapp_template_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_credit_ledger: {
+        Row: {
+          account_id: string
+          balance_after: number
+          created_at: string
+          credits_delta: number
+          entry_type: string
+          id: string
+          idempotency_key: string
+          message_id: string | null
+          metadata: Json
+          purchase_id: string | null
+        }
+        Insert: {
+          account_id: string
+          balance_after: number
+          created_at?: string
+          credits_delta: number
+          entry_type: string
+          id?: string
+          idempotency_key: string
+          message_id?: string | null
+          metadata?: Json
+          purchase_id?: string | null
+        }
+        Update: {
+          account_id?: string
+          balance_after?: number
+          created_at?: string
+          credits_delta?: number
+          entry_type?: string
+          id?: string
+          idempotency_key?: string
+          message_id?: string | null
+          metadata?: Json
+          purchase_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_credit_ledger_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_credit_ledger_purchase_id_fkey"
+            columns: ["purchase_id"]
+            referencedRelation: "whatsapp_credit_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_credit_purchases: {
         Row: {
           account_id: string
@@ -1910,8 +3332,59 @@ export type Database = {
           {
             foreignKeyName: "whatsapp_credit_purchases_package_id_fkey"
             columns: ["package_id"]
-            isOneToOne: false
             referencedRelation: "whatsapp_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_delivery_events: {
+        Row: {
+          account_id: string | null
+          created_at: string
+          id: string
+          message_id: string | null
+          occurred_at: string
+          provider: string
+          provider_message_id: string | null
+          provider_status: string
+          raw_payload: Json
+          recipient_phone: string | null
+        }
+        Insert: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          occurred_at?: string
+          provider: string
+          provider_message_id?: string | null
+          provider_status: string
+          raw_payload?: Json
+          recipient_phone?: string | null
+        }
+        Update: {
+          account_id?: string | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          occurred_at?: string
+          provider?: string
+          provider_message_id?: string | null
+          provider_status?: string
+          raw_payload?: Json
+          recipient_phone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_delivery_events_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_delivery_events_message_id_fkey"
+            columns: ["message_id"]
+            referencedRelation: "whatsapp_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -1922,12 +3395,22 @@ export type Database = {
           content: string
           cost_credits: number
           created_at: string
+          credit_refunded_at: string | null
+          credit_reserved_at: string | null
+          delivered_at: string | null
+          delivery_attempts: number
           error_message: string | null
           id: string
           kind: string
+          locked_until: string | null
           member_id: string | null
           phone: string
+          provider: string | null
+          provider_delivery_status: string | null
           provider_message_id: string | null
+          provider_payload: Json
+          provider_status_at: string | null
+          read_at: string | null
           recipient_name: string | null
           scheduled_date: string
           scheduled_for: string
@@ -1940,12 +3423,22 @@ export type Database = {
           content: string
           cost_credits?: number
           created_at?: string
+          credit_refunded_at?: string | null
+          credit_reserved_at?: string | null
+          delivered_at?: string | null
+          delivery_attempts?: number
           error_message?: string | null
           id?: string
           kind?: string
+          locked_until?: string | null
           member_id?: string | null
           phone: string
+          provider?: string | null
+          provider_delivery_status?: string | null
           provider_message_id?: string | null
+          provider_payload?: Json
+          provider_status_at?: string | null
+          read_at?: string | null
           recipient_name?: string | null
           scheduled_date?: string
           scheduled_for?: string
@@ -1958,12 +3451,22 @@ export type Database = {
           content?: string
           cost_credits?: number
           created_at?: string
+          credit_refunded_at?: string | null
+          credit_reserved_at?: string | null
+          delivered_at?: string | null
+          delivery_attempts?: number
           error_message?: string | null
           id?: string
           kind?: string
+          locked_until?: string | null
           member_id?: string | null
           phone?: string
+          provider?: string | null
+          provider_delivery_status?: string | null
           provider_message_id?: string | null
+          provider_payload?: Json
+          provider_status_at?: string | null
+          read_at?: string | null
           recipient_name?: string | null
           scheduled_date?: string
           scheduled_for?: string
@@ -1972,6 +3475,58 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      whatsapp_opt_outs: {
+        Row: {
+          account_id: string
+          created_at: string
+          id: string
+          member_id: string | null
+          message_id: string | null
+          metadata: Json
+          phone_normalized: string
+          reason: string | null
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          message_id?: string | null
+          metadata?: Json
+          phone_normalized: string
+          reason?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          id?: string
+          member_id?: string | null
+          message_id?: string | null
+          metadata?: Json
+          phone_normalized?: string
+          reason?: string | null
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_opt_outs_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_opt_outs_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_packages: {
         Row: {
@@ -2009,11 +3564,71 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_provider_connections: {
+        Row: {
+          access_token_secret_name: string
+          account_id: string
+          active: boolean
+          api_base_url: string | null
+          business_account_id: string | null
+          created_at: string
+          instance_id: string | null
+          last_checked_at: string | null
+          last_error: string | null
+          phone_number_id: string | null
+          provider: string
+          sender_phone: string | null
+          updated_at: string
+          webhook_secret_name: string | null
+        }
+        Insert: {
+          access_token_secret_name: string
+          account_id: string
+          active?: boolean
+          api_base_url?: string | null
+          business_account_id?: string | null
+          created_at?: string
+          instance_id?: string | null
+          last_checked_at?: string | null
+          last_error?: string | null
+          phone_number_id?: string | null
+          provider: string
+          sender_phone?: string | null
+          updated_at?: string
+          webhook_secret_name?: string | null
+        }
+        Update: {
+          access_token_secret_name?: string
+          account_id?: string
+          active?: boolean
+          api_base_url?: string | null
+          business_account_id?: string | null
+          created_at?: string
+          instance_id?: string | null
+          last_checked_at?: string | null
+          last_error?: string | null
+          phone_number_id?: string | null
+          provider?: string
+          sender_phone?: string | null
+          updated_at?: string
+          webhook_secret_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_provider_connections_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_settings: {
         Row: {
           account_id: string
           birthday_enabled: boolean
           birthday_template: string
+          campaign_update_enabled: boolean | null
+          campaign_update_template: string | null
           celula_reminder_enabled: boolean
           celula_reminder_template: string
           created_at: string
@@ -2021,15 +3636,27 @@ export type Database = {
           culto_reminder_enabled: boolean
           culto_reminder_template: string
           enabled: boolean
+          event_confirmation_enabled: boolean | null
+          event_confirmation_template: string | null
+          event_reminder_enabled: boolean | null
+          event_reminder_template: string | null
+          new_visitor_enabled: boolean | null
+          new_visitor_template: string | null
           newsletter_enabled: boolean
           newsletter_template: string
           prayer_request_enabled: boolean
           prayer_request_template: string
+          schedule_change_enabled: boolean | null
+          schedule_change_template: string | null
           send_hour_brt: number
           sender_name: string | null
           tithe_reminder_enabled: boolean
           tithe_reminder_template: string
           updated_at: string
+          volunteer_confirmation_enabled: boolean | null
+          volunteer_confirmation_template: string | null
+          weekly_bulletin_enabled: boolean | null
+          weekly_bulletin_template: string | null
           welcome_enabled: boolean
           welcome_template: string
         }
@@ -2037,6 +3664,8 @@ export type Database = {
           account_id: string
           birthday_enabled?: boolean
           birthday_template?: string
+          campaign_update_enabled?: boolean | null
+          campaign_update_template?: string | null
           celula_reminder_enabled?: boolean
           celula_reminder_template?: string
           created_at?: string
@@ -2044,15 +3673,27 @@ export type Database = {
           culto_reminder_enabled?: boolean
           culto_reminder_template?: string
           enabled?: boolean
+          event_confirmation_enabled?: boolean | null
+          event_confirmation_template?: string | null
+          event_reminder_enabled?: boolean | null
+          event_reminder_template?: string | null
+          new_visitor_enabled?: boolean | null
+          new_visitor_template?: string | null
           newsletter_enabled?: boolean
           newsletter_template?: string
           prayer_request_enabled?: boolean
           prayer_request_template?: string
+          schedule_change_enabled?: boolean | null
+          schedule_change_template?: string | null
           send_hour_brt?: number
           sender_name?: string | null
           tithe_reminder_enabled?: boolean
           tithe_reminder_template?: string
           updated_at?: string
+          volunteer_confirmation_enabled?: boolean | null
+          volunteer_confirmation_template?: string | null
+          weekly_bulletin_enabled?: boolean | null
+          weekly_bulletin_template?: string | null
           welcome_enabled?: boolean
           welcome_template?: string
         }
@@ -2060,6 +3701,8 @@ export type Database = {
           account_id?: string
           birthday_enabled?: boolean
           birthday_template?: string
+          campaign_update_enabled?: boolean | null
+          campaign_update_template?: string | null
           celula_reminder_enabled?: boolean
           celula_reminder_template?: string
           created_at?: string
@@ -2067,25 +3710,116 @@ export type Database = {
           culto_reminder_enabled?: boolean
           culto_reminder_template?: string
           enabled?: boolean
+          event_confirmation_enabled?: boolean | null
+          event_confirmation_template?: string | null
+          event_reminder_enabled?: boolean | null
+          event_reminder_template?: string | null
+          new_visitor_enabled?: boolean | null
+          new_visitor_template?: string | null
           newsletter_enabled?: boolean
           newsletter_template?: string
           prayer_request_enabled?: boolean
           prayer_request_template?: string
+          schedule_change_enabled?: boolean | null
+          schedule_change_template?: string | null
           send_hour_brt?: number
           sender_name?: string | null
           tithe_reminder_enabled?: boolean
           tithe_reminder_template?: string
           updated_at?: string
+          volunteer_confirmation_enabled?: boolean | null
+          volunteer_confirmation_template?: string | null
+          weekly_bulletin_enabled?: boolean | null
+          weekly_bulletin_template?: string | null
           welcome_enabled?: boolean
           welcome_template?: string
         }
         Relationships: []
+      }
+      whatsapp_template_library: {
+        Row: {
+          account_id: string
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          kind: string
+          name: string
+          preview: string | null
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          account_id: string
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind: string
+          name: string
+          preview?: string | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          account_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          kind?: string
+          name?: string
+          preview?: string | null
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_template_library_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_grant_whatsapp_credits: {
+        Args: {
+          p_account_id: string
+          p_amount_cents?: number
+          p_credits: number
+          p_metadata?: Json
+        }
+        Returns: {
+          balance: number
+          ledger_id: string
+          purchase_id: string
+        }[]
+      }
+      claim_whatsapp_messages: {
+        Args: { p_limit?: number; p_lock_seconds?: number }
+        Returns: {
+          account_id: string
+          content: string
+          cost_credits: number
+          delivery_attempts: number
+          id: string
+          member_id: string
+          phone: string
+        }[]
+      }
+      complete_whatsapp_credit_purchase: {
+        Args: { p_metadata?: Json; p_purchase_id: string }
+        Returns: {
+          balance: number
+          ledger_id: string
+          reason: string
+        }[]
+      }
       generate_site_id: { Args: never; Returns: string }
       has_role: {
         Args: {
@@ -2093,6 +3827,59 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_account_member: {
+        Args: { _account_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_account_owner: {
+        Args: { _account_id: string; _user_id: string }
+        Returns: boolean
+      }
+      normalize_whatsapp_phone: { Args: { p_phone: string }; Returns: string }
+      record_whatsapp_opt_out: {
+        Args: {
+          p_account_id: string
+          p_member_id?: string
+          p_message_id?: string
+          p_metadata?: Json
+          p_phone: string
+          p_reason?: string
+          p_source?: string
+        }
+        Returns: {
+          opt_out_id: string
+          phone_normalized: string
+        }[]
+      }
+      refund_whatsapp_message_credits: {
+        Args: {
+          p_account_id: string
+          p_idempotency_key: string
+          p_message_id: string
+          p_metadata?: Json
+        }
+        Returns: {
+          balance: number
+          ledger_id: string
+          ok: boolean
+          reason: string
+        }[]
+      }
+      reserve_whatsapp_credits: {
+        Args: {
+          p_account_id: string
+          p_cost: number
+          p_idempotency_key: string
+          p_message_id: string
+          p_metadata?: Json
+        }
+        Returns: {
+          balance: number
+          ledger_id: string
+          ok: boolean
+          reason: string
+        }[]
       }
     }
     Enums: {

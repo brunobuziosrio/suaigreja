@@ -73,7 +73,7 @@ function ProductDetail() {
             <div className="p-6 space-y-4">
               <div>
                 <div className="flex items-center gap-2">
-                  {product.badge && <Badge variant="secondary">{product.badge}</Badge>}
+                  {product.badge && <Badge variant="neutral">{product.badge}</Badge>}
                   {product.featured && <Badge>Destaque</Badge>}
                 </div>
                 <h1 className="text-2xl font-semibold tracking-tight mt-2">{product.name}</h1>

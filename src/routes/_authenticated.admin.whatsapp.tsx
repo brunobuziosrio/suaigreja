@@ -276,7 +276,7 @@ function AdminWhatsappPage() {
                       <Badge variant="outline">{row.plan_tier ?? "premium"}</Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={row.whatsapp?.enabled ? "default" : "secondary"}>
+                      <Badge variant={row.whatsapp?.enabled ? "default" : "neutral"}>
                         {row.whatsapp?.enabled ? "Ativo" : "Desativado"}
                       </Badge>
                     </TableCell>

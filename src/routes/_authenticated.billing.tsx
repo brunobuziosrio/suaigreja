@@ -113,7 +113,7 @@ function BillingPage() {
           ) : (
             <div>
               <div className="flex items-center gap-2">
-                <Badge variant={account?.subscription_status === "active" ? "default" : "secondary"}>
+                <Badge variant={account?.subscription_status === "active" ? "default" : "neutral"}>
                   {ACCOUNT_STATUS_LABELS[account?.subscription_status ?? "trial"] ?? account?.subscription_status ?? "Trial"}
                 </Badge>
                 {account?.current_plan && (
@@ -152,7 +152,7 @@ function BillingPage() {
                 <div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Plano {plan.tierLabel}</h2>
-                    {plan.cycle === "annual" && <Badge variant="secondary">2 meses grátis</Badge>}
+                    {plan.cycle === "annual" && <Badge variant="neutral">2 meses grátis</Badge>}
                   </div>
                   <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Ciclo {plan.cycleLabel.toLowerCase()}
@@ -216,7 +216,7 @@ function BillingPage() {
                   <div className="font-medium">Plano {BILLING_PLANS[p.plan as BillingPlanId]?.label} — {formatCentsBRL(p.amount_cents)}</div>
                   <div className="text-xs text-muted-foreground">{new Date(p.created_at).toLocaleString("pt-BR")}</div>
                 </div>
-                <Badge variant={p.status === "paid" || p.status === "authorized" ? "default" : "secondary"}>{STATUS_LABELS[p.status] ?? p.status}</Badge>
+                <Badge variant={p.status === "paid" || p.status === "authorized" ? "default" : "neutral"}>{STATUS_LABELS[p.status] ?? p.status}</Badge>
               </div>
             ))}
           </div>

@@ -141,7 +141,7 @@ function EbdReport({ year, month }: { year: number; month: number }) {
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base">{c.class_name}</CardTitle>
             <div className="flex gap-2">
-              <Badge variant="secondary">{c.meetings} encontros</Badge>
+              <Badge variant="neutral">{c.meetings} encontros</Badge>
               <Badge>{c.rate}% frequência</Badge>
             </div>
           </CardHeader>

@@ -337,7 +337,7 @@ function AdminProductsPage() {
                   <TableCell>
                     <div className="flex gap-1">
                       <Badge variant={p.active ? "default" : "outline"}>{p.active ? "Ativo" : "Inativo"}</Badge>
-                      {p.featured && <Badge variant="secondary">Destaque</Badge>}
+                      {p.featured && <Badge variant="neutral">Destaque</Badge>}
                     </div>
                   </TableCell>
                   <TableCell>

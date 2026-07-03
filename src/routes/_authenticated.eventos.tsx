@@ -293,7 +293,7 @@ function EventosPage() {
                         </div>
                       </TableCell>
                     <TableCell className="text-sm">{e.event_date}</TableCell>
-                    <TableCell>{e.price_cents > 0 ? formatCentsBRL(e.price_cents) : <Badge variant="secondary">Grátis</Badge>}</TableCell>
+                    <TableCell>{e.price_cents > 0 ? formatCentsBRL(e.price_cents) : <Badge variant="neutral">Grátis</Badge>}</TableCell>
                     <TableCell>
                       <button
                         className="text-sm underline-offset-2 hover:underline flex items-center gap-1"

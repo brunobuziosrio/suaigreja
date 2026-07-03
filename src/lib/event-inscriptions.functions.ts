@@ -119,7 +119,7 @@ export const generateQRCodeForInscription = createServerFn({ method: "GET" })
     await requirePermission(context, "events", "view");
     const { data: inscription, error } = await supabase
       .from("event_inscriptions")
-      .select("*, events(id, name)")
+      .select("*, events(id, type_name)")
       .eq("id", data.inscription_id)
       .eq("account_id", accountId)
       .single();
@@ -132,7 +132,7 @@ export const generateQRCodeForInscription = createServerFn({ method: "GET" })
     return {
       inscription_id: inscription.id,
       qr_data: qrData,
-      event_name: inscription.events?.name,
+      event_name: inscription.events?.type_name,
       participant_name: inscription.full_name,
     };
   });
@@ -180,7 +180,7 @@ export const generateEventCertificate = createServerFn({ method: "GET" })
     await requirePermission(context, "events", "view");
     const { data: inscription, error: inscErr } = await supabase
       .from("event_inscriptions")
-      .select("*, events(name, event_date)")
+      .select("*, events(type_name, event_date)")
       .eq("id", data.inscription_id)
       .eq("account_id", accountId)
       .single();
@@ -193,7 +193,7 @@ export const generateEventCertificate = createServerFn({ method: "GET" })
 
     const certificateData = {
       participant_name: inscription.full_name,
-      event_name: inscription.events?.name,
+      event_name: inscription.events?.type_name,
       event_date: inscription.events?.event_date,
       issued_at: new Date().toISOString(),
       certificate_id: inscription.id,

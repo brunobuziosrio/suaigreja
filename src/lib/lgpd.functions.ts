@@ -86,8 +86,7 @@ export const exportMemberData = createServerFn({ method: "GET" })
           .from("members")
           .select("*")
           .eq("account_id", accountId)
-          .single()
-          .catch(() => ({ data: null })),
+          .single(),
         supabase
           .from("donations")
           .select("*")
