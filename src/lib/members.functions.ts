@@ -112,6 +112,78 @@ export const deleteMember = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ===================== VINCULO FAMILIAR =====================
+// Reaproveita a coluna members.family_head_id que ja existia no banco
+// (self-referencing FK) mas nunca tinha sido usada por nenhuma tela.
+
+export type FamilyGroup = {
+  head: { id: string; full_name: string; phone: string | null; photo_url: string | null };
+  dependents: { id: string; full_name: string; phone: string | null; photo_url: string | null; birth_date: string | null }[];
+};
+
+export const listFamilyGroups = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "members", "view");
+    const { supabase } = context;
+    const { data, error } = await supabase
+      .from("members")
+      .select("id, full_name, phone, photo_url, birth_date, family_head_id")
+      .eq("account_id", accountId)
+      .order("full_name", { ascending: true });
+    if (error) throw new Error(error.message);
+    const members = data ?? [];
+    const byId = new Map(members.map((m) => [m.id, m]));
+    const groups = new Map<string, FamilyGroup>();
+    for (const m of members) {
+      if (!m.family_head_id) continue;
+      const head = byId.get(m.family_head_id);
+      if (!head) continue;
+      if (!groups.has(head.id)) {
+        groups.set(head.id, {
+          head: { id: head.id, full_name: head.full_name, phone: head.phone, photo_url: head.photo_url },
+          dependents: [],
+        });
+      }
+      groups.get(head.id)!.dependents.push({
+        id: m.id, full_name: m.full_name, phone: m.phone, photo_url: m.photo_url, birth_date: m.birth_date,
+      });
+    }
+    return Array.from(groups.values()).sort((a, b) => a.head.full_name.localeCompare(b.head.full_name));
+  });
+
+export const setMemberFamilyHead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z.object({ member_id: z.string().uuid(), family_head_id: z.string().uuid().nullable() }).parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "members", "edit");
+    const { supabase } = context;
+    if (data.family_head_id === data.member_id) {
+      throw new Error("Um membro não pode ser chefe da própria família.");
+    }
+    if (data.family_head_id) {
+      const { data: head, error: headErr } = await supabase
+        .from("members")
+        .select("id")
+        .eq("id", data.family_head_id)
+        .eq("account_id", accountId)
+        .maybeSingle();
+      if (headErr) throw new Error(headErr.message);
+      if (!head) throw new Error("Chefe de família não encontrado nesta igreja.");
+    }
+    const { error } = await supabase
+      .from("members")
+      .update({ family_head_id: data.family_head_id } as any)
+      .eq("id", data.member_id)
+      .eq("account_id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 // ===================== IMPORTACAO CSV =====================
 
 const CSV_ROW_LIMIT = 2000;

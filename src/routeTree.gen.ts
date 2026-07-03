@@ -44,6 +44,7 @@ import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenti
 import { Route as AuthenticatedLocationsRouteImport } from './routes/_authenticated.locations'
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hub'
 import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
+import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated.familias'
 import { Route as AuthenticatedEventosRouteImport } from './routes/_authenticated.eventos'
 import { Route as AuthenticatedEscalasRouteImport } from './routes/_authenticated.escalas'
 import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated.equipe'
@@ -254,6 +255,11 @@ const AuthenticatedHubRoute = AuthenticatedHubRouteImport.update({
 const AuthenticatedFinancesRoute = AuthenticatedFinancesRouteImport.update({
   id: '/finances',
   path: '/finances',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedFamiliasRoute = AuthenticatedFamiliasRouteImport.update({
+  id: '/familias',
+  path: '/familias',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedEventosRoute = AuthenticatedEventosRouteImport.update({
@@ -467,6 +473,7 @@ export interface FileRoutesByFullPath {
   '/equipe': typeof AuthenticatedEquipeRoute
   '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
+  '/familias': typeof AuthenticatedFamiliasRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/locations': typeof AuthenticatedLocationsRoute
@@ -538,6 +545,7 @@ export interface FileRoutesByTo {
   '/equipe': typeof AuthenticatedEquipeRoute
   '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
+  '/familias': typeof AuthenticatedFamiliasRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/locations': typeof AuthenticatedLocationsRoute
@@ -611,6 +619,7 @@ export interface FileRoutesById {
   '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
   '/_authenticated/escalas': typeof AuthenticatedEscalasRoute
   '/_authenticated/eventos': typeof AuthenticatedEventosRoute
+  '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
   '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/hub': typeof AuthenticatedHubRoute
   '/_authenticated/locations': typeof AuthenticatedLocationsRoute
@@ -684,6 +693,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/escalas'
     | '/eventos'
+    | '/familias'
     | '/finances'
     | '/hub'
     | '/locations'
@@ -755,6 +765,7 @@ export interface FileRouteTypes {
     | '/equipe'
     | '/escalas'
     | '/eventos'
+    | '/familias'
     | '/finances'
     | '/hub'
     | '/locations'
@@ -827,6 +838,7 @@ export interface FileRouteTypes {
     | '/_authenticated/equipe'
     | '/_authenticated/escalas'
     | '/_authenticated/eventos'
+    | '/_authenticated/familias'
     | '/_authenticated/finances'
     | '/_authenticated/hub'
     | '/_authenticated/locations'
@@ -1157,6 +1169,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/familias': {
+      id: '/_authenticated/familias'
+      path: '/familias'
+      fullPath: '/familias'
+      preLoaderRoute: typeof AuthenticatedFamiliasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/eventos': {
       id: '/_authenticated/eventos'
       path: '/eventos'
@@ -1436,6 +1455,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
   AuthenticatedEscalasRoute: typeof AuthenticatedEscalasRoute
   AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
+  AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
   AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
   AuthenticatedLocationsRoute: typeof AuthenticatedLocationsRoute
@@ -1478,6 +1498,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
   AuthenticatedEscalasRoute: AuthenticatedEscalasRoute,
   AuthenticatedEventosRoute: AuthenticatedEventosRoute,
+  AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
   AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
   AuthenticatedLocationsRoute: AuthenticatedLocationsRoute,

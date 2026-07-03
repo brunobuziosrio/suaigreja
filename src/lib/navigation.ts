@@ -95,6 +95,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       icon: Users,
       items: [
         { title: terms.people, url: "/membros", icon: IdCard },
+        { title: "Vínculo Familiar", url: "/familias", icon: Users2 },
         { title: "Visitantes", url: "/visitantes", icon: UserPlus },
         { title: terms.smallGroups, url: "/celulas", icon: Users2 },
         { title: "Pedidos de oração", url: "/oracoes", icon: HandHeart },
