@@ -764,6 +764,21 @@ foto/aniversário/nome do dependente → removi o vínculo → grupo sumiu da
 lista (sem dependentes). Zero erro de console. Confirmado no banco que não
 sobrou nenhum `family_head_id` residual depois do teste.
 
+### Lembrete de turno via WhatsApp — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima quarta feature do backlog. Fecha o ciclo do alerta "turnos sem
+confirmação" que entrou no Dashboard nesta sessão: cada turno pendente na
+tabela de `/escalas` ganhou um botão de WhatsApp que abre uma mensagem
+pronta lembrando o voluntário (nome, escala, data, horário), reaproveitando
+o telefone que já vinha no join com `members`. Sem server function nova —
+só um link `wa.me`, mesmo padrão já usado nos aniversariantes do
+Dashboard.
+
+Testado com um turno de teste real: o link gerado apontou pro número
+correto do voluntário e a mensagem incluiu nome, escala, data formatada
+(05/07/2026) e horário. Zero erro de console. Dado de teste removido
+depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
