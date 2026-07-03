@@ -485,6 +485,27 @@ do certificado → extraído o link do QR → acessada a página pública
 Registro de teste removido depois. `/documentos` agora é acessível a
 qualquer conta Premium (ou superior) normalmente.
 
+### Boletim Semanal — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Quinta feature do backlog. `bulletin.functions.ts` (`getWeeklyBulletin`)
+agrega numa única chamada: agenda dos próximos 7 dias, aniversariantes da
+semana (compara só mês/dia, cruza virada de ano), últimos 3 avisos
+publicados, versículo/mensagem semanal (`accounts.weekly_verse`/
+`weekly_message`, já existiam) e contagem de pedidos de oração novos. Sem
+tabela nova — só lê dados de outros módulos. Rota `/boletim` (novo item no
+menu "Site e comunicação"): layout pronto pra imprimir e botão "Copiar
+para WhatsApp" que monta o texto formatado (emojis + negrito markdown do
+WhatsApp).
+
+Testado de ponta a ponta com login real: a página carregou com dados 100%
+reais da conta (7 eventos da semana, 1 aniversariante do dia, versículo e
+mensagem semanal já configurados pelo Bruno, 3 avisos publicados), o botão
+copiou pro clipboard um texto corretamente formatado, zero erro de console.
+Reparo cosmético identificado mas **não é bug**: o versículo aparece com
+aspas duplicadas porque o texto salvo na conta já inclui aspas — mesmo
+comportamento já existente na página pública do hub (`$slug.tsx`), não
+introduzido por esta feature.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
