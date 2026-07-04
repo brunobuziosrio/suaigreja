@@ -230,7 +230,8 @@ function CampaignsPage() {
   const thithesMut = useMutation({
     mutationFn: (form: typeof titheForm) => saveTithe({ data: form as any }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tithes", "tithes-report"] });
+      qc.invalidateQueries({ queryKey: ["tithes"] });
+      qc.invalidateQueries({ queryKey: ["tithes-report"] });
       toast.success("Dízimo registrado");
       setOpenTitheDialog(false);
       setTitheForm({
@@ -248,7 +249,8 @@ function CampaignsPage() {
   const deleteTitheMut = useMutation({
     mutationFn: (id: string) => removeTithe({ data: { id } }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["tithes", "tithes-report"] });
+      qc.invalidateQueries({ queryKey: ["tithes"] });
+      qc.invalidateQueries({ queryKey: ["tithes-report"] });
       toast.success("Dízimo removido");
     },
     onError: (e: Error) => toast.error(e.message),
