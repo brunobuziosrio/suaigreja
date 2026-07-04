@@ -20,6 +20,7 @@ import {
   Sparkles,
   UserCheck,
   TrendingDown,
+  UserX,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -34,6 +35,7 @@ import { listMyDonationCampaigns } from "@/lib/donations.functions";
 import { listSystemUpdates, createSuggestion } from "@/lib/feedback.functions";
 import { listUpcomingUnconfirmedShifts } from "@/lib/volunteer-shifts.functions";
 import { listCampaigns } from "@/lib/campaigns.functions";
+import { listAbsentMembers } from "@/lib/event-attendance.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,6 +57,7 @@ function DashboardPage() {
   const fetchCampaigns = useServerFn(listMyDonationCampaigns);
   const fetchUnconfirmedShifts = useServerFn(listUpcomingUnconfirmedShifts);
   const fetchContributionCampaigns = useServerFn(listCampaigns);
+  const fetchAbsentMembers = useServerFn(listAbsentMembers);
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
   const planTier = resolvePlanTier(account);
   const canUseMembers = !!account && canAccessPath(planTier, "/membros");
@@ -78,6 +81,11 @@ function DashboardPage() {
     queryKey: ["contribution-campaigns"],
     queryFn: () => fetchContributionCampaigns(),
     enabled: canUseContribCampaigns,
+  });
+  const { data: absentData } = useQuery({
+    queryKey: ["absent-members"],
+    queryFn: () => fetchAbsentMembers(),
+    enabled: canUseMembers,
   });
   const range = useMemo(() => {
     const d = new Date();
@@ -218,8 +226,19 @@ function DashboardPage() {
         href: "/campanhas",
       });
     }
+    if (canUseMembers && absentData?.trackingActive && absentData.members.length > 0) {
+      list.push({
+        key: "absent-members",
+        icon: UserX,
+        tone: "text-amber-600 bg-amber-500/10",
+        title: `${absentData.members.length} membro(s) sumido(s)`,
+        description: "Sem presença registrada há 21+ dias. Vale uma visita ou ligação pastoral.",
+        href: "/ausencias",
+      });
+    }
     return list;
   }, [
+    absentData,
     activeCampaigns,
     birthdaysToday,
     campaignsBehindPace,

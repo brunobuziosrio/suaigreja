@@ -64,6 +64,7 @@ import { Route as AuthenticatedCelulasRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
 import { Route as AuthenticatedBoletimRouteImport } from './routes/_authenticated.boletim'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
+import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated.ausencias'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
 import { Route as AuthenticatedAcaoSocialRouteImport } from './routes/_authenticated.acao-social'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
@@ -366,6 +367,11 @@ const AuthenticatedBillingRoute = AuthenticatedBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
+  id: '/ausencias',
+  path: '/ausencias',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -493,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/update-password': typeof UpdatePasswordRoute
   '/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/ausencias': typeof AuthenticatedAusenciasRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/boletim': typeof AuthenticatedBoletimRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
@@ -570,6 +577,7 @@ export interface FileRoutesByTo {
   '/update-password': typeof UpdatePasswordRoute
   '/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/ausencias': typeof AuthenticatedAusenciasRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/boletim': typeof AuthenticatedBoletimRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
@@ -649,6 +657,7 @@ export interface FileRoutesById {
   '/update-password': typeof UpdatePasswordRoute
   '/_authenticated/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/boletim': typeof AuthenticatedBoletimRoute
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
@@ -728,6 +737,7 @@ export interface FileRouteTypes {
     | '/update-password'
     | '/acao-social'
     | '/agenda'
+    | '/ausencias'
     | '/billing'
     | '/boletim'
     | '/campanhas'
@@ -805,6 +815,7 @@ export interface FileRouteTypes {
     | '/update-password'
     | '/acao-social'
     | '/agenda'
+    | '/ausencias'
     | '/billing'
     | '/boletim'
     | '/campanhas'
@@ -883,6 +894,7 @@ export interface FileRouteTypes {
     | '/update-password'
     | '/_authenticated/acao-social'
     | '/_authenticated/agenda'
+    | '/_authenticated/ausencias'
     | '/_authenticated/billing'
     | '/_authenticated/boletim'
     | '/_authenticated/campanhas'
@@ -1374,6 +1386,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBillingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/ausencias': {
+      id: '/_authenticated/ausencias'
+      path: '/ausencias'
+      fullPath: '/ausencias'
+      preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/agenda': {
       id: '/_authenticated/agenda'
       path: '/agenda'
@@ -1541,6 +1560,7 @@ const AuthenticatedMarketplaceRouteWithChildren =
 interface AuthenticatedRouteChildren {
   AuthenticatedAcaoSocialRoute: typeof AuthenticatedAcaoSocialRoute
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedBoletimRoute: typeof AuthenticatedBoletimRoute
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
@@ -1588,6 +1608,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcaoSocialRoute: AuthenticatedAcaoSocialRoute,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedBoletimRoute: AuthenticatedBoletimRoute,
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,

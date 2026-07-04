@@ -88,6 +88,87 @@ export const setEventAttendance = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const ABSENCE_THRESHOLD_DAYS = 21;
+const TRACKING_ACTIVE_WINDOW_DAYS = 30;
+
+export type AbsentMemberRow = {
+  member_id: string;
+  full_name: string;
+  photo_url: string | null;
+  phone: string | null;
+  last_attended_at: string | null;
+  days_absent: number | null;
+};
+
+// So faz sentido alertar "sumido" se a igreja de fato estiver usando a
+// marcacao de presenca -- senao todo mundo apareceria como ausente no
+// primeiro dia da feature, o que seria enganoso. Guarda: precisa ter
+// pelo menos 1 presenca de verdade nos ultimos 30 dias pra o alerta
+// ligar.
+export const listAbsentMembers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "members", "view");
+    const { supabase } = context;
+
+    const windowStart = new Date();
+    windowStart.setDate(windowStart.getDate() - TRACKING_ACTIVE_WINDOW_DAYS);
+
+    const { count: recentCount, error: recentErr } = await supabase
+      .from("event_attendance" as never)
+      .select("*", { count: "exact", head: true })
+      .eq("account_id", accountId)
+      .eq("attended", true)
+      .gte("checked_in_at", windowStart.toISOString());
+    if (recentErr) throw new Error(recentErr.message);
+    if (!recentCount) {
+      return { trackingActive: false, members: [] as AbsentMemberRow[] };
+    }
+
+    const [{ data: members, error: membersErr }, { data: attendance, error: attErr }] = await Promise.all([
+      supabase
+        .from("members")
+        .select("id, full_name, photo_url, phone")
+        .eq("account_id", accountId)
+        .eq("status", "ativo"),
+      supabase
+        .from("event_attendance" as never)
+        .select("member_id, checked_in_at")
+        .eq("account_id", accountId)
+        .eq("attended", true)
+        .order("checked_in_at", { ascending: false }),
+    ]);
+    if (membersErr) throw new Error(membersErr.message);
+    if (attErr) throw new Error(attErr.message);
+
+    const lastAttendanceByMember = new Map<string, string>();
+    for (const a of (attendance as any[]) ?? []) {
+      if (!lastAttendanceByMember.has(a.member_id)) lastAttendanceByMember.set(a.member_id, a.checked_in_at);
+    }
+
+    const now = Date.now();
+    const absent = (members ?? [])
+      .map((m) => {
+        const lastAttended = lastAttendanceByMember.get(m.id) ?? null;
+        const daysAbsent = lastAttended
+          ? Math.floor((now - new Date(lastAttended).getTime()) / (1000 * 60 * 60 * 24))
+          : null;
+        return {
+          member_id: m.id,
+          full_name: m.full_name,
+          photo_url: m.photo_url,
+          phone: m.phone,
+          last_attended_at: lastAttended,
+          days_absent: daysAbsent,
+        };
+      })
+      .filter((m) => m.days_absent === null || m.days_absent >= ABSENCE_THRESHOLD_DAYS)
+      .sort((a, b) => (b.days_absent ?? 9999) - (a.days_absent ?? 9999));
+
+    return { trackingActive: true, members: absent as AbsentMemberRow[] };
+  });
+
 export const getEventAttendanceCount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
