@@ -872,6 +872,48 @@ favor da abordagem de `event-pages`. O bug corrigido lá continua correto,
 mas não desbloqueia nada em produção — o arquivo é candidato a remoção
 numa sessão futura (confirmar com o Bruno antes de apagar).
 
+### Limpeza de código morto — 2026-07-03 (a pedido do Bruno)
+
+Depois de encontrar vários módulos abandonados ao longo da sessão, o Bruno
+pediu pra focar em limpeza em vez de mais features novas. Rodei uma
+auditoria (agente de exploração + verificação manual) em todo o codebase:
+
+**Removido** (zero uso confirmado em qualquer lugar):
+- `src/lib/event-inscriptions.functions.ts` (achado acima)
+- `src/lib/whatsapp-templates.functions.ts` — mesmo padrão: sistema
+  paralelo de templates/automações de WhatsApp (`whatsapp_template_library`/
+  `whatsapp_automation_rules`) nunca usado. O sistema real é outro (campos
+  fixos `birthday_template`/`welcome_template`/etc. na tabela
+  `whatsapp_settings`, usado de verdade em `_authenticated.whatsapp.tsx`).
+- `src/components/ui/pagination.tsx` (tinha 3 erros de tipo pré-existentes)
+- **21 componentes shadcn/ui** nunca importados em lugar nenhum: accordion,
+  alert-dialog, aspect-ratio, avatar, breadcrumb, calendar, carousel,
+  chart, context-menu, drawer, dropdown-menu, form, hover-card, input-otp,
+  menubar, navigation-menu, popover, radio-group, resizable, scroll-area,
+  toggle-group. Scaffold padrão do shadcn CLI, nunca chegaram a ser usados
+  em nenhuma feature.
+
+**Auditado e confirmado limpo** (sem achados novos): nenhuma rota
+autenticada órfã (as únicas fora do menu — `admin/test-data` e
+`onboarding` — são alcançadas por link/redirect programático, não estão
+soltas de verdade), nenhum arquivo `.functions.ts` sem consumidor real,
+nenhuma rota `api.public.*` abandonada (todas são webhooks/callbacks
+externos legítimos).
+
+**Resultado**: `tsc --noEmit` foi de 150+ erros espalhados por dezenas de
+arquivos (início da sessão) pra **zero erros em todo o codebase**.
+
+**Não removido ainda** (tabelas do banco correspondentes aos arquivos
+apagados — `event_inscriptions`, `whatsapp_template_library`,
+`whatsapp_automation_rules` — mais `data_subject_requests` e
+`privacy_policies`, também sem nenhum uso): apagar tabela é mais
+irreversível que apagar arquivo de código, então deixei só documentado
+como candidato pra próxima sessão decidir, não apaguei sem confirmar.
+
+Testado após a limpeza: 21 páginas com login real (as 18 já testadas
+antes + `/familias`, `/jornada-espiritual`, `/privacidade`), zero erro de
+console em qualquer uma — a remoção não quebrou nada em produção.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
