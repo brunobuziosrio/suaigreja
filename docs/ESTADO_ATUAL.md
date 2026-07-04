@@ -813,6 +813,48 @@ sucesso → card "Batizado" foi de 0 pra 1 → filtro aplicado mostrou só ele.
 Zero erro de console. Etapa revertida pra `null` depois do teste (não
 alterei dado real da conta).
 
+### Privacidade e Dados (LGPD) — NOVA feature, 2026-07-03 — DEPLOYADA e testada
+
+Décima sétima feature do backlog. `lgpd.functions.ts` existia desde 20-06
+(consentimento, exportação, exclusão, auditoria, anonimização) mas
+**nenhuma das 7 funções estava conectada a nenhuma tela** — o módulo
+inteiro de conformidade LGPD era código morto.
+
+`exportMemberData` tinha, além do bug de `.catch()` já corrigido antes
+nesta sessão, um erro de modelo de dados: tentava buscar "um membro" via
+`account_id` sem filtrar por pessoa nenhuma (`.single()` sem localizar
+quem), o que não fazia sentido — `account_members` (usuário da
+plataforma) e `members` (fiéis da congregação) são conceitos diferentes.
+Reescrita como `exportMyAccountData`: exporta o vínculo do usuário
+autenticado com a conta, histórico de consentimentos e solicitações de
+exclusão — dados que pertencem a ele como usuário da plataforma.
+
+Nova rota `/privacidade` (menu "Sistema e conta"): consentimentos (4
+toggles), baixar meus dados (JSON), solicitar exclusão da conta (com
+diálogo de confirmação e motivo opcional).
+
+**Bug crítico real encontrado e corrigido durante o teste**: `RLS` em
+`lgpd_consent_records` e `lgpd_deletion_requests` só tinha policy de
+`SELECT` desde a criação (20-06) — **nenhuma de `INSERT`**. Toda gravação
+de consentimento ou pedido de exclusão falhava silenciosamente (0 linhas
+em produção desde sempre). Agravante: `requestDataDeletion` nem checava o
+erro do insert, então **sempre retornava "solicitação registrada com
+sucesso" mesmo quando nada era gravado** — um pedido de exclusão de dados
+real, exigido por lei, seria perdido sem ninguém perceber. Corrigido com
+policies de `INSERT` (`WITH CHECK user_id = auth.uid()`) nas duas tabelas
++ as funções agora checam o erro e lançam exceção de verdade em vez de
+fingir sucesso (`anonymizeData`, ainda não conectado a nenhuma tela,
+corrigido pelo mesmo padrão por consistência).
+
+Testado de ponta a ponta duas vezes (antes e depois do fix): a primeira
+rodada mostrou o switch de consentimento não persistindo e confirmei por
+query direta que a tabela tinha 0 linhas mesmo com o fluxo "funcionando"
+na tela. Depois do fix: switch marcou, persistiu após reload, JSON
+exportado trouxe o histórico de consentimento, pedido de exclusão gravou
+linha real (confirmado por query direta: `status=pending`,
+`reason='Teste automatizado - ignorar'`). Zero erro de console. Dados de
+teste removidos depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
