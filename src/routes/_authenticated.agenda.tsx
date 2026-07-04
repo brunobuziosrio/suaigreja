@@ -38,10 +38,12 @@ import {
   GripVertical,
   Copy,
   Share2,
+  UserCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { buildDayMessage, buildRangeMessage, openWhatsAppShare } from "@/lib/whatsapp-share";
+import { listEventAttendance, setEventAttendance } from "@/lib/event-attendance.functions";
 
 export const Route = createFileRoute("/_authenticated/agenda")({
   component: AgendaPage,
@@ -143,6 +145,7 @@ function AgendaPage() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(buildEmpty(toIso(new Date())));
+  const [attendanceEventId, setAttendanceEventId] = useState<string | null>(null);
 
   // Copy day events to another date
   const [copyState, setCopyState] = useState<{ sourceDate: string; targetDate: string } | null>(null);
@@ -802,6 +805,15 @@ function AgendaPage() {
                                 size="icon"
                                 variant="ghost"
                                 className="h-5 w-5"
+                                title="Presença"
+                                onClick={() => setAttendanceEventId(e.id)}
+                              >
+                                <UserCheck className="h-2.5 w-2.5" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-5 w-5"
                                 onClick={() => {
                                   if (confirm("Remover este evento?")) deleteMut.mutate(e.id);
                                 }}
@@ -1017,7 +1029,80 @@ function AgendaPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        <AttendanceDialog eventId={attendanceEventId} onClose={() => setAttendanceEventId(null)} />
       </div>
     </AppShell>
+  );
+}
+
+function AttendanceDialog({ eventId, onClose }: { eventId: string | null; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fetchAttendance = useServerFn(listEventAttendance);
+  const mark = useServerFn(setEventAttendance);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["event-attendance", eventId],
+    queryFn: () => fetchAttendance({ data: { event_id: eventId! } }),
+    enabled: !!eventId,
+  });
+
+  const markMut = useMutation({
+    mutationFn: (v: { member_id: string; attended: boolean }) =>
+      mark({ data: { event_id: eventId!, ...v } }),
+    onMutate: async (v) => {
+      await qc.cancelQueries({ queryKey: ["event-attendance", eventId] });
+      qc.setQueryData(["event-attendance", eventId], (old: any[] = []) =>
+        old.map((r) => (r.member_id === v.member_id ? { ...r, attended: v.attended } : r)),
+      );
+    },
+    onError: () => {
+      toast.error("Não foi possível salvar");
+      qc.invalidateQueries({ queryKey: ["event-attendance", eventId] });
+    },
+  });
+
+  const attendedCount = rows.filter((r) => r.attended).length;
+
+  return (
+    <Dialog open={!!eventId} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <UserCheck className="h-5 w-5" />Presença
+          </DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground -mt-2">{attendedCount} de {rows.length} marcados presentes</p>
+            <div className="space-y-1 max-h-96 overflow-y-auto">
+              {rows.map((r) => (
+                <label
+                  key={r.member_id}
+                  className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/40 cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={r.attended}
+                    onChange={(e) => markMut.mutate({ member_id: r.member_id, attended: e.target.checked })}
+                    className="h-4 w-4"
+                  />
+                  {r.photo_url ? (
+                    <img src={r.photo_url} alt="" className="h-7 w-7 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold">
+                      {r.full_name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-sm">{r.full_name}</span>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
