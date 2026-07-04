@@ -855,6 +855,23 @@ linha real (confirmado por query direta: `status=pending`,
 `reason='Teste automatizado - ignorar'`). Zero erro de console. Dados de
 teste removidos depois.
 
+### Achado: `event-inscriptions.functions.ts` é um módulo abandonado, não uma feature incompleta
+
+Ao verificar se o bug do nome do evento em branco (corrigido na sessão de
+regeneração do `types.ts`) afetava alguma tela real, descobri que as 6
+funções desse arquivo inteiro (`createEventInscription`,
+`listEventInscriptions`, `generateQRCodeForInscription`,
+`recordEventAttendance`, `generateEventCertificate`,
+`exportEventInscriptionsToCSV`, sobre a tabela `event_inscriptions`) não
+são usadas em **nenhuma** rota. O sistema de inscrição em eventos que
+realmente funciona é outro, `event-pages.functions.ts` (tabela
+`event_registrations`), usado de verdade em `e.$slug.tsx` (página pública)
+e `_authenticated.eventos.tsx` (admin). Tudo indica que
+`event-inscriptions.functions.ts` foi uma primeira tentativa abandonada em
+favor da abordagem de `event-pages`. O bug corrigido lá continua correto,
+mas não desbloqueia nada em produção — o arquivo é candidato a remoção
+numa sessão futura (confirmar com o Bruno antes de apagar).
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
