@@ -954,6 +954,27 @@ teste e restaurei a versão real "1.0" como vigente (`UPDATE ...
 is_current = true WHERE id = 'e2a0a927-...'`) — produção voltou
 exatamente ao estado de antes do teste. Zero erro de console.
 
+### Presença em Eventos — NOVA feature, 2026-07-04 — DEPLOYADA e testada
+
+Décima nona feature do backlog. Mesma auditoria que revelou
+`privacy_policies`: a tabela `event_attendance` já existia com RLS
+completa (SELECT/INSERT/UPDATE/DELETE) desde antes, mas nenhuma tela usava.
+Distinta do check-in por QR (`checkin_entries`/`checkin_sessions`): aqui é
+marcação manual de presença, útil pra cultos/reuniões sem totem de
+check-in.
+
+Botão "Presença" (ícone pequeno, mesmo padrão dos outros 3 ícones de ação
+por evento) em cada evento do calendário `/agenda`, abre diálogo com lista
+de membros ativos e checkbox, update otimista (marca na tela na hora, sem
+esperar o servidor responder).
+
+Testado com login real: abri o diálogo de um evento real, marquei um
+membro real como presente, contador foi de "0 de 4" pra "1 de 4", fechei
+e reabri o diálogo — persistiu. Zero erro de console. Marcação de teste
+removida do banco depois (registro real do membro, não dado de teste
+descartável — removido pra não deixar rastro de uma presença que não
+aconteceu de verdade).
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
