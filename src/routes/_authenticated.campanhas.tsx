@@ -35,10 +35,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Edit2, Trash2, TrendingUp, Wallet, Target, DollarSign } from "lucide-react";
+import { Plus, Edit2, Trash2, TrendingUp, Wallet, Target, DollarSign, Printer } from "lucide-react";
 import { listCampaigns, upsertCampaign, deleteCampaign, getCampaignStats } from "@/lib/campaigns.functions";
 import { listTithes, getTithesReport, upsertTithe, deleteTithe } from "@/lib/tithes.functions";
 import { listMembers } from "@/lib/members.functions";
+import { getMyAccount } from "@/lib/account.functions";
 
 export const Route = createFileRoute("/_authenticated/campanhas")({
   component: CampaignsPage,
@@ -66,7 +67,7 @@ type Tithe = {
   contributed_at: string;
   status: string;
   notes: string | null;
-  members?: { full_name: string; email: string };
+  members?: { full_name: string; email: string | null; phone?: string | null };
 };
 
 function formatCurrency(cents: number): string {
@@ -76,16 +77,65 @@ function formatCurrency(cents: number): string {
   });
 }
 
+function escapeHtml(value: unknown) {
+  return String(value ?? "").replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
+}
+
+function printTitheReceipt(tithe: Tithe, churchName: string) {
+  const w = window.open("", "_blank", "width=700,height=850");
+  if (!w) return;
+  const safeChurch = escapeHtml(churchName);
+  const safeName = escapeHtml(tithe.members?.full_name ?? "Contribuinte");
+  const safeAmount = escapeHtml(formatCurrency(tithe.amount_cents));
+  const safeDate = escapeHtml(new Date(`${tithe.contributed_at}T00:00:00`).toLocaleDateString("pt-BR"));
+  const safeId = escapeHtml(tithe.id.slice(0, 8).toUpperCase());
+  const safeToday = escapeHtml(new Date().toLocaleDateString("pt-BR"));
+
+  w.document.write(`<!doctype html><html><head><title>Recibo — ${safeName}</title>
+    <style>
+      body{font-family:Georgia,serif;max-width:600px;margin:60px auto;padding:0 40px;color:#222;line-height:1.7}
+      h1{font-size:20px;text-align:center;margin-bottom:2px}
+      .church{text-align:center;color:#666;font-size:13px;margin-bottom:36px}
+      .box{border:1px solid #ccc;border-radius:8px;padding:24px}
+      .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;font-size:14px}
+      .row:last-child{border-bottom:none}
+      .row span:first-child{color:#666}
+      .amount{font-size:24px;font-weight:bold;text-align:center;margin:20px 0}
+      .sig{margin-top:70px;text-align:center;border-top:1px solid #333;padding-top:8px;width:60%;margin-left:auto;margin-right:auto;font-size:13px}
+      .meta{margin-top:24px;text-align:center;font-size:11px;color:#999}
+      @media print{body{margin:20px}}
+    </style></head><body>
+    <h1>Recibo de Contribuição</h1>
+    <div class="church">${safeChurch}</div>
+    <div class="box">
+      <div class="row"><span>Contribuinte</span><span>${safeName}</span></div>
+      <div class="row"><span>Data</span><span>${safeDate}</span></div>
+      <div class="row"><span>Protocolo</span><span>#${safeId}</span></div>
+      <div class="amount">${safeAmount}</div>
+    </div>
+    <div class="sig">${safeChurch}</div>
+    <div class="meta">Recibo emitido em ${safeToday} · Documento gerado eletronicamente</div>
+    </body></html>`);
+  w.document.close();
+  w.focus();
+  w.print();
+}
+
 function CampaignsPage() {
   const qc = useQueryClient();
   const fetchCampaigns = useServerFn(listCampaigns);
   const fetchMembers = useServerFn(listMembers);
   const fetchTithes = useServerFn(listTithes);
   const fetchTithesReport = useServerFn(getTithesReport);
+  const fetchAccount = useServerFn(getMyAccount);
   const saveCampaign = useServerFn(upsertCampaign);
   const removeCampaign = useServerFn(deleteCampaign);
   const saveTithe = useServerFn(upsertTithe);
   const removeTithe = useServerFn(deleteTithe);
+
+  const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
 
   const [showTithes, setShowTithes] = useState(false);
   const [openTitheDialog, setOpenTitheDialog] = useState(false);
@@ -583,6 +633,14 @@ function CampaignsPage() {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-right space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                title="Imprimir recibo"
+                                onClick={() => printTitheReceipt(tithe, account?.brand_title ?? "Igreja")}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
                               <Button
                                 variant="outline"
                                 size="sm"
