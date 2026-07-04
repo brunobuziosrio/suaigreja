@@ -1023,6 +1023,28 @@ mostrar o roster corretamente → troquei o papel pra "Líder" → removi o
 membro → mensagem de lista vazia voltou. Zero erro de console. Célula de
 teste removida depois.
 
+### Alertas de Ausência — NOVA feature, 2026-07-04 — DEPLOYADA e testada
+
+Vigésima segunda feature do backlog. Complementa a Presença em Eventos:
+`/ausencias` lista fiéis ativos sem presença registrada há 21+ dias, com
+botão de WhatsApp direto — mesmo padrão de ação pastoral já usado em
+outros alertas. Novo alerta no card "O que fazer hoje" do Dashboard.
+
+**Cuidado de design**: como a Presença em Eventos é uma feature nova (zero
+uso real até agora), o alerta só liga se houver pelo menos 1 presença de
+verdade registrada nos últimos 30 dias — senão **todo mundo** apareceria
+como "sumido" logo no primeiro dia, o que seria enganoso e assustador pro
+usuário. Sem isso, a tela mostra "ainda não há presença suficiente
+registrada" com um link pra Agenda.
+
+Testado nos dois estados: (1) sem nenhuma presença real na conta →
+mensagem de "dados insuficientes" apareceu corretamente; (2) registrei uma
+presença de teste recente pra um membro → tela passou a listar os outros
+membros ativos como "Nunca teve presença registrada", o membro com
+presença recente não apareceu na lista, e o alerta "N membro(s) sumido(s)"
+apareceu no Dashboard. Zero erro de console. Registro de teste removido
+depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
