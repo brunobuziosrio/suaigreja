@@ -4,14 +4,22 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { listSmallGroups, upsertSmallGroup, deleteSmallGroup } from "@/lib/small-groups.functions";
+import {
+  listSmallGroupMembers,
+  addSmallGroupMember,
+  setSmallGroupMemberRole,
+  removeSmallGroupMember,
+} from "@/lib/small-group-members.functions";
+import { listMembers } from "@/lib/members.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Pencil, Trash2, Users2, MapPin, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, Users2, MapPin, Clock, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/celulas")({
@@ -29,6 +37,7 @@ function CelulasPage() {
   const { data: groups = [], isLoading } = useQuery({ queryKey: ["small_groups"], queryFn: () => list() });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
+  const [membersGroup, setMembersGroup] = useState<any>(null);
 
   const save = useMutation({
     mutationFn: (payload: any) => upsert({ data: payload }),
@@ -61,6 +70,7 @@ function CelulasPage() {
                   {g.leader_name && <p className="text-xs text-muted-foreground">Líder: {g.leader_name}</p>}
                 </div>
                 <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" title="Membros" onClick={() => setMembersGroup(g)}><UserPlus className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => { setEditing(g); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                   <Button size="icon" variant="ghost" onClick={() => confirm("Remover?") && remove.mutate(g.id)}><Trash2 className="h-4 w-4" /></Button>
                 </div>
@@ -129,7 +139,104 @@ function CelulasPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <GroupMembersDialog group={membersGroup} onClose={() => setMembersGroup(null)} />
     </div>
     </AppShell>
+  );
+}
+
+function GroupMembersDialog({ group, onClose }: { group: any; onClose: () => void }) {
+  const qc = useQueryClient();
+  const fetchRoster = useServerFn(listSmallGroupMembers);
+  const fetchMembers = useServerFn(listMembers);
+  const add = useServerFn(addSmallGroupMember);
+  const setRole = useServerFn(setSmallGroupMemberRole);
+  const removeMember = useServerFn(removeSmallGroupMember);
+
+  const { data: roster = [], isLoading } = useQuery({
+    queryKey: ["small-group-members", group?.id],
+    queryFn: () => fetchRoster({ data: { group_id: group.id } }),
+    enabled: !!group,
+  });
+  const { data: allMembers = [] } = useQuery({ queryKey: ["members"], queryFn: () => fetchMembers(), enabled: !!group });
+
+  const [memberId, setMemberId] = useState("");
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["small-group-members", group?.id] });
+
+  const addMut = useMutation({
+    mutationFn: () => add({ data: { group_id: group.id, member_id: memberId, role: "membro" } }),
+    onSuccess: () => { invalidate(); toast.success("Adicionado à célula"); setMemberId(""); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const roleMut = useMutation({
+    mutationFn: (v: { id: string; role: string }) => setRole({ data: v }),
+    onSuccess: () => { invalidate(); toast.success("Papel atualizado"); },
+  });
+
+  const removeMut = useMutation({
+    mutationFn: (id: string) => removeMember({ data: { id } }),
+    onSuccess: () => { invalidate(); toast.success("Removido da célula"); },
+  });
+
+  const availableMembers = allMembers.filter((m: any) => !roster.some((r) => r.member_id === m.id));
+
+  return (
+    <Dialog open={!!group} onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader><DialogTitle>Membros — {group?.name}</DialogTitle></DialogHeader>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Select value={memberId} onValueChange={setMemberId}>
+              <SelectTrigger className="flex-1"><SelectValue placeholder="Adicionar membro…" /></SelectTrigger>
+              <SelectContent>
+                {availableMembers.map((m: any) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Button size="sm" disabled={!memberId || addMut.isPending} onClick={() => addMut.mutate()}>
+              {addMut.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Adicionar"}
+            </Button>
+          </div>
+
+          {isLoading ? (
+            <p className="text-sm text-muted-foreground">Carregando...</p>
+          ) : roster.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum membro nesta célula ainda.</p>
+          ) : (
+            <div className="space-y-1 max-h-72 overflow-y-auto">
+              {roster.map((r) => (
+                <div key={r.id} className="flex items-center justify-between gap-2 rounded-md p-2 hover:bg-muted/40">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {r.members?.photo_url ? (
+                      <img src={r.members.photo_url} alt="" className="h-7 w-7 rounded-full object-cover shrink-0" />
+                    ) : (
+                      <div className="h-7 w-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-semibold shrink-0">
+                        {(r.members?.full_name ?? "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm truncate">{r.members?.full_name}</span>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <Select value={r.role} onValueChange={(v) => roleMut.mutate({ id: r.id, role: v })}>
+                      <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="lider">Líder</SelectItem>
+                        <SelectItem value="anfitriao">Anfitrião</SelectItem>
+                        <SelectItem value="membro">Membro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button size="icon" variant="ghost" onClick={() => removeMut.mutate(r.id)}>
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
