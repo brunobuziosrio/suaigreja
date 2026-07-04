@@ -2729,7 +2729,20 @@ export type Database = {
           member_id?: string
           role?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "small_group_members_group_id_fkey"
+            columns: ["group_id"]
+            referencedRelation: "small_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "small_group_members_member_id_fkey"
+            columns: ["member_id"]
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       small_groups: {
         Row: {
