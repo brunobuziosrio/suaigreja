@@ -42,6 +42,7 @@ import { Route as AuthenticatedPoliticaPrivacidadeRouteImport } from './routes/_
 import { Route as AuthenticatedPatrimonioRouteImport } from './routes/_authenticated.patrimonio'
 import { Route as AuthenticatedOracoesRouteImport } from './routes/_authenticated.oracoes'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
+import { Route as AuthenticatedMinisteriosRouteImport } from './routes/_authenticated.ministerios'
 import { Route as AuthenticatedMembrosRouteImport } from './routes/_authenticated.membros'
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated.marketplace'
 import { Route as AuthenticatedLocationsRouteImport } from './routes/_authenticated.locations'
@@ -252,6 +253,12 @@ const AuthenticatedOnboardingRoute = AuthenticatedOnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMinisteriosRoute =
+  AuthenticatedMinisteriosRouteImport.update({
+    id: '/ministerios',
+    path: '/ministerios',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedMembrosRoute = AuthenticatedMembrosRouteImport.update({
   id: '/membros',
   path: '/membros',
@@ -507,6 +514,7 @@ export interface FileRoutesByFullPath {
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/membros': typeof AuthenticatedMembrosRoute
+  '/ministerios': typeof AuthenticatedMinisteriosRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/patrimonio': typeof AuthenticatedPatrimonioRoute
@@ -583,6 +591,7 @@ export interface FileRoutesByTo {
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/membros': typeof AuthenticatedMembrosRoute
+  '/ministerios': typeof AuthenticatedMinisteriosRoute
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/patrimonio': typeof AuthenticatedPatrimonioRoute
@@ -661,6 +670,7 @@ export interface FileRoutesById {
   '/_authenticated/locations': typeof AuthenticatedLocationsRoute
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/_authenticated/membros': typeof AuthenticatedMembrosRoute
+  '/_authenticated/ministerios': typeof AuthenticatedMinisteriosRoute
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/oracoes': typeof AuthenticatedOracoesRoute
   '/_authenticated/patrimonio': typeof AuthenticatedPatrimonioRoute
@@ -739,6 +749,7 @@ export interface FileRouteTypes {
     | '/locations'
     | '/marketplace'
     | '/membros'
+    | '/ministerios'
     | '/onboarding'
     | '/oracoes'
     | '/patrimonio'
@@ -815,6 +826,7 @@ export interface FileRouteTypes {
     | '/locations'
     | '/marketplace'
     | '/membros'
+    | '/ministerios'
     | '/onboarding'
     | '/oracoes'
     | '/patrimonio'
@@ -892,6 +904,7 @@ export interface FileRouteTypes {
     | '/_authenticated/locations'
     | '/_authenticated/marketplace'
     | '/_authenticated/membros'
+    | '/_authenticated/ministerios'
     | '/_authenticated/onboarding'
     | '/_authenticated/oracoes'
     | '/_authenticated/patrimonio'
@@ -1205,6 +1218,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof AuthenticatedOnboardingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/ministerios': {
+      id: '/_authenticated/ministerios'
+      path: '/ministerios'
+      fullPath: '/ministerios'
+      preLoaderRoute: typeof AuthenticatedMinisteriosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/membros': {
@@ -1542,6 +1562,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedLocationsRoute: typeof AuthenticatedLocationsRoute
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRouteWithChildren
   AuthenticatedMembrosRoute: typeof AuthenticatedMembrosRoute
+  AuthenticatedMinisteriosRoute: typeof AuthenticatedMinisteriosRoute
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedOracoesRoute: typeof AuthenticatedOracoesRoute
   AuthenticatedPatrimonioRoute: typeof AuthenticatedPatrimonioRoute
@@ -1588,6 +1609,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedLocationsRoute: AuthenticatedLocationsRoute,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRouteWithChildren,
   AuthenticatedMembrosRoute: AuthenticatedMembrosRoute,
+  AuthenticatedMinisteriosRoute: AuthenticatedMinisteriosRoute,
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedOracoesRoute: AuthenticatedOracoesRoute,
   AuthenticatedPatrimonioRoute: AuthenticatedPatrimonioRoute,

@@ -99,6 +99,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
         { title: terms.people, url: "/membros", icon: IdCard },
         { title: "Jornada Espiritual", url: "/jornada-espiritual", icon: Sprout },
         { title: "Vínculo Familiar", url: "/familias", icon: Users2 },
+        { title: "Ministérios", url: "/ministerios", icon: Users2 },
         { title: "Visitantes", url: "/visitantes", icon: UserPlus },
         { title: terms.smallGroups, url: "/celulas", icon: Users2 },
         { title: "Pedidos de oração", url: "/oracoes", icon: HandHeart },
