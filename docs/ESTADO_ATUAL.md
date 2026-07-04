@@ -1084,61 +1084,101 @@ Testado de ponta a ponta após os dois fixes: registrei um dízimo de teste
 recibo" → popup abriu com nome, valor e protocolo corretos. Zero erro de
 console. Dado de teste removido depois.
 
-## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
+## 5.2. Itens do fim de 02-07 — todos RESOLVIDOS
 
-1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
-   Conta confirmada saudável no banco (senha definida, e-mail confirmado, sem
-   bloqueio/exclusão) — **não foi causado por nenhuma mudança desta sessão** (RLS e
-   resolução de conta só afetam dados pós-login, não a checagem de senha do GoTrue).
-   A conta tem **duas identidades vinculadas**: Google OAuth e e-mail/senha (ambas
-   criadas em 2026-06-06) — hipótese mais provável é que o Bruno normalmente entra
-   via **"Continuar com Google"** e a senha manual está desatualizada/não é a usada
-   no dia a dia. Testar primeiro login via Google. Se precisar trocar a senha: SMTP
-   está quebrado (ver item 2), então usar link de recuperação gerado por
-   `auth.admin.generateLink({type:'recovery', email, options:{redirectTo:'/update-password'}})`
-   via API admin (não expor o token gerado em arquivos versionados — é credencial
-   de acesso). Observação: o `redirect_to` passado não fez efeito no teste desta
-   sessão (GoTrue redirecionou para a raiz do site mesmo estando na allow-list); se
-   acontecer de novo, navegar manualmente para `/update-password` na mesma aba após
-   clicar o link (a sessão de recuperação persiste).
+Os 5 pendentes que este mapa listava aqui (login do Bruno, SMTP Zoho quebrado,
+Fase 3b de contas de equipe, convidado de teste em produção, e o backlog geral)
+foram todos endereçados nas sessões de 03-07/04-07: SMTP corrigido e testado,
+Fase 3b + matriz de permissões por verbo aplicadas em 15 módulos, usuário de
+teste removido. Detalhe completo nas seções 5.1 (sessão 02-07) e no registro de
+sessão 03-07/04-07 abaixo desta.
 
-2. **SMTP Zoho quebrado** (`535 Authentication Failed`) — nenhum e-mail transacional
-   sai (convite, confirmação de signup, recuperação de senha). Ver
-   [[project_smtp_quebrado]] na memória. Ação: corrigir credencial/senha de app da
-   Zoho e reiniciar `supabase-auth`. Até lá, convites usam link manual (já
-   implementado) e recuperação de senha também precisa de link gerado manualmente.
+## 5.3. RESUMO EXECUTIVO — estado em 2026-07-04 (fim de sessão longa: 23 features + 11 bugs reais)
 
-3. **Fase 3b (Equipe e Permissões) pendente** — ver seção "Fase 3 (enforcement,
-   parcial)" acima. Resumo do que falta:
-   - Trocar `.eq("account_id", userId)` bruto por `resolveAccountContext` nas ~41
-     funções de módulo (`members`, `events`, `campaigns`, `donations`, `finances`,
-     `visitors`, `checkin`, `secretaria`, `whatsapp`, `small-groups`, `ebd`,
-     `documents`, `volunteer-shifts`, `reports`, etc.) — fazer em lotes pequenos e
-     testáveis, não uma varredura única. Sem isso, um membro convidado loga e vê o
-     dashboard, mas cada módulo aparece **vazio** (não erra).
-   - Depois: aplicar a matriz de `/equipe` de fato (checagem por verbo em código,
-     usando `roleCan()`/`account_role_permissions`, mesmo padrão de `requirePlanTier`).
-     Hoje qualquer membro ativo tem acesso igual ao dono, a matriz ainda não restringe.
+**Núcleo vendável (Prioridade 1 do `IDEIAS_IMPLEMENTACOES.md`): 100% completo.**
+Site público, CRM de membros, visitantes, agenda/eventos, doações Pix, WhatsApp
+básico (com créditos/ledger/webhook/opt-out), Secretaria Digital, Dashboard,
+Configurações/branding, LGPD e permissões — todos implementados, testados com
+login real e sem erro de console.
 
-4. **Convidado de teste ativo em produção**: `brunobuzios@hotmail.com` está vinculado
-   como `tesoureiro_geral` na conta real. Considerar remover em `/equipe` quando os
-   testes terminarem (ou manter se for um usuário real da equipe).
+**Diferenciais fortes (Prioridade 2): quase tudo pronto.** Jornada do visitante,
+escalas (com indisponibilidade e lembrete WhatsApp), células (com gestão de
+membros), certificados, campanhas financeiras (com recibo automático), boletim
+semanal — prontos. Faltam pontas soltas: push notification no PWA (manifesto
+dinâmico já existe, mas sem notificação push de verdade) e check-in **infantil**
+com etiqueta/código de retirada (o check-in genérico por QR já existe, mas não
+o fluxo específico de segurança infantil).
 
-5. **Backlog grande ainda não iniciado**: ver `IDEIAS_IMPLEMENTACOES.md` — a maioria
-   das ideias (financeiro avançado, multiunidade, IA Pastoral, importação CSV,
-   certificados, páginas de SEO comerciais etc.) não foi tocada nesta sessão. IA
-   Pastoral e domínio gerenciado comercial exigem decisão comercial/credencial do
-   Bruno antes de iniciar.
+**"Cara de plataforma grande" (Prioridade 3): parcialmente iniciado.** Ação
+Social, Patrimônio e Reserva de Ambientes foram entregues nesta sessão. Ainda
+faltam: IA Pastoral, multiunidade avançado (congregações/CNPJ/GPS/liderança
+vinculada), API pública/webhooks para terceiros, marketplace, Trust Center
+público e transmissões/pregações avançado (podcast, transcrição, cortes).
 
-## 6. Próximos passos sugeridos (aguardando decisão do Bruno)
-Ordenados por valor x independência de terceiros:
-1. **Amadurecer módulos beta** para venda (WhatsApp, Secretaria, Documentos): fechar
-   pontas, responsividade e critérios de pronto. Sem dependência externa.
-2. **Permissões granulares por cargo** — alto valor para igrejas com equipe; sem
-   dependência externa.
-3. **Importação CSV** de membros — dor real de migração de dados; sem dependência externa.
-4. **IA Pastoral** (usar Claude/Anthropic) — grande diferencial; depende de custo/credencial.
-5. **Domínio gerenciado comercial** (Registro.br + cobrança) — depende de registrador/preço.
+**Qualidade de código**: `tsc --noEmit` zero erros (era 150+ erros no início da
+sessão de 03-07), `types.ts` sincronizado com as 69 tabelas reais do banco,
+código morto removido (2 módulos abandonados + 21 componentes shadcn/ui nunca
+importados).
 
-> Itens 4 e 5 exigem decisão comercial/credenciais e **não devem ser iniciados sem
-> alinhamento com o Bruno**.
+### O que falta, organizado por tema (cruzado com `IDEIAS_IMPLEMENTACOES.md`)
+
+**A. Lacunas comerciais/conversão — maior impacto em vendas, sem dependência externa**
+- Onboarding guiado: cadastro em 3 etapas (dados da igreja → responsável →
+  checkout), cards de plano já no cadastro, banner de trial com dias restantes,
+  página de upgrade contextual quando um módulo está bloqueado. Hoje o cadastro
+  existe mas não segue esse fluxo guiado.
+- Painel financeiro avançado: importação de lançamentos em lote por CSV
+  (dízimos já tem CSV de membros, mas não de lançamentos financeiros), livro
+  caixa/balancete/DRE, conciliação bancária, cadastro de contas bancárias/Pix
+  com "conta principal" e "visível para membros" (hoje só existe 1 chave Pix
+  por conta em Configurações e 1 chave Pix por campanha — não um cadastro
+  multi-conta dedicado).
+- Filtros financeiros avançados (por tipo/subtipo/categoria/contribuinte/texto
+  livre) com totalizadores sempre visíveis no resultado filtrado.
+
+**B. Estrutura ainda ausente — mudança maior, avaliar com calma**
+- Multiunidade/congregações: hoje o produto é single-tenant por igreja: não
+  existe cadastro de congregação/filial, dashboard agregado, financeiro por
+  unidade nem liderança vinculada por papel. É o maior buraco estrutural do
+  backlog — precisa de decisão de modelagem antes de começar (como
+  `account_id` se relaciona com múltiplas unidades).
+- Check-in infantil seguro (etiqueta impressa, código de retirada, alerta de
+  retirada não autorizada) — distinto do check-in genérico já existente.
+
+**C. Diferenciais de produto ainda não iniciados — exigem decisão do Bruno antes de começar**
+- IA Pastoral (resumir pedidos de oração, sugerir acompanhamento de ausentes,
+  gerar devocional/roteiro de culto/posts) — depende de qual provedor de LLM
+  usar e como tratar custo por geração.
+- Domínio gerenciado comercial de verdade (registro/renovação automatizada via
+  Registro.br) — hoje só existe o pedido assistido (cliente pede, Admin
+  processa manualmente); falta a automação com o registrador.
+- Marketplace de fornecedores religiosos, Trust Center público, API
+  pública/webhooks para terceiros.
+
+**D. Itens pequenos, sem dependência, podem entrar a qualquer momento**
+- Corrigir aspas duplicadas no versículo semanal (`/boletim` e `$slug.tsx`) —
+  cosmético, registrado desde 03-07.
+- Levar `prayer.functions.ts` (pedidos de oração) e outras funções "menores"
+  pela Fase 3b/matriz de permissões — não fazem parte do catálogo oficial de
+  módulos, então ficaram de fora dos lotes já aplicados; avaliar se precisam do
+  mesmo tratamento de segurança multi-tenant.
+- Auditar `secretaria_requests.member_id` e módulos WhatsApp por eventuais
+  gaps residuais documentados em `docs/HANDOFF_2026-06-28.md` (arquivo mais
+  antigo, mas com itens de integridade que vale reconferir rapidamente antes
+  de assumir que já foram cobertos pela Fase 3b desta sessão).
+
+### Recomendação para amanhã
+
+Not extensa — três candidatos concretos, do menor pro maior escopo:
+
+1. **Cadastro de contas bancárias/Pix dedicado** (item A) — escopo pequeno,
+   sem dependência, mesmo padrão de CRUD já usado a exaustão nesta sessão.
+2. **Onboarding guiado em 3 etapas** (item A) — impacto comercial direto,
+   escopo médio, sem dependência externa.
+3. **Multiunidade** (item B) — maior valor estrutural de longo prazo, mas
+   exige conversa antes de codar (como as congregações se relacionam com o
+   `account_id` atual: nova tabela `congregations` dentro da mesma conta, ou
+   mudança de modelo?).
+
+IA Pastoral e domínio gerenciado automatizado (itens C) não devem ser
+iniciados sem alinhamento comercial/técnico prévio com o Bruno.
