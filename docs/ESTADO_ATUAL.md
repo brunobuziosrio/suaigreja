@@ -1045,6 +1045,45 @@ presença recente não apareceu na lista, e o alerta "N membro(s) sumido(s)"
 apareceu no Dashboard. Zero erro de console. Registro de teste removido
 depois.
 
+### Recibo Automático de Contribuição — NOVA feature, 2026-07-04 — DEPLOYADA e testada, com 2 bugs graves corrigidos
+
+Vigésima terceira feature do backlog. Botão de imprimir recibo por
+lançamento de dízimo em `/campanhas` (aba Dízimos), mesmo padrão de popup
+já usado em `documentos.tsx` e no print de escala — layout formal (igreja,
+contribuinte, data, valor, protocolo).
+
+**2 bugs reais graves encontrados e corrigidos testando esta feature —
+achados que não tinham relação direta com o recibo, mas bloqueavam
+completamente a aba Dízimos desde que o arquivo foi criado em 20-06**:
+
+1. `invalidateQueries({ queryKey: ["tithes", "tithes-report"] })` passava
+   uma única chave composta que não batia com nenhuma das duas queries
+   reais (`["tithes"]` e `["tithes-report"]`, registradas separadamente) —
+   registrar ou remover um dízimo nunca atualizava a lista sem reload
+   manual da página. Corrigido chamando `invalidateQueries` duas vezes.
+
+2. **Bug mais sério**: mesmo com reload completo da página, o dízimo
+   continuava não aparecendo. Diagnóstico completo: testei a query exata
+   (`select=*,members(...)`) direto contra o PostgREST usando o **token
+   JWT real do usuário** (extraído do `localStorage` via Playwright),
+   confirmando que RLS, foreign key e schema cache estavam 100%
+   corretos — o backend sempre devolveu o dado certo. O problema era
+   `showTithes`, o estado que habilita as queries de dízimo
+   (`enabled: showTithes`) e o card de resumo (Total Arrecadado/Meta/%
+   Atingido): **nunca era setado como `true` em lugar nenhum do arquivo**.
+   O `<Tabs>` é não controlado (`defaultValue="campaigns"`, sem
+   `value`/`onValueChange`), então clicar na aba "Dízimos" trocava o
+   conteúdo visível via estado interno do Radix, mas nunca sincronizava
+   com `showTithes` — a aba inteira de Dízimos era, na prática,
+   **inutilizável há mais de duas semanas**, com um bug completamente
+   silencioso (nenhum erro de console, nenhuma mensagem de erro na tela).
+   Corrigido com `onValueChange={(v) => setShowTithes(v === "tithes")}`.
+
+Testado de ponta a ponta após os dois fixes: registrei um dízimo de teste
+→ apareceu na lista imediatamente (sem reload) → cliquei "Imprimir
+recibo" → popup abriu com nome, valor e protocolo corretos. Zero erro de
+console. Dado de teste removido depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
