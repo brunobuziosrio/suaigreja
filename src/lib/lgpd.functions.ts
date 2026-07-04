@@ -136,13 +136,14 @@ export const requestDataDeletion = createServerFn({ method: "POST" })
 
     const now = new Date().toISOString();
 
-    await supabase.from("lgpd_deletion_requests").insert({
+    const { error } = await supabase.from("lgpd_deletion_requests").insert({
       user_id: userId,
       account_id: accountId,
       reason: data.reason || null,
       status: "pending",
       requested_at: now,
     });
+    if (error) throw new Error(error.message);
 
     return { ok: true, message: "Solicitação de exclusão registrada. Será processada em até 30 dias." };
   });
@@ -219,7 +220,7 @@ export const anonymizeData = createServerFn({ method: "POST" })
 
     if (!data.confirm) throw new Error("Deve confirmar anonimização");
 
-    await supabase
+    const { error } = await supabase
       .from("members")
       .update({
         full_name: "Usuário Anônimo",
@@ -240,6 +241,7 @@ export const anonymizeData = createServerFn({ method: "POST" })
       } as any)
       .eq("id", data.member_id)
       .eq("account_id", accountId);
+    if (error) throw new Error(error.message);
 
     await logDataAccess({
       data: {
