@@ -914,6 +914,46 @@ Testado após a limpeza: 21 páginas com login real (as 18 já testadas
 antes + `/familias`, `/jornada-espiritual`, `/privacidade`), zero erro de
 console em qualquer uma — a remoção não quebrou nada em produção.
 
+### Política de Privacidade versionada — NOVA feature, 2026-07-04 — DEPLOYADA e testada
+
+Décima oitava feature do backlog. O Bruno pediu pra verificar se as
+tabelas sem uso encontradas na limpeza (`data_subject_requests`,
+`privacy_policies`) eram lixo ou implementação inacabada antes de decidir
+apagar. Investigando: `privacy_policies` já tinha RLS de SELECT/INSERT
+corretas desde a criação — diferente do bug do LGPD — e **já continha um
+registro real** (versão "1.0", criada em 24-06, com o texto completo da
+política, inserido via SQL direto por alguém antes, sem nenhuma tela pra
+gerenciar isso). Confirmado: feature real e valiosa, só faltava a UI.
+`data_subject_requests` ficou de fora por se sobrepor ao que `/privacidade`
+já cobre (não foi tocada).
+
+Completado: `/politica-privacidade` (admin escreve/publica versões, marca
+qual está vigente, vê histórico) + `/pp/$siteId` (pública, mostra a
+versão vigente) + link "Política de Privacidade" no rodapé do site
+público, ao lado do copyright.
+
+**2 bugs reais encontrados e corrigidos durante o teste**:
+1. `privacy_policies` tinha GRANT de INSERT/SELECT pro role `authenticated`
+   mas faltava GRANT de UPDATE/DELETE — RLS policy sozinha não basta no
+   PostgREST (mesmo padrão de tabela nova já visto nesta sessão). Toda
+   tentativa de marcar uma versão como vigente ou apagar um rascunho
+   falhava com "permission denied for table privacy_policies".
+2. O link do rodapé só foi parar em `hub-chrome.tsx` (`HubFooter`), usado
+   pelas páginas públicas menores — mas a home pública de verdade
+   (`$slug.tsx`) tem seu **próprio** footer duplicado, não usa
+   `HubChrome`. O link não aparecia na página que os visitantes realmente
+   veem primeiro. Adicionado lá também.
+
+Testado com cuidado pra não mexer no dado real da conta: publiquei duas
+versões de teste (`TESTE-A`, `TESTE-B`) claramente marcadas, confirmei
+que a segunda virou vigente e a primeira deixou de ser (sem erro de
+permissão depois do fix), conferi a página pública mostrando a versão
+certa, confirmei o link aparecendo no rodapé da home real
+(`<a href="/pp/modelo">`). Depois do teste: apaguei as duas versões de
+teste e restaurei a versão real "1.0" como vigente (`UPDATE ...
+is_current = true WHERE id = 'e2a0a927-...'`) — produção voltou
+exatamente ao estado de antes do teste. Zero erro de console.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
