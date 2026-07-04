@@ -145,6 +145,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
         { title: "Configurações", url: "/settings", icon: Settings },
         { title: "Equipe e permissões", url: "/equipe", icon: ShieldCheck },
         { title: "Privacidade e Dados", url: "/privacidade", icon: Lock },
+        { title: "Política de Privacidade", url: "/politica-privacidade", icon: FileText },
         { title: "Integrações", url: "/embed", icon: Code2 },
         { title: "Plugins e extras", url: "/marketplace", icon: Store },
         { title: "Assinatura", url: "/billing", icon: WalletCards },

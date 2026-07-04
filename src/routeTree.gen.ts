@@ -17,6 +17,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as VSiteIdRouteImport } from './routes/v.$siteId'
 import { Route as ReciboDonationIdRouteImport } from './routes/recibo.$donationId'
 import { Route as ProtocoloIdRouteImport } from './routes/protocolo.$id'
+import { Route as PpSiteIdRouteImport } from './routes/pp.$siteId'
 import { Route as OSiteIdRouteImport } from './routes/o.$siteId'
 import { Route as NSlugRouteImport } from './routes/n.$slug'
 import { Route as EventosSlugRouteImport } from './routes/eventos.$slug'
@@ -37,6 +38,7 @@ import { Route as AuthenticatedSecretariaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated.reservas'
 import { Route as AuthenticatedRelatoriosRouteImport } from './routes/_authenticated.relatorios'
 import { Route as AuthenticatedPrivacidadeRouteImport } from './routes/_authenticated.privacidade'
+import { Route as AuthenticatedPoliticaPrivacidadeRouteImport } from './routes/_authenticated.politica-privacidade'
 import { Route as AuthenticatedPatrimonioRouteImport } from './routes/_authenticated.patrimonio'
 import { Route as AuthenticatedOracoesRouteImport } from './routes/_authenticated.oracoes'
 import { Route as AuthenticatedOnboardingRouteImport } from './routes/_authenticated.onboarding'
@@ -120,6 +122,11 @@ const ReciboDonationIdRoute = ReciboDonationIdRouteImport.update({
 const ProtocoloIdRoute = ProtocoloIdRouteImport.update({
   id: '/protocolo/$id',
   path: '/protocolo/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PpSiteIdRoute = PpSiteIdRouteImport.update({
+  id: '/pp/$siteId',
+  path: '/pp/$siteId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OSiteIdRoute = OSiteIdRouteImport.update({
@@ -222,6 +229,12 @@ const AuthenticatedPrivacidadeRoute =
   AuthenticatedPrivacidadeRouteImport.update({
     id: '/privacidade',
     path: '/privacidade',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedPoliticaPrivacidadeRoute =
+  AuthenticatedPoliticaPrivacidadeRouteImport.update({
+    id: '/politica-privacidade',
+    path: '/politica-privacidade',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedPatrimonioRoute = AuthenticatedPatrimonioRouteImport.update({
@@ -497,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/patrimonio': typeof AuthenticatedPatrimonioRoute
+  '/politica-privacidade': typeof AuthenticatedPoliticaPrivacidadeRoute
   '/privacidade': typeof AuthenticatedPrivacidadeRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/reservas': typeof AuthenticatedReservasRoute
@@ -517,6 +531,7 @@ export interface FileRoutesByFullPath {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/pp/$siteId': typeof PpSiteIdRoute
   '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
@@ -571,6 +586,7 @@ export interface FileRoutesByTo {
   '/onboarding': typeof AuthenticatedOnboardingRoute
   '/oracoes': typeof AuthenticatedOracoesRoute
   '/patrimonio': typeof AuthenticatedPatrimonioRoute
+  '/politica-privacidade': typeof AuthenticatedPoliticaPrivacidadeRoute
   '/privacidade': typeof AuthenticatedPrivacidadeRoute
   '/relatorios': typeof AuthenticatedRelatoriosRoute
   '/reservas': typeof AuthenticatedReservasRoute
@@ -591,6 +607,7 @@ export interface FileRoutesByTo {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/pp/$siteId': typeof PpSiteIdRoute
   '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
@@ -647,6 +664,7 @@ export interface FileRoutesById {
   '/_authenticated/onboarding': typeof AuthenticatedOnboardingRoute
   '/_authenticated/oracoes': typeof AuthenticatedOracoesRoute
   '/_authenticated/patrimonio': typeof AuthenticatedPatrimonioRoute
+  '/_authenticated/politica-privacidade': typeof AuthenticatedPoliticaPrivacidadeRoute
   '/_authenticated/privacidade': typeof AuthenticatedPrivacidadeRoute
   '/_authenticated/relatorios': typeof AuthenticatedRelatoriosRoute
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
@@ -667,6 +685,7 @@ export interface FileRoutesById {
   '/eventos/$slug': typeof EventosSlugRoute
   '/n/$slug': typeof NSlugRouteWithChildren
   '/o/$siteId': typeof OSiteIdRoute
+  '/pp/$siteId': typeof PpSiteIdRoute
   '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
@@ -723,6 +742,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/oracoes'
     | '/patrimonio'
+    | '/politica-privacidade'
     | '/privacidade'
     | '/relatorios'
     | '/reservas'
@@ -743,6 +763,7 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/pp/$siteId'
     | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
@@ -797,6 +818,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/oracoes'
     | '/patrimonio'
+    | '/politica-privacidade'
     | '/privacidade'
     | '/relatorios'
     | '/reservas'
@@ -817,6 +839,7 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/pp/$siteId'
     | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
@@ -872,6 +895,7 @@ export interface FileRouteTypes {
     | '/_authenticated/onboarding'
     | '/_authenticated/oracoes'
     | '/_authenticated/patrimonio'
+    | '/_authenticated/politica-privacidade'
     | '/_authenticated/privacidade'
     | '/_authenticated/relatorios'
     | '/_authenticated/reservas'
@@ -892,6 +916,7 @@ export interface FileRouteTypes {
     | '/eventos/$slug'
     | '/n/$slug'
     | '/o/$siteId'
+    | '/pp/$siteId'
     | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
@@ -933,6 +958,7 @@ export interface RootRouteChildren {
   EventosSlugRoute: typeof EventosSlugRoute
   NSlugRoute: typeof NSlugRouteWithChildren
   OSiteIdRoute: typeof OSiteIdRoute
+  PpSiteIdRoute: typeof PpSiteIdRoute
   ProtocoloIdRoute: typeof ProtocoloIdRoute
   ReciboDonationIdRoute: typeof ReciboDonationIdRoute
   VSiteIdRoute: typeof VSiteIdRoute
@@ -1004,6 +1030,13 @@ declare module '@tanstack/react-router' {
       path: '/protocolo/$id'
       fullPath: '/protocolo/$id'
       preLoaderRoute: typeof ProtocoloIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pp/$siteId': {
+      id: '/pp/$siteId'
+      path: '/pp/$siteId'
+      fullPath: '/pp/$siteId'
+      preLoaderRoute: typeof PpSiteIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/o/$siteId': {
@@ -1144,6 +1177,13 @@ declare module '@tanstack/react-router' {
       path: '/privacidade'
       fullPath: '/privacidade'
       preLoaderRoute: typeof AuthenticatedPrivacidadeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/politica-privacidade': {
+      id: '/_authenticated/politica-privacidade'
+      path: '/politica-privacidade'
+      fullPath: '/politica-privacidade'
+      preLoaderRoute: typeof AuthenticatedPoliticaPrivacidadeRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/patrimonio': {
@@ -1505,6 +1545,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedOnboardingRoute: typeof AuthenticatedOnboardingRoute
   AuthenticatedOracoesRoute: typeof AuthenticatedOracoesRoute
   AuthenticatedPatrimonioRoute: typeof AuthenticatedPatrimonioRoute
+  AuthenticatedPoliticaPrivacidadeRoute: typeof AuthenticatedPoliticaPrivacidadeRoute
   AuthenticatedPrivacidadeRoute: typeof AuthenticatedPrivacidadeRoute
   AuthenticatedRelatoriosRoute: typeof AuthenticatedRelatoriosRoute
   AuthenticatedReservasRoute: typeof AuthenticatedReservasRoute
@@ -1550,6 +1591,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedOnboardingRoute: AuthenticatedOnboardingRoute,
   AuthenticatedOracoesRoute: AuthenticatedOracoesRoute,
   AuthenticatedPatrimonioRoute: AuthenticatedPatrimonioRoute,
+  AuthenticatedPoliticaPrivacidadeRoute: AuthenticatedPoliticaPrivacidadeRoute,
   AuthenticatedPrivacidadeRoute: AuthenticatedPrivacidadeRoute,
   AuthenticatedRelatoriosRoute: AuthenticatedRelatoriosRoute,
   AuthenticatedReservasRoute: AuthenticatedReservasRoute,
@@ -1599,6 +1641,7 @@ const rootRouteChildren: RootRouteChildren = {
   EventosSlugRoute: EventosSlugRoute,
   NSlugRoute: NSlugRouteWithChildren,
   OSiteIdRoute: OSiteIdRoute,
+  PpSiteIdRoute: PpSiteIdRoute,
   ProtocoloIdRoute: ProtocoloIdRoute,
   ReciboDonationIdRoute: ReciboDonationIdRoute,
   VSiteIdRoute: VSiteIdRoute,

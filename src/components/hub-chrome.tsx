@@ -89,7 +89,7 @@ export function HubChrome({
           children
         )}
       </main>
-      <HubFooter account={account} accent={accent} nav={nav} socials={socials} />
+      <HubFooter account={account} accent={accent} nav={nav} socials={socials} slug={slug} />
     </div>
   );
 }
@@ -191,11 +191,12 @@ function HubTopNav({
 }
 
 function HubFooter({
-  account, accent, nav, socials,
+  account, accent, nav, socials, slug,
 }: {
   account: HubChromeAccount; accent: string;
   nav: { label: string; href: string }[];
   socials: { href: string; Icon: any; label: string }[];
+  slug: string;
 }) {
   return (
     <footer className="mt-10 bg-stone-900 text-stone-300">
@@ -252,7 +253,10 @@ function HubFooter({
       </div>
       <div className="border-t border-stone-800">
         <div className="max-w-6xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
-          <p>© {new Date().getFullYear()} {account.brand_title}. Todos os direitos reservados.</p>
+          <p className="flex items-center gap-3 flex-wrap justify-center">
+            <span>© {new Date().getFullYear()} {account.brand_title}. Todos os direitos reservados.</span>
+            <a href={`/pp/${slug}`} className="underline underline-offset-2 hover:text-white">Política de Privacidade</a>
+          </p>
           <p className="flex items-center gap-1.5">
             Feito com <Heart className="h-3 w-3 fill-current" style={{ color: accent }} /> por{" "}
             <a href="/" className="underline underline-offset-2 hover:text-white">suaigreja</a>
