@@ -975,6 +975,26 @@ removida do banco depois (registro real do membro, não dado de teste
 descartável — removido pra não deixar rastro de uma presença que não
 aconteceu de verdade).
 
+### Histórico de Ministérios — NOVA feature, 2026-07-04 — DEPLOYADA e testada
+
+Vigésima feature do backlog. Mesma auditoria: `ministry_assignments` já
+tinha RLS completa (SELECT/INSERT/UPDATE/DELETE), GRANTs corretos e
+trigger de `updated_at` desde antes, mas nenhuma tela usava. Distinta dos
+campos soltos `members.ministry`/`members.pastoral` (só guardam UM valor
+atual, sem histórico): aqui cada linha é uma passagem por um ministério,
+com início/fim e função exercida.
+
+`/ministerios`: agrupado por ministério, cards por pessoa com
+foto/função/período, filtro (servindo agora / encerradas / todas),
+formulário com autocomplete de ministérios comuns. Ação dedicada
+"Encerrar" (marca fim de vigência + `active=false`) em vez de update
+genérico.
+
+Testado com login real: criei atribuição de teste → apareceu como
+"Ativo" → cliquei "Encerrar" → toast de sucesso → sumiu da lista
+"Servindo agora" (contador foi a 0). Zero erro de console. Registro de
+teste removido depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
