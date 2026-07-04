@@ -431,7 +431,7 @@ function CampaignsPage() {
           </div>
         )}
 
-        <Tabs defaultValue="campaigns">
+        <Tabs defaultValue="campaigns" onValueChange={(v) => setShowTithes(v === "tithes")}>
           <TabsList>
             <TabsTrigger value="campaigns">
               <Target className="mr-2 h-4 w-4" /> Campanhas
