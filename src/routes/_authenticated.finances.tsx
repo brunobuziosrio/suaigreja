@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
@@ -73,25 +73,10 @@ const getMembersWithDonations = createServerFn({
   });
 
 function FinancesPage() {
-  const getDonationsData = createServerFn({ method: "GET" })
-    .middleware([requireSupabaseAuth])
-    .handler(async ({ context }) => {
-      const { accountId } = await requirePlanTier(context, "premium");
-      await requirePermission(context, "finances", "view");
-      const { supabase } = context;
-      const { data, error } = await supabase
-        .from("donations")
-        .select("*")
-        .eq("account_id", accountId)
-        .order("created_at", { ascending: false });
-
-      if (error) throw new Error(error.message);
-      return data ?? [];
-    });
-
+  const fetchDonations = useServerFn(getDonations);
   const { data: donations, isLoading } = useQuery({
     queryKey: ["donations"],
-    queryFn: () => getDonationsData(),
+    queryFn: () => fetchDonations(),
   });
 
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "failed">("all");

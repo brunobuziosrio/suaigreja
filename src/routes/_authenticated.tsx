@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
 import { Loader2 } from "lucide-react";
-import { canAccessAccountPath } from "@/lib/plan-access";
+import { canAccessAccountPath, getModuleAccess } from "@/lib/plan-access";
 
 export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
@@ -48,6 +48,13 @@ function AuthenticatedLayout() {
       !pathname.startsWith("/admin") &&
       !canAccessAccountPath(account, pathname)
     ) {
+      const blockedModule = getModuleAccess(pathname);
+      if (blockedModule) {
+        sessionStorage.setItem(
+          "upgrade_context",
+          JSON.stringify({ label: blockedModule.label, minimumTier: blockedModule.minimumTier }),
+        );
+      }
       navigate({ to: "/billing" });
     }
   }, [user, loading, account, accountLoading, pathname, navigate]);

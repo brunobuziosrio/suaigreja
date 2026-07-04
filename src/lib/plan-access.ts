@@ -37,6 +37,8 @@ export const MODULE_CATALOG: ModuleAccess[] = [
   { id: "education", label: "Ensino e turmas", path: "/ebd", minimumTier: "premium", status: "ready", sellable: true },
   { id: "documents", label: "Documentos", path: "/documentos", minimumTier: "premium", status: "beta", sellable: true },
   { id: "finances", label: "Financeiro", path: "/finances", minimumTier: "premium", status: "ready", sellable: true },
+  { id: "bank_accounts", label: "Contas Bancárias e Pix", path: "/contas-bancarias", minimumTier: "premium", status: "ready", sellable: true },
+  { id: "cash_book", label: "Livro Caixa", path: "/livro-caixa", minimumTier: "premium", status: "ready", sellable: true },
   { id: "volunteer_shifts", label: "Escalas", path: "/escalas", minimumTier: "premium", status: "ready", sellable: true },
   { id: "secretaria", label: "Secretaria Digital", path: "/secretaria", minimumTier: "pro", status: "beta", sellable: true },
 ];

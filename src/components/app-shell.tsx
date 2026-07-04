@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { Separator } from "@/components/ui/separator";
+import { TrialBanner } from "@/components/trial-banner";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
@@ -54,6 +55,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Button>
           </div>
         </header>
+        <TrialBanner />
         <main
           id="conteudo-principal"
           tabIndex={-1}

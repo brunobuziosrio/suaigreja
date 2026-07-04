@@ -1,6 +1,6 @@
 # Estado atual do produto — implementado x pendente
 
-Atualizado em: 2026-07-02
+Atualizado em: 2026-07-04 (sessão contínua autônoma — ver seção 6)
 
 Este arquivo é um **mapa de continuidade entre IAs/sessões**. Ele responde a duas
 perguntas: **o que já existe no código** e **o que os documentos de planejamento
@@ -107,8 +107,8 @@ Instagram (`instagram.functions.ts`, callback), WhatsApp (Meta/UAZAPI).
 | **IA Pastoral** (resumos, devocionais, roteiros, posts) | IDEIAS "Novos módulos" | ❌ não iniciado | **Externa**: provedor LLM + custo. Usar Claude (Anthropic) por padrão. |
 | **Permissões granulares por cargo** (matriz por módulo/verbo; perfis pastor, tesoureiro, secretário…) | IDEIAS "Permissões" | ⚠️ **Fase 1 feita** (fundação + matriz visual); Fases 2–3 pendentes | Descoberto: hoje **1 login = 1 igreja** (`accounts.id = auth.uid()`, trigger cria conta por signup). Multiusuário exige convites (Fase 2) e reescrita de RLS/queries para membership (Fase 3, toca núcleo). |
 | **Autocadastro/pré-cadastro público de membro** | IDEIAS "Membros" | ❌ não iniciado | Existe form público de visitante, não de membro. |
-| **Importação em lote (CSV) de membros e lançamentos** | IDEIAS "Membros"/"Financeiro" | ❌ não iniciado | Só existe **exportação** CSV (relatórios/eventos). |
-| **Financeiro avançado** (livro caixa, balancete, DRE, conciliação, repasses por congregação) | IDEIAS "Financeiro" | ❌ não iniciado | `/finances` é básico (ready). |
+| **Importação em lote (CSV) de membros e lançamentos** | IDEIAS "Membros"/"Financeiro" | ✅ feito (03-07 membros, 04-07 lançamentos) | `/membros` e `/livro-caixa`. |
+| **Financeiro avançado** (livro caixa, balancete, DRE, conciliação, repasses por congregação) | IDEIAS "Financeiro" | ⚠️ parcial (04-07) | `/livro-caixa`: lançamentos manuais + CSV + filtros prontos. Balancete/DRE/conciliação **não feitos**. |
 | **Multiunidade / congregações** (dashboard de igrejas, financeiro por unidade) | IDEIAS "Igrejas" | ❌ não iniciado | "congregação" hoje é só um campo do membro, não um módulo. |
 | **Notificações push (PWA)** | IDEIAS "App/PWA" | ❌ não iniciado | Só há manifesto PWA; falta service worker + VAPID + consentimento. |
 | **2FA / MFA de conta** | IDEIAS "Segurança" | ❌ não iniciado | `input-otp` é só componente de UI. |
@@ -1167,9 +1167,9 @@ importados).
   antigo, mas com itens de integridade que vale reconferir rapidamente antes
   de assumir que já foram cobertos pela Fase 3b desta sessão).
 
-### Recomendação para amanhã
+### Recomendação para amanhã (histórico — ver sessão 04-07 contínua abaixo)
 
-Not extensa — três candidatos concretos, do menor pro maior escopo:
+Não extensa — três candidatos concretos, do menor pro maior escopo:
 
 1. **Cadastro de contas bancárias/Pix dedicado** (item A) — escopo pequeno,
    sem dependência, mesmo padrão de CRUD já usado a exaustão nesta sessão.
@@ -1182,3 +1182,180 @@ Not extensa — três candidatos concretos, do menor pro maior escopo:
 
 IA Pastoral e domínio gerenciado automatizado (itens C) não devem ser
 iniciados sem alinhamento comercial/técnico prévio com o Bruno.
+
+## 6. Sessão 04-07 (continuação, autônoma) — 4 features entregues + 2 bugs reais corrigidos
+
+Bruno saiu por ~3h e pediu para avançar o máximo possível na lista acima
+**sem pedir autorização a cada passo**, deixando só as pontas que exigem
+decisão dele para quando ele voltar. Tudo abaixo foi implementado, testado
+com login real (magic link + Playwright, mesma técnica das sessões
+anteriores) e **deployado em produção**. `bun run build` e `tsc --noEmit`
+limpos em cada etapa.
+
+### Entregue e testado
+
+1. **Aspas duplicadas no versículo semanal — CORRIGIDO.** Helper
+   `stripSurroundingQuotes` em `src/lib/utils.ts`, aplicado em
+   `bulletin.functions.ts` (fonte única) e nos dois pontos de exibição em
+   `$slug.tsx`. Item D pendente desde 03-07, fechado.
+2. **Fase 3b em `prayer.functions.ts`** — auditoria confirmou que a RLS
+   genérica da Fase 3 (migration `20260702160000`) já cobria a tabela
+   `prayer_requests` (política reescrita automaticamente para
+   `is_account_member`), então não havia vazamento de dados entre contas.
+   Mesmo assim, `listPrayerRequests`/`updatePrayerStatus`/
+   `deletePrayerRequest` foram reforçadas com filtro explícito por
+   `accountId` resolvido (defesa em profundidade, mesmo padrão dos demais
+   módulos). **Decisão deliberada**: não entrou na matriz de permissões por
+   verbo (`requirePermission`) — mesmo precedente já usado para Central de
+   Decisões; adicionar isso exigiria decidir defaults por cargo para um
+   módulo que hoje qualquer membro ativo acessa, risco de trancar acesso
+   sem o Bruno por perto para ajustar. Registrado como possível item futuro.
+3. **Cadastro de Contas Bancárias e Pix** (`/contas-bancarias`, plano
+   Premium) — tabela `bank_accounts` nova (migration
+   `20260704120000_bank_accounts_module.sql`, RLS por membership desde a
+   criação), múltiplas contas/chaves Pix, uma marcada como "principal" por
+   igreja (unique index parcial no banco), flag "visível para membros".
+   CRUD completo com ações dedicadas (tornar principal, ativar/desativar).
+   Testado de ponta a ponta com login real: criar → marcar principal →
+   remover, mobile (375px) conferido. **Achado de rota corrigido durante o
+   teste**: o arquivo inicial `_authenticated.finances.contas-bancarias.tsx`
+   ficava aninhado sob a rota `/finances` (que não tem `<Outlet/>`), então a
+   página nunca aparecia de verdade — corrigido movendo para path próprio
+   `/contas-bancarias` + entrada dedicada no `MODULE_CATALOG`
+   (`plan-access.ts`) para manter o bloqueio por plano.
+4. **Onboarding guiado em 3 etapas** (`/onboarding`) — Etapa 1 (nome da
+   igreja + perfil religioso), Etapa 2 (responsável: nome/telefone, colunas
+   novas `accounts.owner_name`/`owner_phone`, migration
+   `20260704130000_account_owner_contact.sql`), Etapa 3 (cards dos 3 planos
+   com preço mensal, sem forçar pagamento — "Concluir e começar teste
+   grátis" ou "Concluir e ir para assinatura" se um plano foi destacado).
+   `completeOnboarding` estendida para gravar os campos novos. Testado
+   visualmente nas 3 etapas **sem tocar em dado real**: flag `onboarded`
+   temporariamente setada para `false` na conta real só para renderizar o
+   fluxo, revertida por SQL direto sem nunca chamar o submit final (nenhum
+   dado da conta real foi alterado).
+   - **Banner de trial com dias restantes**: `src/components/trial-banner.tsx`,
+     embutido no `AppShell` (aparece em todas as páginas autenticadas).
+     Não pôde ser validado visualmente com dados reais porque a conta do
+     Bruno já está com assinatura `active` (não `trial`) — lógica revisada
+     em código, condicional simples e de baixo risco.
+   - **Upgrade contextual**: ao ser bloqueado por plano, `_authenticated.tsx`
+     agora grava o módulo/tier mínimo em `sessionStorage` antes de redirecionar
+     para `/billing`, que exibe um card explicando "X requer o plano Y".
+     Testado simulando o `sessionStorage` (conta real é Premium, não há
+     módulo bloqueado de verdade para disparar organicamente) — renderizou
+     corretamente e limpou o storage após ler.
+5. **Livro Caixa** (`/livro-caixa`, plano Premium) — módulo novo de
+   lançamentos financeiros manuais (entrada/saída), cobrindo os itens
+   "CSV de lançamentos" e "filtros avançados" do backlog. Tabela
+   `financial_entries` (migration `20260704140000_financial_entries_module.sql`,
+   RLS por membership desde a criação). CRUD com categorias sugeridas por
+   tipo, forma de pagamento, contribuinte/fornecedor. Importação CSV
+   (`src/lib/csv.ts` reaproveitado) com detecção de entrada/saída em
+   português, datas BR ou ISO, valores BR (vírgula) ou US (ponto). Filtros
+   por tipo/categoria/contribuinte/texto livre/período, com totais
+   (entradas, saídas, saldo) sempre recalculados sobre a lista filtrada.
+   Testado de ponta a ponta: lançamento manual, importação CSV (2 linhas,
+   1 entrada + 1 saída, totais bateram certinho), filtro por tipo. Dados de
+   teste removidos depois.
+   **Escopo não coberto** (fora do que foi pedido para hoje, registrado como
+   pendência maior): livro caixa é só lançamentos manuais — balancete, DRE
+   e conciliação bancária automática **não foram feitos**, são features
+   bem maiores que merecem sessão dedicada com mais definição de requisito.
+
+### Bug real encontrado e corrigido (não estava na lista, achado testando)
+
+**Criar campanha sempre falhava com erro de banco, silenciosamente
+mascarado.** `campaigns.start_date` é `NOT NULL DEFAULT CURRENT_DATE` no
+Postgres — mas o `default` só se aplica quando a coluna é **omitida** do
+INSERT, não quando recebe `null` explícito. `upsertCampaign` sempre mandava
+`start_date: data.start_date || null`, e como o formulário nunca expõe um
+campo pra essa data, toda campanha nova quebrava com "null value in column
+start_date... violates not-null constraint". Corrigido em
+`campaigns.functions.ts`: omitir a chave do payload quando não houver valor
+(deixa o `DEFAULT CURRENT_DATE` do banco funcionar), em vez de forçar
+`null`. Validado criando uma campanha real depois do fix — funcionou.
+**Retestado no mesmo lote**: registro de dízimo (aba que já foi corrigida
+em 03-07) voltou a funcionar de ponta a ponta. WhatsApp
+templates/automações não puderam ser retestados porque o arquivo
+(`whatsapp-templates.functions.ts`) **já tinha sido removido** como código
+morto na limpeza de 03-07 — item considerado encerrado.
+
+**Segundo bug real encontrado na varredura final de regressão**: `/finances`
+("Finanças e Doações", tela mais antiga do produto) ficava **eternamente em
+"Carregando…"**, com erro de console `Missing Supabase environment
+variable(s): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY` disparado **no
+navegador** (não no servidor — as duas variáveis existem normalmente no
+container). Causa raiz: `_authenticated.finances.tsx` era o único arquivo
+do projeto que declarava um `createServerFn` **dentro do corpo do
+componente React** (`getDonationsData`, duplicata exata do
+`getDonations` já existente no topo do arquivo), em vez de no escopo do
+módulo como todo o resto do código faz. Isso confunde o plugin de
+build do TanStack Start que separa código de servidor/cliente, vazando
+`requirePlanTier`/`requirePermission` → `supabaseAdmin` (cliente com
+service role key) para o bundle do navegador — onde `process.env` não
+existe de verdade, então a checagem sempre falhava. Corrigido substituindo
+a função inline pela já existente `getDonations` via `useServerFn` (mesmo
+padrão usado em todas as outras ~50 páginas do app). Confirmado após o
+fix: bundle do cliente para `/finances` não contém mais a string da
+service role key, e a tela voltou a carregar os 30 registros de doação
+reais (de teste, gerados pelo admin) normalmente. Varredura final em 25
+páginas autenticadas com login real: **zero erros de console**.
+
+### Item propositalmente NÃO implementado — Multiunidade/congregações
+
+A sessão de 03-07 já tinha sinalizado que este item **exige decisão de
+modelagem antes de codar**, não é um "código óbvio" como os demais. Mesmo
+com autorização para agir sem pausar, decidi **não arriscar uma escolha
+estrutural irreversível sozinho** enquanto o Bruno estava fora — é
+exatamente o tipo de decisão que ele pediu para reservar pra quando
+voltasse. Proposta concreta abaixo, pronta para aprovação:
+
+**Opção recomendada (menor risco): tabela `congregations` dentro da mesma
+conta.**
+- Nova tabela `congregations` (id, account_id, name, address, leader_name,
+  leader_phone, notes) — mesmo padrão de RLS por membership já usado o dia
+  todo.
+- Nova coluna `members.congregation_id` (FK opcional para `congregations`,
+  `ON DELETE SET NULL`) **ao lado** do campo `members.congregation` (texto
+  livre) que já existe — não remove nem migra o campo antigo
+  automaticamente (dado real dos usuários), só passa a oferecer a versão
+  estruturada pra quem quiser usar.
+- Dashboard por congregação: contagem de membros, eventos e arrecadação
+  filtrados por `congregation_id`, dentro da MESMA conta/assinatura — sem
+  mexer em billing, login ou `account_id`.
+- **Vantagem**: zero risco ao núcleo (login, RLS, planos, faturamento
+  continuam exatamente iguais); reversível (é só uma tabela nova); entrega
+  valor real (múltiplas congregações sob uma sede) sem esperar a decisão
+  maior.
+- **Limitação clara**: não separa faturamento por congregação, não dá
+  login próprio pra líder de congregação (isso continua sendo resolvido
+  por Equipe e Permissões, papel "líder", já existente) — é organização
+  interna, não multi-tenant de verdade.
+
+**Opção maior (não recomendada para agora): reformular `account_id` para
+suportar hierarquia de contas** (ex.: uma "rede" com várias contas-filhas,
+cada uma com seu próprio plano/faturamento). Isso tocaria RLS, billing,
+login e a Fase 3 inteira de novo — é uma decisão de produto (vender assim?
+por quanto?) antes de ser uma decisão técnica.
+
+**Pergunta objetiva para o Bruno decidir na volta**: a opção pequena
+(`congregations` dentro da mesma conta) resolve o caso de uso real que
+motivou o pedido, ou o objetivo é multi-tenant de verdade com faturamento
+separado por congregação? Recomendo começar pela opção pequena de qualquer
+forma — não impede evoluir para a maior depois, e já destrava valor hoje.
+
+### Pendências reais para o Bruno decidir/autorizar na volta
+1. Aprovar (ou não) a Opção recomendada de Multiunidade acima antes de
+   começar a codar.
+2. IA Pastoral, domínio gerenciado automatizado, marketplace, Trust Center,
+   API pública — nenhum foi tocado, continuam exigindo alinhamento prévio
+   (custo de LLM, credenciais de registrador, etc.) — sem mudança desde
+   03-07.
+3. Balancete/DRE/conciliação bancária automática — Livro Caixa cobre só a
+   parte manual; vale uma conversa sobre o quanto de "contabilidade de
+   verdade" o produto precisa ter.
+4. `data_subject_requests`/`privacy_policies` (tabelas antigas sem uso) e as
+   3 tabelas de sistemas abandonados (`event_inscriptions`,
+   `whatsapp_template_library`, `whatsapp_automation_rules`) continuam só
+   documentadas como candidatas a apagar — nenhuma decisão tomada.

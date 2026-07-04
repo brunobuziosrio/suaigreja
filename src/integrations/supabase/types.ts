@@ -147,6 +147,8 @@ export type Database = {
           media_show_youtube: boolean
           media_youtube_url: string | null
           onboarded: boolean
+          owner_name: string | null
+          owner_phone: string | null
           pix_key: string | null
           plan_tier: string
           primary_color: string
@@ -231,6 +233,8 @@ export type Database = {
           media_show_youtube?: boolean
           media_youtube_url?: string | null
           onboarded?: boolean
+          owner_name?: string | null
+          owner_phone?: string | null
           pix_key?: string | null
           plan_tier?: string
           primary_color?: string
@@ -315,6 +319,8 @@ export type Database = {
           media_show_youtube?: boolean
           media_youtube_url?: string | null
           onboarded?: boolean
+          owner_name?: string | null
+          owner_phone?: string | null
           pix_key?: string | null
           plan_tier?: string
           primary_color?: string
@@ -409,6 +415,70 @@ export type Database = {
             foreignKeyName: "assets_location_id_fkey"
             columns: ["location_id"]
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bank_accounts: {
+        Row: {
+          account_id: string
+          account_kind: string
+          account_number: string | null
+          active: boolean
+          agency: string | null
+          bank_name: string | null
+          created_at: string
+          holder_name: string | null
+          id: string
+          is_primary: boolean
+          label: string
+          notes: string | null
+          pix_key: string | null
+          pix_key_type: string | null
+          updated_at: string
+          visible_to_members: boolean
+        }
+        Insert: {
+          account_id: string
+          account_kind?: string
+          account_number?: string | null
+          active?: boolean
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string
+          holder_name?: string | null
+          id?: string
+          is_primary?: boolean
+          label: string
+          notes?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          updated_at?: string
+          visible_to_members?: boolean
+        }
+        Update: {
+          account_id?: string
+          account_kind?: string
+          account_number?: string | null
+          active?: boolean
+          agency?: string | null
+          bank_name?: string | null
+          created_at?: string
+          holder_name?: string | null
+          id?: string
+          is_primary?: boolean
+          label?: string
+          notes?: string | null
+          pix_key?: string | null
+          pix_key_type?: string | null
+          updated_at?: string
+          visible_to_members?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_accounts_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
             referencedColumns: ["id"]
           },
         ]
@@ -1507,6 +1577,58 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "feature_suggestions_account_id_fkey"
+            columns: ["account_id"]
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_entries: {
+        Row: {
+          account_id: string
+          amount_cents: number
+          category: string
+          contributor_name: string | null
+          created_at: string
+          description: string | null
+          entry_date: string
+          entry_type: string
+          id: string
+          notes: string | null
+          payment_method: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_id: string
+          amount_cents: number
+          category: string
+          contributor_name?: string | null
+          created_at?: string
+          description?: string | null
+          entry_date?: string
+          entry_type: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_id?: string
+          amount_cents?: number
+          category?: string
+          contributor_name?: string | null
+          created_at?: string
+          description?: string | null
+          entry_date?: string
+          entry_type?: string
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_entries_account_id_fkey"
             columns: ["account_id"]
             referencedRelation: "accounts"
             referencedColumns: ["id"]

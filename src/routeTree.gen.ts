@@ -46,6 +46,7 @@ import { Route as AuthenticatedMinisteriosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedMembrosRouteImport } from './routes/_authenticated.membros'
 import { Route as AuthenticatedMarketplaceRouteImport } from './routes/_authenticated.marketplace'
 import { Route as AuthenticatedLocationsRouteImport } from './routes/_authenticated.locations'
+import { Route as AuthenticatedLivroCaixaRouteImport } from './routes/_authenticated.livro-caixa'
 import { Route as AuthenticatedJornadaEspiritualRouteImport } from './routes/_authenticated.jornada-espiritual'
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hub'
 import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
@@ -59,6 +60,7 @@ import { Route as AuthenticatedDocumentosRouteImport } from './routes/_authentic
 import { Route as AuthenticatedDevocionalRouteImport } from './routes/_authenticated.devocional'
 import { Route as AuthenticatedDecisoesRouteImport } from './routes/_authenticated.decisoes'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
+import { Route as AuthenticatedContasBancariasRouteImport } from './routes/_authenticated.contas-bancarias'
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated.checkin'
 import { Route as AuthenticatedCelulasRouteImport } from './routes/_authenticated.celulas'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
@@ -276,6 +278,11 @@ const AuthenticatedLocationsRoute = AuthenticatedLocationsRouteImport.update({
   path: '/locations',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedLivroCaixaRoute = AuthenticatedLivroCaixaRouteImport.update({
+  id: '/livro-caixa',
+  path: '/livro-caixa',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedJornadaEspiritualRoute =
   AuthenticatedJornadaEspiritualRouteImport.update({
     id: '/jornada-espiritual',
@@ -342,6 +349,12 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedContasBancariasRoute =
+  AuthenticatedContasBancariasRouteImport.update({
+    id: '/contas-bancarias',
+    path: '/contas-bancarias',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCheckinRoute = AuthenticatedCheckinRouteImport.update({
   id: '/checkin',
   path: '/checkin',
@@ -505,6 +518,7 @@ export interface FileRoutesByFullPath {
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
+  '/contas-bancarias': typeof AuthenticatedContasBancariasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/decisoes': typeof AuthenticatedDecisoesRoute
   '/devocional': typeof AuthenticatedDevocionalRoute
@@ -518,6 +532,7 @@ export interface FileRoutesByFullPath {
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
+  '/livro-caixa': typeof AuthenticatedLivroCaixaRoute
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/membros': typeof AuthenticatedMembrosRoute
@@ -583,6 +598,7 @@ export interface FileRoutesByTo {
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
+  '/contas-bancarias': typeof AuthenticatedContasBancariasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/decisoes': typeof AuthenticatedDecisoesRoute
   '/devocional': typeof AuthenticatedDevocionalRoute
@@ -596,6 +612,7 @@ export interface FileRoutesByTo {
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
+  '/livro-caixa': typeof AuthenticatedLivroCaixaRoute
   '/locations': typeof AuthenticatedLocationsRoute
   '/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/membros': typeof AuthenticatedMembrosRoute
@@ -663,6 +680,7 @@ export interface FileRoutesById {
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/celulas': typeof AuthenticatedCelulasRoute
   '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
+  '/_authenticated/contas-bancarias': typeof AuthenticatedContasBancariasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/decisoes': typeof AuthenticatedDecisoesRoute
   '/_authenticated/devocional': typeof AuthenticatedDevocionalRoute
@@ -676,6 +694,7 @@ export interface FileRoutesById {
   '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/hub': typeof AuthenticatedHubRoute
   '/_authenticated/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
+  '/_authenticated/livro-caixa': typeof AuthenticatedLivroCaixaRoute
   '/_authenticated/locations': typeof AuthenticatedLocationsRoute
   '/_authenticated/marketplace': typeof AuthenticatedMarketplaceRouteWithChildren
   '/_authenticated/membros': typeof AuthenticatedMembrosRoute
@@ -743,6 +762,7 @@ export interface FileRouteTypes {
     | '/campanhas'
     | '/celulas'
     | '/checkin'
+    | '/contas-bancarias'
     | '/dashboard'
     | '/decisoes'
     | '/devocional'
@@ -756,6 +776,7 @@ export interface FileRouteTypes {
     | '/finances'
     | '/hub'
     | '/jornada-espiritual'
+    | '/livro-caixa'
     | '/locations'
     | '/marketplace'
     | '/membros'
@@ -821,6 +842,7 @@ export interface FileRouteTypes {
     | '/campanhas'
     | '/celulas'
     | '/checkin'
+    | '/contas-bancarias'
     | '/dashboard'
     | '/decisoes'
     | '/devocional'
@@ -834,6 +856,7 @@ export interface FileRouteTypes {
     | '/finances'
     | '/hub'
     | '/jornada-espiritual'
+    | '/livro-caixa'
     | '/locations'
     | '/marketplace'
     | '/membros'
@@ -900,6 +923,7 @@ export interface FileRouteTypes {
     | '/_authenticated/campanhas'
     | '/_authenticated/celulas'
     | '/_authenticated/checkin'
+    | '/_authenticated/contas-bancarias'
     | '/_authenticated/dashboard'
     | '/_authenticated/decisoes'
     | '/_authenticated/devocional'
@@ -913,6 +937,7 @@ export interface FileRouteTypes {
     | '/_authenticated/finances'
     | '/_authenticated/hub'
     | '/_authenticated/jornada-espiritual'
+    | '/_authenticated/livro-caixa'
     | '/_authenticated/locations'
     | '/_authenticated/marketplace'
     | '/_authenticated/membros'
@@ -1260,6 +1285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLocationsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/livro-caixa': {
+      id: '/_authenticated/livro-caixa'
+      path: '/livro-caixa'
+      fullPath: '/livro-caixa'
+      preLoaderRoute: typeof AuthenticatedLivroCaixaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/jornada-espiritual': {
       id: '/_authenticated/jornada-espiritual'
       path: '/jornada-espiritual'
@@ -1349,6 +1381,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/contas-bancarias': {
+      id: '/_authenticated/contas-bancarias'
+      path: '/contas-bancarias'
+      fullPath: '/contas-bancarias'
+      preLoaderRoute: typeof AuthenticatedContasBancariasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/checkin': {
@@ -1566,6 +1605,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedCelulasRoute: typeof AuthenticatedCelulasRoute
   AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
+  AuthenticatedContasBancariasRoute: typeof AuthenticatedContasBancariasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDecisoesRoute: typeof AuthenticatedDecisoesRoute
   AuthenticatedDevocionalRoute: typeof AuthenticatedDevocionalRoute
@@ -1579,6 +1619,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
   AuthenticatedJornadaEspiritualRoute: typeof AuthenticatedJornadaEspiritualRoute
+  AuthenticatedLivroCaixaRoute: typeof AuthenticatedLivroCaixaRoute
   AuthenticatedLocationsRoute: typeof AuthenticatedLocationsRoute
   AuthenticatedMarketplaceRoute: typeof AuthenticatedMarketplaceRouteWithChildren
   AuthenticatedMembrosRoute: typeof AuthenticatedMembrosRoute
@@ -1614,6 +1655,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedCelulasRoute: AuthenticatedCelulasRoute,
   AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
+  AuthenticatedContasBancariasRoute: AuthenticatedContasBancariasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDecisoesRoute: AuthenticatedDecisoesRoute,
   AuthenticatedDevocionalRoute: AuthenticatedDevocionalRoute,
@@ -1627,6 +1669,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
   AuthenticatedJornadaEspiritualRoute: AuthenticatedJornadaEspiritualRoute,
+  AuthenticatedLivroCaixaRoute: AuthenticatedLivroCaixaRoute,
   AuthenticatedLocationsRoute: AuthenticatedLocationsRoute,
   AuthenticatedMarketplaceRoute: AuthenticatedMarketplaceRouteWithChildren,
   AuthenticatedMembrosRoute: AuthenticatedMembrosRoute,

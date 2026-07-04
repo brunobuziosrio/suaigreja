@@ -61,7 +61,10 @@ export const upsertCampaign = createServerFn({ method: "POST" })
       name: data.name.trim(),
       description: data.description?.trim() || null,
       goal_amount_cents: data.goal_amount_cents,
-      start_date: data.start_date || null,
+      // start_date e NOT NULL com default CURRENT_DATE no banco -- so o
+      // default se aplica quando a coluna e omitida do INSERT, nao quando
+      // recebe null explicito. undefined vira ausencia de chave no JSON.
+      ...(data.start_date ? { start_date: data.start_date } : {}),
       end_date: data.end_date || null,
       is_active: data.is_active ?? true,
       pix_key: data.pix_key?.trim() || null,

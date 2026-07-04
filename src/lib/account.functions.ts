@@ -364,6 +364,9 @@ const onboardingSchema = z.object({
     "pentecostal",
     "comunidade_crista",
   ]),
+  brand_title: z.string().trim().min(2).max(120).optional(),
+  owner_name: z.string().trim().min(2).max(160).optional(),
+  owner_phone: z.string().trim().max(30).optional(),
 });
 
 export const completeOnboarding = createServerFn({ method: "POST" })
@@ -376,7 +379,13 @@ export const completeOnboarding = createServerFn({ method: "POST" })
 
     const { error: updateErr } = await supabase
       .from("accounts")
-      .update({ religion_profile: data.religion_profile as ReligionProfile, onboarded: true })
+      .update({
+        religion_profile: data.religion_profile as ReligionProfile,
+        onboarded: true,
+        ...(data.brand_title ? { brand_title: data.brand_title } : {}),
+        ...(data.owner_name ? { owner_name: data.owner_name } : {}),
+        ...(data.owner_phone ? { owner_phone: data.owner_phone } : {}),
+      } as never)
       .eq("id", accountId);
     if (updateErr) throw new Error(updateErr.message);
 

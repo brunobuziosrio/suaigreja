@@ -22,6 +22,7 @@ import {
   HandHeart,
   HeartHandshake,
   IdCard,
+  Landmark,
   LayoutDashboard,
   ListChecks,
   Lock,
@@ -138,6 +139,8 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       icon: CircleDollarSign,
       items: [
         { title: "Finanças", url: "/finances", icon: CircleDollarSign },
+        { title: "Livro Caixa", url: "/livro-caixa", icon: BookOpen },
+        { title: "Contas Bancárias e Pix", url: "/contas-bancarias", icon: Landmark },
         { title: terms.contributionCampaigns, url: "/campanhas", icon: TrendingUp },
       ],
     },

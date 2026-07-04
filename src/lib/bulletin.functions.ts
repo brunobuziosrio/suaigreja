@@ -9,6 +9,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { stripSurroundingQuotes } from "@/lib/utils";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -100,7 +101,7 @@ export const getWeeklyBulletin = createServerFn({ method: "GET" })
     return {
       churchName: account?.brand_title ?? "Igreja",
       weeklyMessage: account?.weekly_message ?? null,
-      weeklyVerse: account?.weekly_verse ?? null,
+      weeklyVerse: account?.weekly_verse ? stripSurroundingQuotes(account.weekly_verse) : null,
       weeklyVerseRef: account?.weekly_verse_ref ?? null,
       periodFrom: toIsoDate(today),
       periodTo: toIsoDate(new Date(weekEnd.getTime() - 86400000)),

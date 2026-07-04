@@ -30,6 +30,7 @@ import QRCode from "qrcode";
 import { buildPixBrCode } from "@/lib/pix-brcode";
 import { PublicAgendaView } from "@/components/public-agenda-view";
 import { openWhatsAppShare } from "@/lib/whatsapp-share";
+import { stripSurroundingQuotes } from "@/lib/utils";
 
 // Lightweight scroll-reveal wrapper using IntersectionObserver
 function Reveal({
@@ -205,7 +206,8 @@ function HubPage() {
     };
   }, [igOpen]);
   const weeklyMessage = (account as any).weekly_message as string | null;
-  const weeklyVerse = (account as any).weekly_verse as string | null;
+  const weeklyVerseRaw = (account as any).weekly_verse as string | null;
+  const weeklyVerse = weeklyVerseRaw ? stripSurroundingQuotes(weeklyVerseRaw) : weeklyVerseRaw;
   const weeklyVerseRef = (account as any).weekly_verse_ref as string | null;
   const rawSlides = Array.isArray((account as any).hub_slides)
     ? ((account as any).hub_slides as Array<{
@@ -1867,7 +1869,7 @@ function HubFooter({
               className="text-sm sm:text-base italic text-stone-400 leading-relaxed"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              "{account.weekly_verse}"
+              "{stripSurroundingQuotes(account.weekly_verse)}"
               {account.weekly_verse_ref && (
                 <span className="block mt-1 not-italic text-xs font-medium" style={{ color: accent }}>
                   — {account.weekly_verse_ref}

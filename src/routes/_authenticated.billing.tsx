@@ -14,8 +14,11 @@ import {
   formatCentsBRL,
   type BillingPlanId,
 } from "@/lib/billing-plans";
-import { Check, Copy, Loader2, QrCode, WalletCards } from "lucide-react";
+import { Check, Copy, Lock, Loader2, QrCode, WalletCards } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect, useState } from "react";
+
+const TIER_LABELS: Record<string, string> = { essential: "Essencial", pro: "Pro", premium: "Premium" };
 
 export const Route = createFileRoute("/_authenticated/billing")({
   component: BillingPage,
@@ -93,6 +96,19 @@ function BillingPage() {
 
   const account = setup?.account;
 
+  const [upgradeContext, setUpgradeContext] = useState<{ label: string; minimumTier: string } | null>(null);
+  useEffect(() => {
+    const raw = sessionStorage.getItem("upgrade_context");
+    if (raw) {
+      try {
+        setUpgradeContext(JSON.parse(raw));
+      } catch {
+        // ignora contexto corrompido
+      }
+      sessionStorage.removeItem("upgrade_context");
+    }
+  }, []);
+
   return (
     <AppShell>
       <div className="w-full space-y-6">
@@ -104,6 +120,17 @@ function BillingPage() {
             O pagamento é por PIX manual. A cada ciclo você gera uma nova cobrança.
           </p>
         </div>
+
+        {upgradeContext && (
+          <Card className="p-4 border-primary/40 bg-primary/5 flex items-start gap-3">
+            <Lock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm">
+              <b>{upgradeContext.label}</b> requer o plano{" "}
+              <b>{TIER_LABELS[upgradeContext.minimumTier] ?? upgradeContext.minimumTier}</b> ou superior.
+              Escolha um dos planos abaixo para liberar este módulo.
+            </p>
+          </Card>
+        )}
 
         <Card className="p-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {setupLoading ? (

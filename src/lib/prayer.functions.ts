@@ -2,14 +2,17 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAccountContext } from "@/lib/account-context.server";
 
 export const listPrayerRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("prayer_requests")
       .select("*")
+      .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -25,7 +28,12 @@ export const updatePrayerStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase.from("prayer_requests").update({ status: data.status }).eq("id", data.id);
+    const { accountId } = await resolveAccountContext(context.userId);
+    const { error } = await supabase
+      .from("prayer_requests")
+      .update({ status: data.status })
+      .eq("id", data.id)
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -35,7 +43,12 @@ export const deletePrayerRequest = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
-    const { error } = await supabase.from("prayer_requests").delete().eq("id", data.id);
+    const { accountId } = await resolveAccountContext(context.userId);
+    const { error } = await supabase
+      .from("prayer_requests")
+      .delete()
+      .eq("id", data.id)
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
