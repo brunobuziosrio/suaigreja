@@ -995,6 +995,34 @@ Testado com login real: criei atribuição de teste → apareceu como
 "Servindo agora" (contador foi a 0). Zero erro de console. Registro de
 teste removido depois.
 
+### Gestão de Membros de Célula — NOVA feature, 2026-07-04 — DEPLOYADA e testada
+
+Vigésima primeira feature do backlog. Completa `small_group_members`, que
+já tinha RLS/GRANT completos (policy `FOR ALL`) e já era **lida** por
+`reports.functions.ts` (relatório de saúde do grupo), mas nenhuma tela
+permitia de fato adicionar/remover membros — o relatório sempre mostrava
+zero porque não havia como popular a tabela.
+
+Botão "Membros" em cada card de célula em `/celulas`: dialog com select de
+membro disponível + roster atual com selo de papel editável inline
+(líder/anfitrião/membro).
+
+**Bug real encontrado e corrigido durante o teste**: `small_group_members`
+nunca teve foreign key de verdade pra `small_groups`/`members` — só a
+chave primária. Sem FK, o PostgREST não consegue montar o embed
+(`select "*, members(...)"`) e retorna "Could not find a relationship
+between 'small_group_members' and 'members' in the schema cache" — o
+dialog ficava travado em "Carregando..." pra sempre, **sem nenhum erro no
+console** (o erro vinha dentro do corpo de uma resposta HTTP 200, não como
+falha HTTP). Corrigido adicionando as duas FKs (`ON DELETE CASCADE`) +
+`types.ts` regenerado de novo pra refletir o relacionamento novo.
+
+Testado de ponta a ponta após o fix: criei célula de teste → abri
+"Membros" → adicionei um membro real → trocou de "Carregando..." pra
+mostrar o roster corretamente → troquei o papel pra "Líder" → removi o
+membro → mensagem de lista vazia voltou. Zero erro de console. Célula de
+teste removida depois.
+
 ## 5.2. RETOMAR AMANHÃ (pendências abertas ao final de 2026-07-02)
 
 1. **Login do Bruno (`brunobuzios@gmail.com`) com "Invalid login credentials".**
