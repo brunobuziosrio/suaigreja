@@ -1877,7 +1877,10 @@ function HubFooter({
           </div>
         )}
         <div className="max-w-6xl mx-auto px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-stone-500">
-          <p>© {new Date().getFullYear()} {account.brand_title}. Todos os direitos reservados.</p>
+          <p className="flex items-center gap-3 flex-wrap justify-center">
+            <span>© {new Date().getFullYear()} {account.brand_title}. Todos os direitos reservados.</span>
+            <a href={`/pp/${slug}`} className="underline underline-offset-2 hover:text-white">Política de Privacidade</a>
+          </p>
           <p className="flex items-center gap-1.5">
             Feito com <Heart className="h-3 w-3 fill-current" style={{ color: accent }} /> por{" "}
             <a href="/" className="underline underline-offset-2 hover:text-white">suaigreja</a>
