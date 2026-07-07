@@ -1,4158 +1,4330 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
       account_members: {
         Row: {
-          account_id: string
-          created_at: string
-          id: string
-          invited_by: string | null
-          invited_email: string | null
-          role: string
-          status: string
-          updated_at: string
-          user_id: string | null
-        }
+          account_id: string;
+          created_at: string;
+          id: string;
+          invited_by: string | null;
+          invited_email: string | null;
+          role: string;
+          status: string;
+          updated_at: string;
+          user_id: string | null;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          id?: string
-          invited_by?: string | null
-          invited_email?: string | null
-          role?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
+          account_id: string;
+          created_at?: string;
+          id?: string;
+          invited_by?: string | null;
+          invited_email?: string | null;
+          role?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          id?: string
-          invited_by?: string | null
-          invited_email?: string | null
-          role?: string
-          status?: string
-          updated_at?: string
-          user_id?: string | null
-        }
+          account_id?: string;
+          created_at?: string;
+          id?: string;
+          invited_by?: string | null;
+          invited_email?: string | null;
+          role?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "account_members_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "account_members_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       account_role_permissions: {
         Row: {
-          account_id: string
-          permissions: Json
-          role: string
-          updated_at: string
-        }
+          account_id: string;
+          permissions: Json;
+          role: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          permissions?: Json
-          role: string
-          updated_at?: string
-        }
+          account_id: string;
+          permissions?: Json;
+          role: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          permissions?: Json
-          role?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          permissions?: Json;
+          role?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "account_role_permissions_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "account_role_permissions_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       accounts: {
         Row: {
-          brand_empty_message: string
-          brand_footer_logo_url: string | null
-          brand_logo_height_px: number
-          brand_logo_url: string | null
-          brand_subtitle: string
-          brand_title: string
-          brand_today_title: string
-          card_accent_color: string | null
-          card_field_size_px: number | null
-          card_footer_size_px: number | null
-          card_footer_text: string | null
-          card_label_size_px: number | null
-          card_logo_height_px: number | null
-          card_logo_url: string | null
-          card_title_size_px: number | null
-          created_at: string
-          cta_enabled: boolean
-          cta_label: string
-          current_plan: string | null
-          custom_domain: string | null
-          custom_domain_error: string | null
-          custom_domain_last_checked_at: string | null
-          custom_domain_status: string
-          custom_domain_verification_token: string | null
-          custom_domain_verified_at: string | null
-          custom_slug: string | null
-          donations_fixed_image_url: string | null
-          force_show_type: boolean
-          gallery_urls: Json
-          hub_bio: string | null
-          hub_cover_url: string | null
-          hub_enabled: boolean
-          hub_highlights: Json
-          hub_show_agenda: boolean
-          hub_show_all_locations: boolean
-          hub_show_events: boolean
-          hub_show_prayer: boolean
-          hub_show_visitor: boolean
-          hub_show_whatsapp: boolean
-          hub_slides: Json
-          hub_whatsapp: string | null
-          id: string
-          instagram_columns: number
-          instagram_post_count: number
-          live_url: string | null
-          managed_domain_holder_address: string | null
-          managed_domain_holder_document: string | null
-          managed_domain_holder_email: string | null
-          managed_domain_holder_name: string | null
-          managed_domain_holder_phone: string | null
-          managed_domain_notes: string | null
-          managed_domain_requested_at: string | null
-          managed_domain_requested_name: string | null
-          managed_domain_status: string
-          managed_domain_updated_at: string | null
-          media_audio_url: string | null
-          media_show_audio: boolean
-          media_show_youtube: boolean
-          media_youtube_url: string | null
-          onboarded: boolean
-          owner_name: string | null
-          owner_phone: string | null
-          pix_key: string | null
-          plan_tier: string
-          primary_color: string
-          religion_profile: Database["public"]["Enums"]["religion_profile"]
-          show_end_time: boolean
-          show_live_fields: boolean
-          site_id: string
-          social_facebook: string | null
-          social_instagram: string | null
-          social_website: string | null
-          social_youtube: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          subscription_ends_at: string | null
-          subscription_status: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at: string
-          updated_at: string
-          visitor_welcome_message: string | null
-          visitor_whatsapp: string | null
-          weekly_message: string | null
-          weekly_verse: string | null
-          weekly_verse_ref: string | null
-        }
+          brand_empty_message: string;
+          brand_footer_logo_url: string | null;
+          brand_logo_height_px: number;
+          brand_logo_url: string | null;
+          brand_subtitle: string;
+          brand_title: string;
+          brand_today_title: string;
+          card_accent_color: string | null;
+          card_field_size_px: number | null;
+          card_footer_size_px: number | null;
+          card_footer_text: string | null;
+          card_label_size_px: number | null;
+          card_logo_height_px: number | null;
+          card_logo_url: string | null;
+          card_title_size_px: number | null;
+          created_at: string;
+          cta_enabled: boolean;
+          cta_label: string;
+          current_plan: string | null;
+          custom_domain: string | null;
+          custom_domain_error: string | null;
+          custom_domain_last_checked_at: string | null;
+          custom_domain_status: string;
+          custom_domain_verification_token: string | null;
+          custom_domain_verified_at: string | null;
+          custom_slug: string | null;
+          donations_fixed_image_url: string | null;
+          force_show_type: boolean;
+          gallery_urls: Json;
+          hub_bio: string | null;
+          hub_cover_url: string | null;
+          hub_enabled: boolean;
+          hub_highlights: Json;
+          hub_show_agenda: boolean;
+          hub_show_all_locations: boolean;
+          hub_show_events: boolean;
+          hub_show_prayer: boolean;
+          hub_show_visitor: boolean;
+          hub_show_whatsapp: boolean;
+          hub_slides: Json;
+          hub_whatsapp: string | null;
+          id: string;
+          instagram_columns: number;
+          instagram_post_count: number;
+          live_url: string | null;
+          managed_domain_holder_address: string | null;
+          managed_domain_holder_document: string | null;
+          managed_domain_holder_email: string | null;
+          managed_domain_holder_name: string | null;
+          managed_domain_holder_phone: string | null;
+          managed_domain_notes: string | null;
+          managed_domain_requested_at: string | null;
+          managed_domain_requested_name: string | null;
+          managed_domain_status: string;
+          managed_domain_updated_at: string | null;
+          media_audio_url: string | null;
+          media_show_audio: boolean;
+          media_show_youtube: boolean;
+          media_youtube_url: string | null;
+          onboarded: boolean;
+          owner_name: string | null;
+          owner_phone: string | null;
+          pix_key: string | null;
+          plan_tier: string;
+          primary_color: string;
+          religion_profile: Database["public"]["Enums"]["religion_profile"];
+          show_end_time: boolean;
+          show_live_fields: boolean;
+          site_id: string;
+          social_facebook: string | null;
+          social_instagram: string | null;
+          social_website: string | null;
+          social_youtube: string | null;
+          stripe_customer_id: string | null;
+          stripe_subscription_id: string | null;
+          subscription_ends_at: string | null;
+          subscription_status: Database["public"]["Enums"]["subscription_status"];
+          trial_ends_at: string;
+          updated_at: string;
+          visitor_welcome_message: string | null;
+          visitor_whatsapp: string | null;
+          weekly_message: string | null;
+          weekly_verse: string | null;
+          weekly_verse_ref: string | null;
+        };
         Insert: {
-          brand_empty_message?: string
-          brand_footer_logo_url?: string | null
-          brand_logo_height_px?: number
-          brand_logo_url?: string | null
-          brand_subtitle?: string
-          brand_title?: string
-          brand_today_title?: string
-          card_accent_color?: string | null
-          card_field_size_px?: number | null
-          card_footer_size_px?: number | null
-          card_footer_text?: string | null
-          card_label_size_px?: number | null
-          card_logo_height_px?: number | null
-          card_logo_url?: string | null
-          card_title_size_px?: number | null
-          created_at?: string
-          cta_enabled?: boolean
-          cta_label?: string
-          current_plan?: string | null
-          custom_domain?: string | null
-          custom_domain_error?: string | null
-          custom_domain_last_checked_at?: string | null
-          custom_domain_status?: string
-          custom_domain_verification_token?: string | null
-          custom_domain_verified_at?: string | null
-          custom_slug?: string | null
-          donations_fixed_image_url?: string | null
-          force_show_type?: boolean
-          gallery_urls?: Json
-          hub_bio?: string | null
-          hub_cover_url?: string | null
-          hub_enabled?: boolean
-          hub_highlights?: Json
-          hub_show_agenda?: boolean
-          hub_show_all_locations?: boolean
-          hub_show_events?: boolean
-          hub_show_prayer?: boolean
-          hub_show_visitor?: boolean
-          hub_show_whatsapp?: boolean
-          hub_slides?: Json
-          hub_whatsapp?: string | null
-          id: string
-          instagram_columns?: number
-          instagram_post_count?: number
-          live_url?: string | null
-          managed_domain_holder_address?: string | null
-          managed_domain_holder_document?: string | null
-          managed_domain_holder_email?: string | null
-          managed_domain_holder_name?: string | null
-          managed_domain_holder_phone?: string | null
-          managed_domain_notes?: string | null
-          managed_domain_requested_at?: string | null
-          managed_domain_requested_name?: string | null
-          managed_domain_status?: string
-          managed_domain_updated_at?: string | null
-          media_audio_url?: string | null
-          media_show_audio?: boolean
-          media_show_youtube?: boolean
-          media_youtube_url?: string | null
-          onboarded?: boolean
-          owner_name?: string | null
-          owner_phone?: string | null
-          pix_key?: string | null
-          plan_tier?: string
-          primary_color?: string
-          religion_profile?: Database["public"]["Enums"]["religion_profile"]
-          show_end_time?: boolean
-          show_live_fields?: boolean
-          site_id?: string
-          social_facebook?: string | null
-          social_instagram?: string | null
-          social_website?: string | null
-          social_youtube?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_ends_at?: string | null
-          subscription_status?: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at?: string
-          updated_at?: string
-          visitor_welcome_message?: string | null
-          visitor_whatsapp?: string | null
-          weekly_message?: string | null
-          weekly_verse?: string | null
-          weekly_verse_ref?: string | null
-        }
+          brand_empty_message?: string;
+          brand_footer_logo_url?: string | null;
+          brand_logo_height_px?: number;
+          brand_logo_url?: string | null;
+          brand_subtitle?: string;
+          brand_title?: string;
+          brand_today_title?: string;
+          card_accent_color?: string | null;
+          card_field_size_px?: number | null;
+          card_footer_size_px?: number | null;
+          card_footer_text?: string | null;
+          card_label_size_px?: number | null;
+          card_logo_height_px?: number | null;
+          card_logo_url?: string | null;
+          card_title_size_px?: number | null;
+          created_at?: string;
+          cta_enabled?: boolean;
+          cta_label?: string;
+          current_plan?: string | null;
+          custom_domain?: string | null;
+          custom_domain_error?: string | null;
+          custom_domain_last_checked_at?: string | null;
+          custom_domain_status?: string;
+          custom_domain_verification_token?: string | null;
+          custom_domain_verified_at?: string | null;
+          custom_slug?: string | null;
+          donations_fixed_image_url?: string | null;
+          force_show_type?: boolean;
+          gallery_urls?: Json;
+          hub_bio?: string | null;
+          hub_cover_url?: string | null;
+          hub_enabled?: boolean;
+          hub_highlights?: Json;
+          hub_show_agenda?: boolean;
+          hub_show_all_locations?: boolean;
+          hub_show_events?: boolean;
+          hub_show_prayer?: boolean;
+          hub_show_visitor?: boolean;
+          hub_show_whatsapp?: boolean;
+          hub_slides?: Json;
+          hub_whatsapp?: string | null;
+          id: string;
+          instagram_columns?: number;
+          instagram_post_count?: number;
+          live_url?: string | null;
+          managed_domain_holder_address?: string | null;
+          managed_domain_holder_document?: string | null;
+          managed_domain_holder_email?: string | null;
+          managed_domain_holder_name?: string | null;
+          managed_domain_holder_phone?: string | null;
+          managed_domain_notes?: string | null;
+          managed_domain_requested_at?: string | null;
+          managed_domain_requested_name?: string | null;
+          managed_domain_status?: string;
+          managed_domain_updated_at?: string | null;
+          media_audio_url?: string | null;
+          media_show_audio?: boolean;
+          media_show_youtube?: boolean;
+          media_youtube_url?: string | null;
+          onboarded?: boolean;
+          owner_name?: string | null;
+          owner_phone?: string | null;
+          pix_key?: string | null;
+          plan_tier?: string;
+          primary_color?: string;
+          religion_profile?: Database["public"]["Enums"]["religion_profile"];
+          show_end_time?: boolean;
+          show_live_fields?: boolean;
+          site_id?: string;
+          social_facebook?: string | null;
+          social_instagram?: string | null;
+          social_website?: string | null;
+          social_youtube?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_ends_at?: string | null;
+          subscription_status?: Database["public"]["Enums"]["subscription_status"];
+          trial_ends_at?: string;
+          updated_at?: string;
+          visitor_welcome_message?: string | null;
+          visitor_whatsapp?: string | null;
+          weekly_message?: string | null;
+          weekly_verse?: string | null;
+          weekly_verse_ref?: string | null;
+        };
         Update: {
-          brand_empty_message?: string
-          brand_footer_logo_url?: string | null
-          brand_logo_height_px?: number
-          brand_logo_url?: string | null
-          brand_subtitle?: string
-          brand_title?: string
-          brand_today_title?: string
-          card_accent_color?: string | null
-          card_field_size_px?: number | null
-          card_footer_size_px?: number | null
-          card_footer_text?: string | null
-          card_label_size_px?: number | null
-          card_logo_height_px?: number | null
-          card_logo_url?: string | null
-          card_title_size_px?: number | null
-          created_at?: string
-          cta_enabled?: boolean
-          cta_label?: string
-          current_plan?: string | null
-          custom_domain?: string | null
-          custom_domain_error?: string | null
-          custom_domain_last_checked_at?: string | null
-          custom_domain_status?: string
-          custom_domain_verification_token?: string | null
-          custom_domain_verified_at?: string | null
-          custom_slug?: string | null
-          donations_fixed_image_url?: string | null
-          force_show_type?: boolean
-          gallery_urls?: Json
-          hub_bio?: string | null
-          hub_cover_url?: string | null
-          hub_enabled?: boolean
-          hub_highlights?: Json
-          hub_show_agenda?: boolean
-          hub_show_all_locations?: boolean
-          hub_show_events?: boolean
-          hub_show_prayer?: boolean
-          hub_show_visitor?: boolean
-          hub_show_whatsapp?: boolean
-          hub_slides?: Json
-          hub_whatsapp?: string | null
-          id?: string
-          instagram_columns?: number
-          instagram_post_count?: number
-          live_url?: string | null
-          managed_domain_holder_address?: string | null
-          managed_domain_holder_document?: string | null
-          managed_domain_holder_email?: string | null
-          managed_domain_holder_name?: string | null
-          managed_domain_holder_phone?: string | null
-          managed_domain_notes?: string | null
-          managed_domain_requested_at?: string | null
-          managed_domain_requested_name?: string | null
-          managed_domain_status?: string
-          managed_domain_updated_at?: string | null
-          media_audio_url?: string | null
-          media_show_audio?: boolean
-          media_show_youtube?: boolean
-          media_youtube_url?: string | null
-          onboarded?: boolean
-          owner_name?: string | null
-          owner_phone?: string | null
-          pix_key?: string | null
-          plan_tier?: string
-          primary_color?: string
-          religion_profile?: Database["public"]["Enums"]["religion_profile"]
-          show_end_time?: boolean
-          show_live_fields?: boolean
-          site_id?: string
-          social_facebook?: string | null
-          social_instagram?: string | null
-          social_website?: string | null
-          social_youtube?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_ends_at?: string | null
-          subscription_status?: Database["public"]["Enums"]["subscription_status"]
-          trial_ends_at?: string
-          updated_at?: string
-          visitor_welcome_message?: string | null
-          visitor_whatsapp?: string | null
-          weekly_message?: string | null
-          weekly_verse?: string | null
-          weekly_verse_ref?: string | null
-        }
-        Relationships: []
-      }
+          brand_empty_message?: string;
+          brand_footer_logo_url?: string | null;
+          brand_logo_height_px?: number;
+          brand_logo_url?: string | null;
+          brand_subtitle?: string;
+          brand_title?: string;
+          brand_today_title?: string;
+          card_accent_color?: string | null;
+          card_field_size_px?: number | null;
+          card_footer_size_px?: number | null;
+          card_footer_text?: string | null;
+          card_label_size_px?: number | null;
+          card_logo_height_px?: number | null;
+          card_logo_url?: string | null;
+          card_title_size_px?: number | null;
+          created_at?: string;
+          cta_enabled?: boolean;
+          cta_label?: string;
+          current_plan?: string | null;
+          custom_domain?: string | null;
+          custom_domain_error?: string | null;
+          custom_domain_last_checked_at?: string | null;
+          custom_domain_status?: string;
+          custom_domain_verification_token?: string | null;
+          custom_domain_verified_at?: string | null;
+          custom_slug?: string | null;
+          donations_fixed_image_url?: string | null;
+          force_show_type?: boolean;
+          gallery_urls?: Json;
+          hub_bio?: string | null;
+          hub_cover_url?: string | null;
+          hub_enabled?: boolean;
+          hub_highlights?: Json;
+          hub_show_agenda?: boolean;
+          hub_show_all_locations?: boolean;
+          hub_show_events?: boolean;
+          hub_show_prayer?: boolean;
+          hub_show_visitor?: boolean;
+          hub_show_whatsapp?: boolean;
+          hub_slides?: Json;
+          hub_whatsapp?: string | null;
+          id?: string;
+          instagram_columns?: number;
+          instagram_post_count?: number;
+          live_url?: string | null;
+          managed_domain_holder_address?: string | null;
+          managed_domain_holder_document?: string | null;
+          managed_domain_holder_email?: string | null;
+          managed_domain_holder_name?: string | null;
+          managed_domain_holder_phone?: string | null;
+          managed_domain_notes?: string | null;
+          managed_domain_requested_at?: string | null;
+          managed_domain_requested_name?: string | null;
+          managed_domain_status?: string;
+          managed_domain_updated_at?: string | null;
+          media_audio_url?: string | null;
+          media_show_audio?: boolean;
+          media_show_youtube?: boolean;
+          media_youtube_url?: string | null;
+          onboarded?: boolean;
+          owner_name?: string | null;
+          owner_phone?: string | null;
+          pix_key?: string | null;
+          plan_tier?: string;
+          primary_color?: string;
+          religion_profile?: Database["public"]["Enums"]["religion_profile"];
+          show_end_time?: boolean;
+          show_live_fields?: boolean;
+          site_id?: string;
+          social_facebook?: string | null;
+          social_instagram?: string | null;
+          social_website?: string | null;
+          social_youtube?: string | null;
+          stripe_customer_id?: string | null;
+          stripe_subscription_id?: string | null;
+          subscription_ends_at?: string | null;
+          subscription_status?: Database["public"]["Enums"]["subscription_status"];
+          trial_ends_at?: string;
+          updated_at?: string;
+          visitor_welcome_message?: string | null;
+          visitor_whatsapp?: string | null;
+          weekly_message?: string | null;
+          weekly_verse?: string | null;
+          weekly_verse_ref?: string | null;
+        };
+        Relationships: [];
+      };
       assets: {
         Row: {
-          account_id: string
-          acquired_at: string | null
-          category: string
-          created_at: string
-          holder_member_id: string | null
-          id: string
-          loaned_at: string | null
-          location_id: string | null
-          name: string
-          notes: string | null
-          photo_url: string | null
-          serial_or_invoice: string | null
-          status: string
-          updated_at: string
-          value_cents: number | null
-        }
+          account_id: string;
+          acquired_at: string | null;
+          category: string;
+          created_at: string;
+          holder_member_id: string | null;
+          id: string;
+          loaned_at: string | null;
+          location_id: string | null;
+          name: string;
+          notes: string | null;
+          photo_url: string | null;
+          serial_or_invoice: string | null;
+          status: string;
+          updated_at: string;
+          value_cents: number | null;
+        };
         Insert: {
-          account_id: string
-          acquired_at?: string | null
-          category?: string
-          created_at?: string
-          holder_member_id?: string | null
-          id?: string
-          loaned_at?: string | null
-          location_id?: string | null
-          name: string
-          notes?: string | null
-          photo_url?: string | null
-          serial_or_invoice?: string | null
-          status?: string
-          updated_at?: string
-          value_cents?: number | null
-        }
+          account_id: string;
+          acquired_at?: string | null;
+          category?: string;
+          created_at?: string;
+          holder_member_id?: string | null;
+          id?: string;
+          loaned_at?: string | null;
+          location_id?: string | null;
+          name: string;
+          notes?: string | null;
+          photo_url?: string | null;
+          serial_or_invoice?: string | null;
+          status?: string;
+          updated_at?: string;
+          value_cents?: number | null;
+        };
         Update: {
-          account_id?: string
-          acquired_at?: string | null
-          category?: string
-          created_at?: string
-          holder_member_id?: string | null
-          id?: string
-          loaned_at?: string | null
-          location_id?: string | null
-          name?: string
-          notes?: string | null
-          photo_url?: string | null
-          serial_or_invoice?: string | null
-          status?: string
-          updated_at?: string
-          value_cents?: number | null
-        }
+          account_id?: string;
+          acquired_at?: string | null;
+          category?: string;
+          created_at?: string;
+          holder_member_id?: string | null;
+          id?: string;
+          loaned_at?: string | null;
+          location_id?: string | null;
+          name?: string;
+          notes?: string | null;
+          photo_url?: string | null;
+          serial_or_invoice?: string | null;
+          status?: string;
+          updated_at?: string;
+          value_cents?: number | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "assets_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "assets_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "assets_holder_member_id_fkey"
-            columns: ["holder_member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "assets_holder_member_id_fkey";
+            columns: ["holder_member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "assets_location_id_fkey"
-            columns: ["location_id"]
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
+            foreignKeyName: "assets_location_id_fkey";
+            columns: ["location_id"];
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       bank_accounts: {
         Row: {
-          account_id: string
-          account_kind: string
-          account_number: string | null
-          active: boolean
-          agency: string | null
-          bank_name: string | null
-          created_at: string
-          holder_name: string | null
-          id: string
-          is_primary: boolean
-          label: string
-          notes: string | null
-          pix_key: string | null
-          pix_key_type: string | null
-          updated_at: string
-          visible_to_members: boolean
-        }
+          account_id: string;
+          account_kind: string;
+          account_number: string | null;
+          active: boolean;
+          agency: string | null;
+          bank_name: string | null;
+          created_at: string;
+          holder_name: string | null;
+          id: string;
+          is_primary: boolean;
+          label: string;
+          notes: string | null;
+          pix_key: string | null;
+          pix_key_type: string | null;
+          updated_at: string;
+          visible_to_members: boolean;
+        };
         Insert: {
-          account_id: string
-          account_kind?: string
-          account_number?: string | null
-          active?: boolean
-          agency?: string | null
-          bank_name?: string | null
-          created_at?: string
-          holder_name?: string | null
-          id?: string
-          is_primary?: boolean
-          label: string
-          notes?: string | null
-          pix_key?: string | null
-          pix_key_type?: string | null
-          updated_at?: string
-          visible_to_members?: boolean
-        }
+          account_id: string;
+          account_kind?: string;
+          account_number?: string | null;
+          active?: boolean;
+          agency?: string | null;
+          bank_name?: string | null;
+          created_at?: string;
+          holder_name?: string | null;
+          id?: string;
+          is_primary?: boolean;
+          label: string;
+          notes?: string | null;
+          pix_key?: string | null;
+          pix_key_type?: string | null;
+          updated_at?: string;
+          visible_to_members?: boolean;
+        };
         Update: {
-          account_id?: string
-          account_kind?: string
-          account_number?: string | null
-          active?: boolean
-          agency?: string | null
-          bank_name?: string | null
-          created_at?: string
-          holder_name?: string | null
-          id?: string
-          is_primary?: boolean
-          label?: string
-          notes?: string | null
-          pix_key?: string | null
-          pix_key_type?: string | null
-          updated_at?: string
-          visible_to_members?: boolean
-        }
+          account_id?: string;
+          account_kind?: string;
+          account_number?: string | null;
+          active?: boolean;
+          agency?: string | null;
+          bank_name?: string | null;
+          created_at?: string;
+          holder_name?: string | null;
+          id?: string;
+          is_primary?: boolean;
+          label?: string;
+          notes?: string | null;
+          pix_key?: string | null;
+          pix_key_type?: string | null;
+          updated_at?: string;
+          visible_to_members?: boolean;
+        };
         Relationships: [
           {
-            foreignKeyName: "bank_accounts_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "bank_accounts_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       campaigns: {
         Row: {
-          account_id: string
-          created_at: string
-          current_amount_cents: number
-          description: string | null
-          end_date: string | null
-          goal_amount_cents: number
-          id: string
-          is_active: boolean
-          name: string
-          pix_key: string | null
-          sort_order: number
-          start_date: string
-          updated_at: string
-        }
+          account_id: string;
+          created_at: string;
+          current_amount_cents: number;
+          description: string | null;
+          end_date: string | null;
+          goal_amount_cents: number;
+          id: string;
+          is_active: boolean;
+          name: string;
+          pix_key: string | null;
+          sort_order: number;
+          start_date: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          current_amount_cents?: number
-          description?: string | null
-          end_date?: string | null
-          goal_amount_cents: number
-          id?: string
-          is_active?: boolean
-          name: string
-          pix_key?: string | null
-          sort_order?: number
-          start_date?: string
-          updated_at?: string
-        }
+          account_id: string;
+          created_at?: string;
+          current_amount_cents?: number;
+          description?: string | null;
+          end_date?: string | null;
+          goal_amount_cents: number;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          pix_key?: string | null;
+          sort_order?: number;
+          start_date?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          current_amount_cents?: number
-          description?: string | null
-          end_date?: string | null
-          goal_amount_cents?: number
-          id?: string
-          is_active?: boolean
-          name?: string
-          pix_key?: string | null
-          sort_order?: number
-          start_date?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          current_amount_cents?: number;
+          description?: string | null;
+          end_date?: string | null;
+          goal_amount_cents?: number;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          pix_key?: string | null;
+          sort_order?: number;
+          start_date?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "campaigns_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "campaigns_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       celebration_types: {
         Row: {
-          account_id: string
-          active: boolean
-          color: string
-          created_at: string
-          icon: string
-          id: string
-          name: string
-          sort_order: number
-          updated_at: string
-        }
+          account_id: string;
+          active: boolean;
+          color: string;
+          created_at: string;
+          icon: string;
+          id: string;
+          name: string;
+          sort_order: number;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          color?: string
-          created_at?: string
-          icon?: string
-          id?: string
-          name: string
-          sort_order?: number
-          updated_at?: string
-        }
+          account_id: string;
+          active?: boolean;
+          color?: string;
+          created_at?: string;
+          icon?: string;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          color?: string
-          created_at?: string
-          icon?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          updated_at?: string
-        }
+          account_id?: string;
+          active?: boolean;
+          color?: string;
+          created_at?: string;
+          icon?: string;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "celebration_types_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "celebration_types_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       checkin_entries: {
         Row: {
-          account_id: string
-          checked_in_at: string
-          id: string
-          member_id: string | null
-          session_id: string
-          visitor_name: string | null
-          visitor_phone: string | null
-        }
+          account_id: string;
+          checked_in_at: string;
+          id: string;
+          member_id: string | null;
+          session_id: string;
+          visitor_name: string | null;
+          visitor_phone: string | null;
+        };
         Insert: {
-          account_id: string
-          checked_in_at?: string
-          id?: string
-          member_id?: string | null
-          session_id: string
-          visitor_name?: string | null
-          visitor_phone?: string | null
-        }
+          account_id: string;
+          checked_in_at?: string;
+          id?: string;
+          member_id?: string | null;
+          session_id: string;
+          visitor_name?: string | null;
+          visitor_phone?: string | null;
+        };
         Update: {
-          account_id?: string
-          checked_in_at?: string
-          id?: string
-          member_id?: string | null
-          session_id?: string
-          visitor_name?: string | null
-          visitor_phone?: string | null
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          checked_in_at?: string;
+          id?: string;
+          member_id?: string | null;
+          session_id?: string;
+          visitor_name?: string | null;
+          visitor_phone?: string | null;
+        };
+        Relationships: [];
+      };
       checkin_sessions: {
         Row: {
-          account_id: string
-          active: boolean
-          created_at: string
-          id: string
-          notes: string | null
-          session_date: string
-          start_time: string | null
-          title: string
-          updated_at: string
-        }
+          account_id: string;
+          active: boolean;
+          created_at: string;
+          id: string;
+          notes: string | null;
+          session_date: string;
+          start_time: string | null;
+          title: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          created_at?: string
-          id?: string
-          notes?: string | null
-          session_date?: string
-          start_time?: string | null
-          title: string
-          updated_at?: string
-        }
+          account_id: string;
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          session_date?: string;
+          start_time?: string | null;
+          title: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          created_at?: string
-          id?: string
-          notes?: string | null
-          session_date?: string
-          start_time?: string | null
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          notes?: string | null;
+          session_date?: string;
+          start_time?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      child_checkin_entries: {
+        Row: {
+          account_id: string;
+          checked_in_at: string;
+          checked_out_at: string | null;
+          checked_out_by: string | null;
+          child_id: string;
+          created_at: string;
+          id: string;
+          incident_notes: string | null;
+          pickup_code_hash: string;
+          pickup_person: string | null;
+          session_id: string | null;
+        };
+        Insert: {
+          account_id: string;
+          checked_in_at?: string;
+          checked_out_at?: string | null;
+          checked_out_by?: string | null;
+          child_id: string;
+          created_at?: string;
+          id?: string;
+          incident_notes?: string | null;
+          pickup_code_hash: string;
+          pickup_person?: string | null;
+          session_id?: string | null;
+        };
+        Update: {
+          account_id?: string;
+          checked_in_at?: string;
+          checked_out_at?: string | null;
+          checked_out_by?: string | null;
+          child_id?: string;
+          created_at?: string;
+          id?: string;
+          incident_notes?: string | null;
+          pickup_code_hash?: string;
+          pickup_person?: string | null;
+          session_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "child_checkin_entries_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "child_checkin_entries_child_id_fkey";
+            columns: ["child_id"];
+            referencedRelation: "child_profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "child_checkin_entries_session_id_fkey";
+            columns: ["session_id"];
+            referencedRelation: "checkin_sessions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      child_profiles: {
+        Row: {
+          account_id: string;
+          active: boolean;
+          allergies: string | null;
+          authorized_pickups: string | null;
+          birth_date: string | null;
+          created_at: string;
+          full_name: string;
+          guardian_name: string;
+          guardian_phone: string;
+          id: string;
+          medical_notes: string | null;
+          photo_url: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          account_id: string;
+          active?: boolean;
+          allergies?: string | null;
+          authorized_pickups?: string | null;
+          birth_date?: string | null;
+          created_at?: string;
+          full_name: string;
+          guardian_name: string;
+          guardian_phone: string;
+          id?: string;
+          medical_notes?: string | null;
+          photo_url?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          account_id?: string;
+          active?: boolean;
+          allergies?: string | null;
+          authorized_pickups?: string | null;
+          birth_date?: string | null;
+          created_at?: string;
+          full_name?: string;
+          guardian_name?: string;
+          guardian_phone?: string;
+          id?: string;
+          medical_notes?: string | null;
+          photo_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "child_profiles_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      congregations: {
+        Row: {
+          account_id: string;
+          active: boolean;
+          address: string | null;
+          city: string | null;
+          code: string | null;
+          created_at: string;
+          id: string;
+          leader_name: string | null;
+          leader_phone: string | null;
+          name: string;
+          notes: string | null;
+          state: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          account_id: string;
+          active?: boolean;
+          address?: string | null;
+          city?: string | null;
+          code?: string | null;
+          created_at?: string;
+          id?: string;
+          leader_name?: string | null;
+          leader_phone?: string | null;
+          name: string;
+          notes?: string | null;
+          state?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          account_id?: string;
+          active?: boolean;
+          address?: string | null;
+          city?: string | null;
+          code?: string | null;
+          created_at?: string;
+          id?: string;
+          leader_name?: string | null;
+          leader_phone?: string | null;
+          name?: string;
+          notes?: string | null;
+          state?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "congregations_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       data_subject_requests: {
         Row: {
-          account_id: string
-          completed_at: string | null
-          created_at: string
-          description: string
-          id: string
-          received_at: string
-          request_type: string
-          status: string
-          user_id: string | null
-        }
+          account_id: string;
+          completed_at: string | null;
+          created_at: string;
+          description: string;
+          id: string;
+          received_at: string;
+          request_type: string;
+          status: string;
+          user_id: string | null;
+        };
         Insert: {
-          account_id: string
-          completed_at?: string | null
-          created_at?: string
-          description: string
-          id?: string
-          received_at?: string
-          request_type: string
-          status?: string
-          user_id?: string | null
-        }
+          account_id: string;
+          completed_at?: string | null;
+          created_at?: string;
+          description: string;
+          id?: string;
+          received_at?: string;
+          request_type: string;
+          status?: string;
+          user_id?: string | null;
+        };
         Update: {
-          account_id?: string
-          completed_at?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          received_at?: string
-          request_type?: string
-          status?: string
-          user_id?: string | null
-        }
+          account_id?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          received_at?: string;
+          request_type?: string;
+          status?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "data_subject_requests_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "data_subject_requests_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       decisions: {
         Row: {
-          account_id: string
-          assignee_note: string | null
-          created_at: string
-          email: string | null
-          id: string
-          kind: string
-          message: string | null
-          name: string
-          phone: string | null
-          status: string
-          updated_at: string
-        }
+          account_id: string;
+          assignee_note: string | null;
+          created_at: string;
+          email: string | null;
+          id: string;
+          kind: string;
+          message: string | null;
+          name: string;
+          phone: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          assignee_note?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          kind: string
-          message?: string | null
-          name: string
-          phone?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id: string;
+          assignee_note?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          kind: string;
+          message?: string | null;
+          name: string;
+          phone?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          assignee_note?: string | null
-          created_at?: string
-          email?: string | null
-          id?: string
-          kind?: string
-          message?: string | null
-          name?: string
-          phone?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          assignee_note?: string | null;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          kind?: string;
+          message?: string | null;
+          name?: string;
+          phone?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "decisions_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "decisions_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       devotionals: {
         Row: {
-          account_id: string
-          created_at: string
-          devotional_date: string
-          id: string
-          message: string | null
-          published: boolean
-          updated_at: string
-          verse_ref: string
-          verse_text: string
-        }
+          account_id: string;
+          created_at: string;
+          devotional_date: string;
+          id: string;
+          message: string | null;
+          published: boolean;
+          updated_at: string;
+          verse_ref: string;
+          verse_text: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          devotional_date?: string
-          id?: string
-          message?: string | null
-          published?: boolean
-          updated_at?: string
-          verse_ref: string
-          verse_text: string
-        }
+          account_id: string;
+          created_at?: string;
+          devotional_date?: string;
+          id?: string;
+          message?: string | null;
+          published?: boolean;
+          updated_at?: string;
+          verse_ref: string;
+          verse_text: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          devotional_date?: string
-          id?: string
-          message?: string | null
-          published?: boolean
-          updated_at?: string
-          verse_ref?: string
-          verse_text?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          created_at?: string;
+          devotional_date?: string;
+          id?: string;
+          message?: string | null;
+          published?: boolean;
+          updated_at?: string;
+          verse_ref?: string;
+          verse_text?: string;
+        };
+        Relationships: [];
+      };
       document_templates: {
         Row: {
-          account_id: string | null
-          active: boolean
-          body: string
-          created_at: string
-          id: string
-          is_global: boolean
-          kind: string
-          sort_order: number
-          title: string
-          updated_at: string
-        }
+          account_id: string | null;
+          active: boolean;
+          body: string;
+          created_at: string;
+          id: string;
+          is_global: boolean;
+          kind: string;
+          sort_order: number;
+          title: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id?: string | null
-          active?: boolean
-          body?: string
-          created_at?: string
-          id?: string
-          is_global?: boolean
-          kind: string
-          sort_order?: number
-          title: string
-          updated_at?: string
-        }
+          account_id?: string | null;
+          active?: boolean;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          is_global?: boolean;
+          kind: string;
+          sort_order?: number;
+          title: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string | null
-          active?: boolean
-          body?: string
-          created_at?: string
-          id?: string
-          is_global?: boolean
-          kind?: string
-          sort_order?: number
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string | null;
+          active?: boolean;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          is_global?: boolean;
+          kind?: string;
+          sort_order?: number;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       donation_campaigns: {
         Row: {
-          account_id: string
-          active: boolean
-          created_at: string
-          description: string
-          featured: boolean
-          goal_cents: number | null
-          id: string
-          image_url: string | null
-          pix_key: string
-          pix_key_type: string
-          recipient_city: string
-          recipient_name: string
-          sort_order: number
-          suggested_amounts_cents: Json
-          title: string
-          updated_at: string
-        }
+          account_id: string;
+          active: boolean;
+          created_at: string;
+          description: string;
+          featured: boolean;
+          goal_cents: number | null;
+          id: string;
+          image_url: string | null;
+          pix_key: string;
+          pix_key_type: string;
+          recipient_city: string;
+          recipient_name: string;
+          sort_order: number;
+          suggested_amounts_cents: Json;
+          title: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          created_at?: string
-          description?: string
-          featured?: boolean
-          goal_cents?: number | null
-          id?: string
-          image_url?: string | null
-          pix_key: string
-          pix_key_type?: string
-          recipient_city?: string
-          recipient_name: string
-          sort_order?: number
-          suggested_amounts_cents?: Json
-          title: string
-          updated_at?: string
-        }
+          account_id: string;
+          active?: boolean;
+          created_at?: string;
+          description?: string;
+          featured?: boolean;
+          goal_cents?: number | null;
+          id?: string;
+          image_url?: string | null;
+          pix_key: string;
+          pix_key_type?: string;
+          recipient_city?: string;
+          recipient_name: string;
+          sort_order?: number;
+          suggested_amounts_cents?: Json;
+          title: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          created_at?: string
-          description?: string
-          featured?: boolean
-          goal_cents?: number | null
-          id?: string
-          image_url?: string | null
-          pix_key?: string
-          pix_key_type?: string
-          recipient_city?: string
-          recipient_name?: string
-          sort_order?: number
-          suggested_amounts_cents?: Json
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          active?: boolean;
+          created_at?: string;
+          description?: string;
+          featured?: boolean;
+          goal_cents?: number | null;
+          id?: string;
+          image_url?: string | null;
+          pix_key?: string;
+          pix_key_type?: string;
+          recipient_city?: string;
+          recipient_name?: string;
+          sort_order?: number;
+          suggested_amounts_cents?: Json;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       donations: {
         Row: {
-          account_id: string
-          amount_cents: number
-          campaign_id: string | null
-          copy_paste: string | null
-          created_at: string
-          donor_email: string | null
-          donor_name: string | null
-          donor_phone: string | null
-          id: string
-          is_test_data: boolean
-          member_id: string | null
-          mercadopago_payment_id: string | null
-          paid_at: string | null
-          qr_code: string | null
-          raw_response: Json | null
-          status: string
-          updated_at: string
-          webhook_payload: Json | null
-        }
+          account_id: string;
+          amount_cents: number;
+          campaign_id: string | null;
+          copy_paste: string | null;
+          created_at: string;
+          donor_email: string | null;
+          donor_name: string | null;
+          donor_phone: string | null;
+          id: string;
+          is_test_data: boolean;
+          member_id: string | null;
+          mercadopago_payment_id: string | null;
+          paid_at: string | null;
+          qr_code: string | null;
+          raw_response: Json | null;
+          status: string;
+          updated_at: string;
+          webhook_payload: Json | null;
+        };
         Insert: {
-          account_id: string
-          amount_cents: number
-          campaign_id?: string | null
-          copy_paste?: string | null
-          created_at?: string
-          donor_email?: string | null
-          donor_name?: string | null
-          donor_phone?: string | null
-          id?: string
-          is_test_data?: boolean
-          member_id?: string | null
-          mercadopago_payment_id?: string | null
-          paid_at?: string | null
-          qr_code?: string | null
-          raw_response?: Json | null
-          status?: string
-          updated_at?: string
-          webhook_payload?: Json | null
-        }
+          account_id: string;
+          amount_cents: number;
+          campaign_id?: string | null;
+          copy_paste?: string | null;
+          created_at?: string;
+          donor_email?: string | null;
+          donor_name?: string | null;
+          donor_phone?: string | null;
+          id?: string;
+          is_test_data?: boolean;
+          member_id?: string | null;
+          mercadopago_payment_id?: string | null;
+          paid_at?: string | null;
+          qr_code?: string | null;
+          raw_response?: Json | null;
+          status?: string;
+          updated_at?: string;
+          webhook_payload?: Json | null;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          campaign_id?: string | null
-          copy_paste?: string | null
-          created_at?: string
-          donor_email?: string | null
-          donor_name?: string | null
-          donor_phone?: string | null
-          id?: string
-          is_test_data?: boolean
-          member_id?: string | null
-          mercadopago_payment_id?: string | null
-          paid_at?: string | null
-          qr_code?: string | null
-          raw_response?: Json | null
-          status?: string
-          updated_at?: string
-          webhook_payload?: Json | null
-        }
+          account_id?: string;
+          amount_cents?: number;
+          campaign_id?: string | null;
+          copy_paste?: string | null;
+          created_at?: string;
+          donor_email?: string | null;
+          donor_name?: string | null;
+          donor_phone?: string | null;
+          id?: string;
+          is_test_data?: boolean;
+          member_id?: string | null;
+          mercadopago_payment_id?: string | null;
+          paid_at?: string | null;
+          qr_code?: string | null;
+          raw_response?: Json | null;
+          status?: string;
+          updated_at?: string;
+          webhook_payload?: Json | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "donations_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "donations_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "donations_campaign_id_fkey"
-            columns: ["campaign_id"]
-            referencedRelation: "donation_campaigns"
-            referencedColumns: ["id"]
+            foreignKeyName: "donations_campaign_id_fkey";
+            columns: ["campaign_id"];
+            referencedRelation: "donation_campaigns";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "donations_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "donations_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       ebd_attendance: {
         Row: {
-          account_id: string
-          attendance_date: string
-          class_id: string
-          created_at: string
-          id: string
-          is_test_data: boolean
-          member_id: string
-          present: boolean
-        }
+          account_id: string;
+          attendance_date: string;
+          class_id: string;
+          created_at: string;
+          id: string;
+          is_test_data: boolean;
+          member_id: string;
+          present: boolean;
+        };
         Insert: {
-          account_id: string
-          attendance_date: string
-          class_id: string
-          created_at?: string
-          id?: string
-          is_test_data?: boolean
-          member_id: string
-          present?: boolean
-        }
+          account_id: string;
+          attendance_date: string;
+          class_id: string;
+          created_at?: string;
+          id?: string;
+          is_test_data?: boolean;
+          member_id: string;
+          present?: boolean;
+        };
         Update: {
-          account_id?: string
-          attendance_date?: string
-          class_id?: string
-          created_at?: string
-          id?: string
-          is_test_data?: boolean
-          member_id?: string
-          present?: boolean
-        }
+          account_id?: string;
+          attendance_date?: string;
+          class_id?: string;
+          created_at?: string;
+          id?: string;
+          is_test_data?: boolean;
+          member_id?: string;
+          present?: boolean;
+        };
         Relationships: [
           {
-            foreignKeyName: "ebd_attendance_class_id_fkey"
-            columns: ["class_id"]
-            referencedRelation: "ebd_classes"
-            referencedColumns: ["id"]
+            foreignKeyName: "ebd_attendance_class_id_fkey";
+            columns: ["class_id"];
+            referencedRelation: "ebd_classes";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "ebd_attendance_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "ebd_attendance_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       ebd_classes: {
         Row: {
-          account_id: string
-          active: boolean
-          age_range: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_test_data: boolean
-          name: string
-          sort_order: number
-          start_time: string | null
-          teacher_name: string | null
-          updated_at: string
-          weekday: number | null
-        }
+          account_id: string;
+          active: boolean;
+          age_range: string | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_test_data: boolean;
+          name: string;
+          sort_order: number;
+          start_time: string | null;
+          teacher_name: string | null;
+          updated_at: string;
+          weekday: number | null;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          age_range?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_test_data?: boolean
-          name: string
-          sort_order?: number
-          start_time?: string | null
-          teacher_name?: string | null
-          updated_at?: string
-          weekday?: number | null
-        }
+          account_id: string;
+          active?: boolean;
+          age_range?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_test_data?: boolean;
+          name: string;
+          sort_order?: number;
+          start_time?: string | null;
+          teacher_name?: string | null;
+          updated_at?: string;
+          weekday?: number | null;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          age_range?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_test_data?: boolean
-          name?: string
-          sort_order?: number
-          start_time?: string | null
-          teacher_name?: string | null
-          updated_at?: string
-          weekday?: number | null
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          active?: boolean;
+          age_range?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_test_data?: boolean;
+          name?: string;
+          sort_order?: number;
+          start_time?: string | null;
+          teacher_name?: string | null;
+          updated_at?: string;
+          weekday?: number | null;
+        };
+        Relationships: [];
+      };
       ebd_enrollments: {
         Row: {
-          account_id: string
-          active: boolean
-          class_id: string
-          created_at: string
-          enrolled_at: string
-          id: string
-          is_test_data: boolean
-          member_id: string
-        }
+          account_id: string;
+          active: boolean;
+          class_id: string;
+          created_at: string;
+          enrolled_at: string;
+          id: string;
+          is_test_data: boolean;
+          member_id: string;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          class_id: string
-          created_at?: string
-          enrolled_at?: string
-          id?: string
-          is_test_data?: boolean
-          member_id: string
-        }
+          account_id: string;
+          active?: boolean;
+          class_id: string;
+          created_at?: string;
+          enrolled_at?: string;
+          id?: string;
+          is_test_data?: boolean;
+          member_id: string;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          class_id?: string
-          created_at?: string
-          enrolled_at?: string
-          id?: string
-          is_test_data?: boolean
-          member_id?: string
-        }
+          account_id?: string;
+          active?: boolean;
+          class_id?: string;
+          created_at?: string;
+          enrolled_at?: string;
+          id?: string;
+          is_test_data?: boolean;
+          member_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ebd_enrollments_class_id_fkey"
-            columns: ["class_id"]
-            referencedRelation: "ebd_classes"
-            referencedColumns: ["id"]
+            foreignKeyName: "ebd_enrollments_class_id_fkey";
+            columns: ["class_id"];
+            referencedRelation: "ebd_classes";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "ebd_enrollments_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "ebd_enrollments_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_attendance: {
         Row: {
-          account_id: string
-          attended: boolean
-          checked_in_at: string | null
-          created_at: string
-          event_id: string
-          id: string
-          member_id: string
-          updated_at: string
-        }
+          account_id: string;
+          attended: boolean;
+          checked_in_at: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          member_id: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          attended?: boolean
-          checked_in_at?: string | null
-          created_at?: string
-          event_id: string
-          id?: string
-          member_id: string
-          updated_at?: string
-        }
+          account_id: string;
+          attended?: boolean;
+          checked_in_at?: string | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          member_id: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          attended?: boolean
-          checked_in_at?: string | null
-          created_at?: string
-          event_id?: string
-          id?: string
-          member_id?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          attended?: boolean;
+          checked_in_at?: string | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          member_id?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_attendance_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_attendance_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_attendance_event_id_fkey"
-            columns: ["event_id"]
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_attendance_event_id_fkey";
+            columns: ["event_id"];
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_attendance_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_attendance_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_certificates: {
         Row: {
-          account_id: string
-          certificate_number: string
-          created_at: string
-          event_id: string
-          file_url: string | null
-          id: string
-          inscription_id: string
-          issued_at: string
-          participant_name: string
-          updated_at: string
-        }
+          account_id: string;
+          certificate_number: string;
+          created_at: string;
+          event_id: string;
+          file_url: string | null;
+          id: string;
+          inscription_id: string;
+          issued_at: string;
+          participant_name: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          certificate_number: string
-          created_at?: string
-          event_id: string
-          file_url?: string | null
-          id?: string
-          inscription_id: string
-          issued_at?: string
-          participant_name: string
-          updated_at?: string
-        }
+          account_id: string;
+          certificate_number: string;
+          created_at?: string;
+          event_id: string;
+          file_url?: string | null;
+          id?: string;
+          inscription_id: string;
+          issued_at?: string;
+          participant_name: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          certificate_number?: string
-          created_at?: string
-          event_id?: string
-          file_url?: string | null
-          id?: string
-          inscription_id?: string
-          issued_at?: string
-          participant_name?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          certificate_number?: string;
+          created_at?: string;
+          event_id?: string;
+          file_url?: string | null;
+          id?: string;
+          inscription_id?: string;
+          issued_at?: string;
+          participant_name?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_certificates_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_certificates_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_certificates_event_id_fkey"
-            columns: ["event_id"]
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_certificates_event_id_fkey";
+            columns: ["event_id"];
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_certificates_inscription_id_fkey"
-            columns: ["inscription_id"]
-            referencedRelation: "event_inscriptions"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_certificates_inscription_id_fkey";
+            columns: ["inscription_id"];
+            referencedRelation: "event_inscriptions";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_inscriptions: {
         Row: {
-          account_id: string
-          attendance_count: number
-          checked_in: boolean | null
-          checked_in_at: string | null
-          created_at: string
-          email: string
-          event_id: string
-          full_name: string
-          id: string
-          inscribed_at: string
-          phone: string
-          status: string
-          total_price_cents: number
-          updated_at: string
-        }
+          account_id: string;
+          attendance_count: number;
+          checked_in: boolean | null;
+          checked_in_at: string | null;
+          created_at: string;
+          email: string;
+          event_id: string;
+          full_name: string;
+          id: string;
+          inscribed_at: string;
+          phone: string;
+          status: string;
+          total_price_cents: number;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          attendance_count?: number
-          checked_in?: boolean | null
-          checked_in_at?: string | null
-          created_at?: string
-          email: string
-          event_id: string
-          full_name: string
-          id?: string
-          inscribed_at?: string
-          phone: string
-          status?: string
-          total_price_cents?: number
-          updated_at?: string
-        }
+          account_id: string;
+          attendance_count?: number;
+          checked_in?: boolean | null;
+          checked_in_at?: string | null;
+          created_at?: string;
+          email: string;
+          event_id: string;
+          full_name: string;
+          id?: string;
+          inscribed_at?: string;
+          phone: string;
+          status?: string;
+          total_price_cents?: number;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          attendance_count?: number
-          checked_in?: boolean | null
-          checked_in_at?: string | null
-          created_at?: string
-          email?: string
-          event_id?: string
-          full_name?: string
-          id?: string
-          inscribed_at?: string
-          phone?: string
-          status?: string
-          total_price_cents?: number
-          updated_at?: string
-        }
+          account_id?: string;
+          attendance_count?: number;
+          checked_in?: boolean | null;
+          checked_in_at?: string | null;
+          created_at?: string;
+          email?: string;
+          event_id?: string;
+          full_name?: string;
+          id?: string;
+          inscribed_at?: string;
+          phone?: string;
+          status?: string;
+          total_price_cents?: number;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_inscriptions_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_inscriptions_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_inscriptions_event_id_fkey"
-            columns: ["event_id"]
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_inscriptions_event_id_fkey";
+            columns: ["event_id"];
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_pages: {
         Row: {
-          account_id: string
-          active: boolean
-          allow_free: boolean
-          cover_image_url: string | null
-          created_at: string
-          description: string
-          end_time: string | null
-          event_date: string
-          id: string
-          location_address: string | null
-          location_name: string
-          max_attendees: number | null
-          price_cents: number
-          primary_color: string
-          slug: string
-          start_time: string
-          title: string
-          updated_at: string
-          whatsapp_contact: string | null
-        }
+          account_id: string;
+          active: boolean;
+          allow_free: boolean;
+          cover_image_url: string | null;
+          created_at: string;
+          description: string;
+          end_time: string | null;
+          event_date: string;
+          id: string;
+          location_address: string | null;
+          location_name: string;
+          max_attendees: number | null;
+          price_cents: number;
+          primary_color: string;
+          slug: string;
+          start_time: string;
+          title: string;
+          updated_at: string;
+          whatsapp_contact: string | null;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          allow_free?: boolean
-          cover_image_url?: string | null
-          created_at?: string
-          description?: string
-          end_time?: string | null
-          event_date: string
-          id?: string
-          location_address?: string | null
-          location_name?: string
-          max_attendees?: number | null
-          price_cents?: number
-          primary_color?: string
-          slug: string
-          start_time: string
-          title: string
-          updated_at?: string
-          whatsapp_contact?: string | null
-        }
+          account_id: string;
+          active?: boolean;
+          allow_free?: boolean;
+          cover_image_url?: string | null;
+          created_at?: string;
+          description?: string;
+          end_time?: string | null;
+          event_date: string;
+          id?: string;
+          location_address?: string | null;
+          location_name?: string;
+          max_attendees?: number | null;
+          price_cents?: number;
+          primary_color?: string;
+          slug: string;
+          start_time: string;
+          title: string;
+          updated_at?: string;
+          whatsapp_contact?: string | null;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          allow_free?: boolean
-          cover_image_url?: string | null
-          created_at?: string
-          description?: string
-          end_time?: string | null
-          event_date?: string
-          id?: string
-          location_address?: string | null
-          location_name?: string
-          max_attendees?: number | null
-          price_cents?: number
-          primary_color?: string
-          slug?: string
-          start_time?: string
-          title?: string
-          updated_at?: string
-          whatsapp_contact?: string | null
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          active?: boolean;
+          allow_free?: boolean;
+          cover_image_url?: string | null;
+          created_at?: string;
+          description?: string;
+          end_time?: string | null;
+          event_date?: string;
+          id?: string;
+          location_address?: string | null;
+          location_name?: string;
+          max_attendees?: number | null;
+          price_cents?: number;
+          primary_color?: string;
+          slug?: string;
+          start_time?: string;
+          title?: string;
+          updated_at?: string;
+          whatsapp_contact?: string | null;
+        };
+        Relationships: [];
+      };
       event_promo_codes: {
         Row: {
-          account_id: string
-          code: string
-          created_at: string
-          discount_fixed_cents: number | null
-          discount_percent: number | null
-          event_id: string
-          id: string
-          is_active: boolean | null
-          max_uses: number | null
-          updated_at: string
-          used_count: number | null
-          valid_from: string
-          valid_until: string
-        }
+          account_id: string;
+          code: string;
+          created_at: string;
+          discount_fixed_cents: number | null;
+          discount_percent: number | null;
+          event_id: string;
+          id: string;
+          is_active: boolean | null;
+          max_uses: number | null;
+          updated_at: string;
+          used_count: number | null;
+          valid_from: string;
+          valid_until: string;
+        };
         Insert: {
-          account_id: string
-          code: string
-          created_at?: string
-          discount_fixed_cents?: number | null
-          discount_percent?: number | null
-          event_id: string
-          id?: string
-          is_active?: boolean | null
-          max_uses?: number | null
-          updated_at?: string
-          used_count?: number | null
-          valid_from?: string
-          valid_until: string
-        }
+          account_id: string;
+          code: string;
+          created_at?: string;
+          discount_fixed_cents?: number | null;
+          discount_percent?: number | null;
+          event_id: string;
+          id?: string;
+          is_active?: boolean | null;
+          max_uses?: number | null;
+          updated_at?: string;
+          used_count?: number | null;
+          valid_from?: string;
+          valid_until: string;
+        };
         Update: {
-          account_id?: string
-          code?: string
-          created_at?: string
-          discount_fixed_cents?: number | null
-          discount_percent?: number | null
-          event_id?: string
-          id?: string
-          is_active?: boolean | null
-          max_uses?: number | null
-          updated_at?: string
-          used_count?: number | null
-          valid_from?: string
-          valid_until?: string
-        }
+          account_id?: string;
+          code?: string;
+          created_at?: string;
+          discount_fixed_cents?: number | null;
+          discount_percent?: number | null;
+          event_id?: string;
+          id?: string;
+          is_active?: boolean | null;
+          max_uses?: number | null;
+          updated_at?: string;
+          used_count?: number | null;
+          valid_from?: string;
+          valid_until?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_promo_codes_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_promo_codes_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_promo_codes_event_id_fkey"
-            columns: ["event_id"]
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_promo_codes_event_id_fkey";
+            columns: ["event_id"];
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_registrations: {
         Row: {
-          account_id: string
-          amount_cents: number
-          created_at: string
-          email: string
-          event_page_id: string
-          id: string
-          name: string
-          notes: string | null
-          paid_at: string | null
-          phone: string | null
-          status: string
-          transaction_id: string | null
-          updated_at: string
-        }
+          account_id: string;
+          amount_cents: number;
+          created_at: string;
+          email: string;
+          event_page_id: string;
+          id: string;
+          name: string;
+          notes: string | null;
+          paid_at: string | null;
+          phone: string | null;
+          status: string;
+          transaction_id: string | null;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          amount_cents?: number
-          created_at?: string
-          email: string
-          event_page_id: string
-          id?: string
-          name: string
-          notes?: string | null
-          paid_at?: string | null
-          phone?: string | null
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-        }
+          account_id: string;
+          amount_cents?: number;
+          created_at?: string;
+          email: string;
+          event_page_id: string;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          paid_at?: string | null;
+          phone?: string | null;
+          status?: string;
+          transaction_id?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          created_at?: string
-          email?: string
-          event_page_id?: string
-          id?: string
-          name?: string
-          notes?: string | null
-          paid_at?: string | null
-          phone?: string | null
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-        }
+          account_id?: string;
+          amount_cents?: number;
+          created_at?: string;
+          email?: string;
+          event_page_id?: string;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          paid_at?: string | null;
+          phone?: string | null;
+          status?: string;
+          transaction_id?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_registrations_event_page_id_fkey"
-            columns: ["event_page_id"]
-            referencedRelation: "event_pages"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_registrations_event_page_id_fkey";
+            columns: ["event_page_id"];
+            referencedRelation: "event_pages";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       events: {
         Row: {
-          account_id: string
-          certificate_template: string | null
-          created_at: string
-          current_inscriptions: number | null
-          description: string | null
-          end_time: string | null
-          event_date: string
-          id: string
-          is_live: boolean
-          is_test_data: boolean
-          live_url: string | null
-          location_id: string | null
-          location_name: string
-          max_inscriptions: number | null
-          price_cents: number | null
-          promotional_price_cents: number | null
-          promotional_until: string | null
-          requires_checkin: boolean | null
-          show_type: boolean
-          start_time: string
-          type_id: string | null
-          type_name: string
-          updated_at: string
-        }
+          account_id: string;
+          certificate_template: string | null;
+          created_at: string;
+          current_inscriptions: number | null;
+          description: string | null;
+          end_time: string | null;
+          event_date: string;
+          id: string;
+          is_live: boolean;
+          is_test_data: boolean;
+          live_url: string | null;
+          location_id: string | null;
+          location_name: string;
+          max_inscriptions: number | null;
+          price_cents: number | null;
+          promotional_price_cents: number | null;
+          promotional_until: string | null;
+          requires_checkin: boolean | null;
+          show_type: boolean;
+          start_time: string;
+          type_id: string | null;
+          type_name: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          certificate_template?: string | null
-          created_at?: string
-          current_inscriptions?: number | null
-          description?: string | null
-          end_time?: string | null
-          event_date: string
-          id?: string
-          is_live?: boolean
-          is_test_data?: boolean
-          live_url?: string | null
-          location_id?: string | null
-          location_name: string
-          max_inscriptions?: number | null
-          price_cents?: number | null
-          promotional_price_cents?: number | null
-          promotional_until?: string | null
-          requires_checkin?: boolean | null
-          show_type?: boolean
-          start_time: string
-          type_id?: string | null
-          type_name: string
-          updated_at?: string
-        }
+          account_id: string;
+          certificate_template?: string | null;
+          created_at?: string;
+          current_inscriptions?: number | null;
+          description?: string | null;
+          end_time?: string | null;
+          event_date: string;
+          id?: string;
+          is_live?: boolean;
+          is_test_data?: boolean;
+          live_url?: string | null;
+          location_id?: string | null;
+          location_name: string;
+          max_inscriptions?: number | null;
+          price_cents?: number | null;
+          promotional_price_cents?: number | null;
+          promotional_until?: string | null;
+          requires_checkin?: boolean | null;
+          show_type?: boolean;
+          start_time: string;
+          type_id?: string | null;
+          type_name: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          certificate_template?: string | null
-          created_at?: string
-          current_inscriptions?: number | null
-          description?: string | null
-          end_time?: string | null
-          event_date?: string
-          id?: string
-          is_live?: boolean
-          is_test_data?: boolean
-          live_url?: string | null
-          location_id?: string | null
-          location_name?: string
-          max_inscriptions?: number | null
-          price_cents?: number | null
-          promotional_price_cents?: number | null
-          promotional_until?: string | null
-          requires_checkin?: boolean | null
-          show_type?: boolean
-          start_time?: string
-          type_id?: string | null
-          type_name?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          certificate_template?: string | null;
+          created_at?: string;
+          current_inscriptions?: number | null;
+          description?: string | null;
+          end_time?: string | null;
+          event_date?: string;
+          id?: string;
+          is_live?: boolean;
+          is_test_data?: boolean;
+          live_url?: string | null;
+          location_id?: string | null;
+          location_name?: string;
+          max_inscriptions?: number | null;
+          price_cents?: number | null;
+          promotional_price_cents?: number | null;
+          promotional_until?: string | null;
+          requires_checkin?: boolean | null;
+          show_type?: boolean;
+          start_time?: string;
+          type_id?: string | null;
+          type_name?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "events_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "events_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "events_location_id_fkey"
-            columns: ["location_id"]
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
+            foreignKeyName: "events_location_id_fkey";
+            columns: ["location_id"];
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "events_type_id_fkey"
-            columns: ["type_id"]
-            referencedRelation: "celebration_types"
-            referencedColumns: ["id"]
+            foreignKeyName: "events_type_id_fkey";
+            columns: ["type_id"];
+            referencedRelation: "celebration_types";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       feature_suggestions: {
         Row: {
-          account_id: string | null
-          created_at: string
-          id: string
-          message: string
-          status: string
-          title: string
-          user_id: string | null
-        }
+          account_id: string | null;
+          created_at: string;
+          id: string;
+          message: string;
+          status: string;
+          title: string;
+          user_id: string | null;
+        };
         Insert: {
-          account_id?: string | null
-          created_at?: string
-          id?: string
-          message: string
-          status?: string
-          title: string
-          user_id?: string | null
-        }
+          account_id?: string | null;
+          created_at?: string;
+          id?: string;
+          message: string;
+          status?: string;
+          title: string;
+          user_id?: string | null;
+        };
         Update: {
-          account_id?: string | null
-          created_at?: string
-          id?: string
-          message?: string
-          status?: string
-          title?: string
-          user_id?: string | null
-        }
+          account_id?: string | null;
+          created_at?: string;
+          id?: string;
+          message?: string;
+          status?: string;
+          title?: string;
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "feature_suggestions_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "feature_suggestions_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       financial_entries: {
         Row: {
-          account_id: string
-          amount_cents: number
-          category: string
-          contributor_name: string | null
-          created_at: string
-          description: string | null
-          entry_date: string
-          entry_type: string
-          id: string
-          notes: string | null
-          payment_method: string | null
-          updated_at: string
-        }
+          account_id: string;
+          amount_cents: number;
+          category: string;
+          contributor_name: string | null;
+          created_at: string;
+          description: string | null;
+          entry_date: string;
+          entry_type: string;
+          id: string;
+          notes: string | null;
+          payment_method: string | null;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          amount_cents: number
-          category: string
-          contributor_name?: string | null
-          created_at?: string
-          description?: string | null
-          entry_date?: string
-          entry_type: string
-          id?: string
-          notes?: string | null
-          payment_method?: string | null
-          updated_at?: string
-        }
+          account_id: string;
+          amount_cents: number;
+          category: string;
+          contributor_name?: string | null;
+          created_at?: string;
+          description?: string | null;
+          entry_date?: string;
+          entry_type: string;
+          id?: string;
+          notes?: string | null;
+          payment_method?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          category?: string
-          contributor_name?: string | null
-          created_at?: string
-          description?: string | null
-          entry_date?: string
-          entry_type?: string
-          id?: string
-          notes?: string | null
-          payment_method?: string | null
-          updated_at?: string
-        }
+          account_id?: string;
+          amount_cents?: number;
+          category?: string;
+          contributor_name?: string | null;
+          created_at?: string;
+          description?: string | null;
+          entry_date?: string;
+          entry_type?: string;
+          id?: string;
+          notes?: string | null;
+          payment_method?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "financial_entries_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "financial_entries_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       instagram_connections: {
         Row: {
-          access_token: string
-          account_id: string
-          connected_at: string
-          id: string
-          ig_user_id: string
-          token_expires_at: string | null
-          updated_at: string
-          username: string | null
-        }
+          access_token: string;
+          account_id: string;
+          connected_at: string;
+          id: string;
+          ig_user_id: string;
+          token_expires_at: string | null;
+          updated_at: string;
+          username: string | null;
+        };
         Insert: {
-          access_token: string
-          account_id: string
-          connected_at?: string
-          id?: string
-          ig_user_id: string
-          token_expires_at?: string | null
-          updated_at?: string
-          username?: string | null
-        }
+          access_token: string;
+          account_id: string;
+          connected_at?: string;
+          id?: string;
+          ig_user_id: string;
+          token_expires_at?: string | null;
+          updated_at?: string;
+          username?: string | null;
+        };
         Update: {
-          access_token?: string
-          account_id?: string
-          connected_at?: string
-          id?: string
-          ig_user_id?: string
-          token_expires_at?: string | null
-          updated_at?: string
-          username?: string | null
-        }
+          access_token?: string;
+          account_id?: string;
+          connected_at?: string;
+          id?: string;
+          ig_user_id?: string;
+          token_expires_at?: string | null;
+          updated_at?: string;
+          username?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "instagram_connections_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "instagram_connections_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       lgpd_audit_logs: {
         Row: {
-          account_id: string
-          action: string
-          description: string | null
-          id: string
-          resource_id: string | null
-          resource_type: string
-          timestamp: string
-          user_id: string
-        }
+          account_id: string;
+          action: string;
+          description: string | null;
+          id: string;
+          resource_id: string | null;
+          resource_type: string;
+          timestamp: string;
+          user_id: string;
+        };
         Insert: {
-          account_id: string
-          action: string
-          description?: string | null
-          id?: string
-          resource_id?: string | null
-          resource_type: string
-          timestamp?: string
-          user_id: string
-        }
+          account_id: string;
+          action: string;
+          description?: string | null;
+          id?: string;
+          resource_id?: string | null;
+          resource_type: string;
+          timestamp?: string;
+          user_id: string;
+        };
         Update: {
-          account_id?: string
-          action?: string
-          description?: string | null
-          id?: string
-          resource_id?: string | null
-          resource_type?: string
-          timestamp?: string
-          user_id?: string
-        }
+          account_id?: string;
+          action?: string;
+          description?: string | null;
+          id?: string;
+          resource_id?: string | null;
+          resource_type?: string;
+          timestamp?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "lgpd_audit_logs_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "lgpd_audit_logs_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       lgpd_consent_records: {
         Row: {
-          accepted: boolean
-          account_id: string
-          consent_type: string
-          created_at: string
-          id: string
-          ip_address: string | null
-          recorded_at: string
-          user_agent: string | null
-          user_id: string
-        }
+          accepted: boolean;
+          account_id: string;
+          consent_type: string;
+          created_at: string;
+          id: string;
+          ip_address: string | null;
+          recorded_at: string;
+          user_agent: string | null;
+          user_id: string;
+        };
         Insert: {
-          accepted: boolean
-          account_id: string
-          consent_type: string
-          created_at?: string
-          id?: string
-          ip_address?: string | null
-          recorded_at?: string
-          user_agent?: string | null
-          user_id: string
-        }
+          accepted: boolean;
+          account_id: string;
+          consent_type: string;
+          created_at?: string;
+          id?: string;
+          ip_address?: string | null;
+          recorded_at?: string;
+          user_agent?: string | null;
+          user_id: string;
+        };
         Update: {
-          accepted?: boolean
-          account_id?: string
-          consent_type?: string
-          created_at?: string
-          id?: string
-          ip_address?: string | null
-          recorded_at?: string
-          user_agent?: string | null
-          user_id?: string
-        }
+          accepted?: boolean;
+          account_id?: string;
+          consent_type?: string;
+          created_at?: string;
+          id?: string;
+          ip_address?: string | null;
+          recorded_at?: string;
+          user_agent?: string | null;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "lgpd_consent_records_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "lgpd_consent_records_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       lgpd_deletion_requests: {
         Row: {
-          account_id: string
-          created_at: string
-          id: string
-          processed_at: string | null
-          reason: string | null
-          requested_at: string
-          status: string
-          user_id: string
-        }
+          account_id: string;
+          created_at: string;
+          id: string;
+          processed_at: string | null;
+          reason: string | null;
+          requested_at: string;
+          status: string;
+          user_id: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          id?: string
-          processed_at?: string | null
-          reason?: string | null
-          requested_at?: string
-          status?: string
-          user_id: string
-        }
+          account_id: string;
+          created_at?: string;
+          id?: string;
+          processed_at?: string | null;
+          reason?: string | null;
+          requested_at?: string;
+          status?: string;
+          user_id: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          id?: string
-          processed_at?: string | null
-          reason?: string | null
-          requested_at?: string
-          status?: string
-          user_id?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          id?: string;
+          processed_at?: string | null;
+          reason?: string | null;
+          requested_at?: string;
+          status?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "lgpd_deletion_requests_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "lgpd_deletion_requests_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       live_stream_overrides: {
         Row: {
-          account_id: string
-          cancelled: boolean
-          created_at: string
-          event_date: string
-          id: string
-          live_stream_id: string
-          live_url: string | null
-          updated_at: string
-        }
+          account_id: string;
+          cancelled: boolean;
+          created_at: string;
+          event_date: string;
+          id: string;
+          live_stream_id: string;
+          live_url: string | null;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          cancelled?: boolean
-          created_at?: string
-          event_date: string
-          id?: string
-          live_stream_id: string
-          live_url?: string | null
-          updated_at?: string
-        }
+          account_id: string;
+          cancelled?: boolean;
+          created_at?: string;
+          event_date: string;
+          id?: string;
+          live_stream_id: string;
+          live_url?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          cancelled?: boolean
-          created_at?: string
-          event_date?: string
-          id?: string
-          live_stream_id?: string
-          live_url?: string | null
-          updated_at?: string
-        }
+          account_id?: string;
+          cancelled?: boolean;
+          created_at?: string;
+          event_date?: string;
+          id?: string;
+          live_stream_id?: string;
+          live_url?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "live_stream_overrides_live_stream_id_fkey"
-            columns: ["live_stream_id"]
-            referencedRelation: "live_streams"
-            referencedColumns: ["id"]
+            foreignKeyName: "live_stream_overrides_live_stream_id_fkey";
+            columns: ["live_stream_id"];
+            referencedRelation: "live_streams";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       live_streams: {
         Row: {
-          account_id: string
-          active: boolean
-          created_at: string
-          default_live_url: string | null
-          duration_minutes: number
-          event_date: string | null
-          id: string
-          minutes_before: number
-          recurrence: string
-          sort_order: number
-          start_time: string
-          title: string
-          updated_at: string
-          weekday: number | null
-        }
+          account_id: string;
+          active: boolean;
+          created_at: string;
+          default_live_url: string | null;
+          duration_minutes: number;
+          event_date: string | null;
+          id: string;
+          minutes_before: number;
+          recurrence: string;
+          sort_order: number;
+          start_time: string;
+          title: string;
+          updated_at: string;
+          weekday: number | null;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          created_at?: string
-          default_live_url?: string | null
-          duration_minutes?: number
-          event_date?: string | null
-          id?: string
-          minutes_before?: number
-          recurrence?: string
-          sort_order?: number
-          start_time: string
-          title: string
-          updated_at?: string
-          weekday?: number | null
-        }
+          account_id: string;
+          active?: boolean;
+          created_at?: string;
+          default_live_url?: string | null;
+          duration_minutes?: number;
+          event_date?: string | null;
+          id?: string;
+          minutes_before?: number;
+          recurrence?: string;
+          sort_order?: number;
+          start_time: string;
+          title: string;
+          updated_at?: string;
+          weekday?: number | null;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          created_at?: string
-          default_live_url?: string | null
-          duration_minutes?: number
-          event_date?: string | null
-          id?: string
-          minutes_before?: number
-          recurrence?: string
-          sort_order?: number
-          start_time?: string
-          title?: string
-          updated_at?: string
-          weekday?: number | null
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          active?: boolean;
+          created_at?: string;
+          default_live_url?: string | null;
+          duration_minutes?: number;
+          event_date?: string | null;
+          id?: string;
+          minutes_before?: number;
+          recurrence?: string;
+          sort_order?: number;
+          start_time?: string;
+          title?: string;
+          updated_at?: string;
+          weekday?: number | null;
+        };
+        Relationships: [];
+      };
       locations: {
         Row: {
-          account_id: string
-          active: boolean
-          address: string | null
-          city: string | null
-          country: string | null
-          created_at: string
-          id: string
-          is_main: boolean
-          latitude: number | null
-          longitude: number | null
-          maps_url: string | null
-          name: string
-          neighborhood: string | null
-          office_hours: string | null
-          phone: string | null
-          place_id: string | null
-          postal_code: string | null
-          sort_order: number
-          state: string | null
-          transport_info: string | null
-          uber_url: string | null
-          updated_at: string
-          waze_url: string | null
-          whatsapp: string | null
-        }
+          account_id: string;
+          active: boolean;
+          address: string | null;
+          city: string | null;
+          country: string | null;
+          created_at: string;
+          id: string;
+          is_main: boolean;
+          latitude: number | null;
+          longitude: number | null;
+          maps_url: string | null;
+          name: string;
+          neighborhood: string | null;
+          office_hours: string | null;
+          phone: string | null;
+          place_id: string | null;
+          postal_code: string | null;
+          sort_order: number;
+          state: string | null;
+          transport_info: string | null;
+          uber_url: string | null;
+          updated_at: string;
+          waze_url: string | null;
+          whatsapp: string | null;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          address?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          is_main?: boolean
-          latitude?: number | null
-          longitude?: number | null
-          maps_url?: string | null
-          name: string
-          neighborhood?: string | null
-          office_hours?: string | null
-          phone?: string | null
-          place_id?: string | null
-          postal_code?: string | null
-          sort_order?: number
-          state?: string | null
-          transport_info?: string | null
-          uber_url?: string | null
-          updated_at?: string
-          waze_url?: string | null
-          whatsapp?: string | null
-        }
+          account_id: string;
+          active?: boolean;
+          address?: string | null;
+          city?: string | null;
+          country?: string | null;
+          created_at?: string;
+          id?: string;
+          is_main?: boolean;
+          latitude?: number | null;
+          longitude?: number | null;
+          maps_url?: string | null;
+          name: string;
+          neighborhood?: string | null;
+          office_hours?: string | null;
+          phone?: string | null;
+          place_id?: string | null;
+          postal_code?: string | null;
+          sort_order?: number;
+          state?: string | null;
+          transport_info?: string | null;
+          uber_url?: string | null;
+          updated_at?: string;
+          waze_url?: string | null;
+          whatsapp?: string | null;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          address?: string | null
-          city?: string | null
-          country?: string | null
-          created_at?: string
-          id?: string
-          is_main?: boolean
-          latitude?: number | null
-          longitude?: number | null
-          maps_url?: string | null
-          name?: string
-          neighborhood?: string | null
-          office_hours?: string | null
-          phone?: string | null
-          place_id?: string | null
-          postal_code?: string | null
-          sort_order?: number
-          state?: string | null
-          transport_info?: string | null
-          uber_url?: string | null
-          updated_at?: string
-          waze_url?: string | null
-          whatsapp?: string | null
-        }
+          account_id?: string;
+          active?: boolean;
+          address?: string | null;
+          city?: string | null;
+          country?: string | null;
+          created_at?: string;
+          id?: string;
+          is_main?: boolean;
+          latitude?: number | null;
+          longitude?: number | null;
+          maps_url?: string | null;
+          name?: string;
+          neighborhood?: string | null;
+          office_hours?: string | null;
+          phone?: string | null;
+          place_id?: string | null;
+          postal_code?: string | null;
+          sort_order?: number;
+          state?: string | null;
+          transport_info?: string | null;
+          uber_url?: string | null;
+          updated_at?: string;
+          waze_url?: string | null;
+          whatsapp?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "locations_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "locations_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       member_documents: {
         Row: {
-          account_id: string
-          body: string
-          certificate_number: string | null
-          created_at: string
-          id: string
-          issued_at: string
-          member_id: string | null
-          template_id: string | null
-          title: string
-          updated_at: string
-        }
+          account_id: string;
+          body: string;
+          certificate_number: string | null;
+          created_at: string;
+          id: string;
+          issued_at: string;
+          member_id: string | null;
+          template_id: string | null;
+          title: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          body?: string
-          certificate_number?: string | null
-          created_at?: string
-          id?: string
-          issued_at?: string
-          member_id?: string | null
-          template_id?: string | null
-          title: string
-          updated_at?: string
-        }
+          account_id: string;
+          body?: string;
+          certificate_number?: string | null;
+          created_at?: string;
+          id?: string;
+          issued_at?: string;
+          member_id?: string | null;
+          template_id?: string | null;
+          title: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          body?: string
-          certificate_number?: string | null
-          created_at?: string
-          id?: string
-          issued_at?: string
-          member_id?: string | null
-          template_id?: string | null
-          title?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          body?: string;
+          certificate_number?: string | null;
+          created_at?: string;
+          id?: string;
+          issued_at?: string;
+          member_id?: string | null;
+          template_id?: string | null;
+          title?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "member_documents_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "member_documents_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "member_documents_template_id_fkey"
-            columns: ["template_id"]
-            referencedRelation: "document_templates"
-            referencedColumns: ["id"]
+            foreignKeyName: "member_documents_template_id_fkey";
+            columns: ["template_id"];
+            referencedRelation: "document_templates";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       members: {
         Row: {
-          account_id: string
-          address_city: string | null
-          address_number: string | null
-          address_state: string | null
-          address_street: string | null
-          birth_date: string | null
-          congregation: string | null
-          cpf: string | null
-          created_at: string
-          email: string | null
-          family_head_id: string | null
-          full_name: string
-          gender: string | null
-          id: string
-          is_test_data: boolean
-          is_tither: boolean
-          last_event_attendance: string | null
-          marital_status: string | null
-          member_since: string | null
-          ministry: string | null
-          neighborhood: string | null
-          notes: string | null
-          pastoral: string | null
-          phone: string | null
-          photo_url: string | null
-          role: string
-          spiritual_stage: string | null
-          status: string
-          updated_at: string
-          whatsapp_consent: boolean
-        }
+          account_id: string;
+          address_city: string | null;
+          address_number: string | null;
+          address_state: string | null;
+          address_street: string | null;
+          birth_date: string | null;
+          congregation: string | null;
+          congregation_id: string | null;
+          cpf: string | null;
+          created_at: string;
+          email: string | null;
+          family_head_id: string | null;
+          full_name: string;
+          gender: string | null;
+          id: string;
+          is_test_data: boolean;
+          is_tither: boolean;
+          last_event_attendance: string | null;
+          marital_status: string | null;
+          member_since: string | null;
+          ministry: string | null;
+          neighborhood: string | null;
+          notes: string | null;
+          pastoral: string | null;
+          phone: string | null;
+          photo_url: string | null;
+          role: string;
+          spiritual_stage: string | null;
+          status: string;
+          updated_at: string;
+          whatsapp_consent: boolean;
+        };
         Insert: {
-          account_id: string
-          address_city?: string | null
-          address_number?: string | null
-          address_state?: string | null
-          address_street?: string | null
-          birth_date?: string | null
-          congregation?: string | null
-          cpf?: string | null
-          created_at?: string
-          email?: string | null
-          family_head_id?: string | null
-          full_name: string
-          gender?: string | null
-          id?: string
-          is_test_data?: boolean
-          is_tither?: boolean
-          last_event_attendance?: string | null
-          marital_status?: string | null
-          member_since?: string | null
-          ministry?: string | null
-          neighborhood?: string | null
-          notes?: string | null
-          pastoral?: string | null
-          phone?: string | null
-          photo_url?: string | null
-          role?: string
-          spiritual_stage?: string | null
-          status?: string
-          updated_at?: string
-          whatsapp_consent?: boolean
-        }
+          account_id: string;
+          address_city?: string | null;
+          address_number?: string | null;
+          address_state?: string | null;
+          address_street?: string | null;
+          birth_date?: string | null;
+          congregation?: string | null;
+          congregation_id?: string | null;
+          cpf?: string | null;
+          created_at?: string;
+          email?: string | null;
+          family_head_id?: string | null;
+          full_name: string;
+          gender?: string | null;
+          id?: string;
+          is_test_data?: boolean;
+          is_tither?: boolean;
+          last_event_attendance?: string | null;
+          marital_status?: string | null;
+          member_since?: string | null;
+          ministry?: string | null;
+          neighborhood?: string | null;
+          notes?: string | null;
+          pastoral?: string | null;
+          phone?: string | null;
+          photo_url?: string | null;
+          role?: string;
+          spiritual_stage?: string | null;
+          status?: string;
+          updated_at?: string;
+          whatsapp_consent?: boolean;
+        };
         Update: {
-          account_id?: string
-          address_city?: string | null
-          address_number?: string | null
-          address_state?: string | null
-          address_street?: string | null
-          birth_date?: string | null
-          congregation?: string | null
-          cpf?: string | null
-          created_at?: string
-          email?: string | null
-          family_head_id?: string | null
-          full_name?: string
-          gender?: string | null
-          id?: string
-          is_test_data?: boolean
-          is_tither?: boolean
-          last_event_attendance?: string | null
-          marital_status?: string | null
-          member_since?: string | null
-          ministry?: string | null
-          neighborhood?: string | null
-          notes?: string | null
-          pastoral?: string | null
-          phone?: string | null
-          photo_url?: string | null
-          role?: string
-          spiritual_stage?: string | null
-          status?: string
-          updated_at?: string
-          whatsapp_consent?: boolean
-        }
+          account_id?: string;
+          address_city?: string | null;
+          address_number?: string | null;
+          address_state?: string | null;
+          address_street?: string | null;
+          birth_date?: string | null;
+          congregation?: string | null;
+          congregation_id?: string | null;
+          cpf?: string | null;
+          created_at?: string;
+          email?: string | null;
+          family_head_id?: string | null;
+          full_name?: string;
+          gender?: string | null;
+          id?: string;
+          is_test_data?: boolean;
+          is_tither?: boolean;
+          last_event_attendance?: string | null;
+          marital_status?: string | null;
+          member_since?: string | null;
+          ministry?: string | null;
+          neighborhood?: string | null;
+          notes?: string | null;
+          pastoral?: string | null;
+          phone?: string | null;
+          photo_url?: string | null;
+          role?: string;
+          spiritual_stage?: string | null;
+          status?: string;
+          updated_at?: string;
+          whatsapp_consent?: boolean;
+        };
         Relationships: [
           {
-            foreignKeyName: "members_family_head_id_fkey"
-            columns: ["family_head_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "members_congregation_id_fkey";
+            columns: ["congregation_id"];
+            referencedRelation: "congregations";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+          {
+            foreignKeyName: "members_family_head_id_fkey";
+            columns: ["family_head_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       mercadopago_connections: {
         Row: {
-          access_token: string
-          account_id: string
-          connected_at: string
-          public_key: string | null
-          updated_at: string
-        }
+          access_token: string;
+          account_id: string;
+          connected_at: string;
+          public_key: string | null;
+          updated_at: string;
+        };
         Insert: {
-          access_token: string
-          account_id: string
-          connected_at?: string
-          public_key?: string | null
-          updated_at?: string
-        }
+          access_token: string;
+          account_id: string;
+          connected_at?: string;
+          public_key?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          access_token?: string
-          account_id?: string
-          connected_at?: string
-          public_key?: string | null
-          updated_at?: string
-        }
+          access_token?: string;
+          account_id?: string;
+          connected_at?: string;
+          public_key?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "mercadopago_connections_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "mercadopago_connections_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       ministry_assignments: {
         Row: {
-          account_id: string
-          active: boolean
-          created_at: string
-          end_date: string | null
-          id: string
-          member_id: string
-          ministry: string
-          role: string | null
-          start_date: string
-          updated_at: string
-        }
+          account_id: string;
+          active: boolean;
+          created_at: string;
+          end_date: string | null;
+          id: string;
+          member_id: string;
+          ministry: string;
+          role: string | null;
+          start_date: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          created_at?: string
-          end_date?: string | null
-          id?: string
-          member_id: string
-          ministry: string
-          role?: string | null
-          start_date?: string
-          updated_at?: string
-        }
+          account_id: string;
+          active?: boolean;
+          created_at?: string;
+          end_date?: string | null;
+          id?: string;
+          member_id: string;
+          ministry: string;
+          role?: string | null;
+          start_date?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          created_at?: string
-          end_date?: string | null
-          id?: string
-          member_id?: string
-          ministry?: string
-          role?: string | null
-          start_date?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          active?: boolean;
+          created_at?: string;
+          end_date?: string | null;
+          id?: string;
+          member_id?: string;
+          ministry?: string;
+          role?: string | null;
+          start_date?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ministry_assignments_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "ministry_assignments_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "ministry_assignments_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "ministry_assignments_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       news_posts: {
         Row: {
-          account_id: string
-          content: string
-          created_at: string
-          id: string
-          image_url: string | null
-          published: boolean
-          sort_order: number
-          subtitle: string
-          title: string
-          updated_at: string
-        }
+          account_id: string;
+          content: string;
+          created_at: string;
+          id: string;
+          image_url: string | null;
+          published: boolean;
+          sort_order: number;
+          subtitle: string;
+          title: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          content?: string
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          published?: boolean
-          sort_order?: number
-          subtitle?: string
-          title: string
-          updated_at?: string
-        }
+          account_id: string;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          image_url?: string | null;
+          published?: boolean;
+          sort_order?: number;
+          subtitle?: string;
+          title: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          image_url?: string | null
-          published?: boolean
-          sort_order?: number
-          subtitle?: string
-          title?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          image_url?: string | null;
+          published?: boolean;
+          sort_order?: number;
+          subtitle?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       payment_transactions: {
         Row: {
-          account_id: string
-          amount_cents: number
-          ativopay_transaction_id: string | null
-          copy_paste: string | null
-          created_at: string
-          expires_at: string | null
-          id: string
-          kind: string
-          paid_at: string | null
-          pay_url: string | null
-          plan: string | null
-          product_id: string | null
-          qr_code: string | null
-          raw_response: Json | null
-          status: string
-          updated_at: string
-          webhook_payload: Json | null
-        }
+          account_id: string;
+          amount_cents: number;
+          ativopay_transaction_id: string | null;
+          copy_paste: string | null;
+          created_at: string;
+          expires_at: string | null;
+          id: string;
+          kind: string;
+          paid_at: string | null;
+          pay_url: string | null;
+          plan: string | null;
+          product_id: string | null;
+          qr_code: string | null;
+          raw_response: Json | null;
+          status: string;
+          updated_at: string;
+          webhook_payload: Json | null;
+        };
         Insert: {
-          account_id: string
-          amount_cents: number
-          ativopay_transaction_id?: string | null
-          copy_paste?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          kind?: string
-          paid_at?: string | null
-          pay_url?: string | null
-          plan?: string | null
-          product_id?: string | null
-          qr_code?: string | null
-          raw_response?: Json | null
-          status?: string
-          updated_at?: string
-          webhook_payload?: Json | null
-        }
+          account_id: string;
+          amount_cents: number;
+          ativopay_transaction_id?: string | null;
+          copy_paste?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          kind?: string;
+          paid_at?: string | null;
+          pay_url?: string | null;
+          plan?: string | null;
+          product_id?: string | null;
+          qr_code?: string | null;
+          raw_response?: Json | null;
+          status?: string;
+          updated_at?: string;
+          webhook_payload?: Json | null;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          ativopay_transaction_id?: string | null
-          copy_paste?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          kind?: string
-          paid_at?: string | null
-          pay_url?: string | null
-          plan?: string | null
-          product_id?: string | null
-          qr_code?: string | null
-          raw_response?: Json | null
-          status?: string
-          updated_at?: string
-          webhook_payload?: Json | null
-        }
+          account_id?: string;
+          amount_cents?: number;
+          ativopay_transaction_id?: string | null;
+          copy_paste?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          kind?: string;
+          paid_at?: string | null;
+          pay_url?: string | null;
+          plan?: string | null;
+          product_id?: string | null;
+          qr_code?: string | null;
+          raw_response?: Json | null;
+          status?: string;
+          updated_at?: string;
+          webhook_payload?: Json | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "payment_transactions_product_id_fkey"
-            columns: ["product_id"]
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "payment_transactions_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       platform_branding: {
         Row: {
-          brand_text: string
-          created_at: string
-          icon_text: string
-          icon_url: string | null
-          id: boolean
-          logo_height_px: number
-          logo_url: string | null
-          subtitle: string
-          updated_at: string
-        }
+          brand_text: string;
+          created_at: string;
+          icon_text: string;
+          icon_url: string | null;
+          id: boolean;
+          logo_height_px: number;
+          logo_url: string | null;
+          subtitle: string;
+          updated_at: string;
+        };
         Insert: {
-          brand_text?: string
-          created_at?: string
-          icon_text?: string
-          icon_url?: string | null
-          id?: boolean
-          logo_height_px?: number
-          logo_url?: string | null
-          subtitle?: string
-          updated_at?: string
-        }
+          brand_text?: string;
+          created_at?: string;
+          icon_text?: string;
+          icon_url?: string | null;
+          id?: boolean;
+          logo_height_px?: number;
+          logo_url?: string | null;
+          subtitle?: string;
+          updated_at?: string;
+        };
         Update: {
-          brand_text?: string
-          created_at?: string
-          icon_text?: string
-          icon_url?: string | null
-          id?: boolean
-          logo_height_px?: number
-          logo_url?: string | null
-          subtitle?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          brand_text?: string;
+          created_at?: string;
+          icon_text?: string;
+          icon_url?: string | null;
+          id?: boolean;
+          logo_height_px?: number;
+          logo_url?: string | null;
+          subtitle?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       platform_payment_settings: {
         Row: {
-          ativopay_api_key: string | null
-          ativopay_webhook_secret: string | null
-          id: boolean
-          mercadopago_access_token: string | null
-          updated_at: string
-        }
+          ativopay_api_key: string | null;
+          ativopay_webhook_secret: string | null;
+          id: boolean;
+          mercadopago_access_token: string | null;
+          updated_at: string;
+        };
         Insert: {
-          ativopay_api_key?: string | null
-          ativopay_webhook_secret?: string | null
-          id?: boolean
-          mercadopago_access_token?: string | null
-          updated_at?: string
-        }
+          ativopay_api_key?: string | null;
+          ativopay_webhook_secret?: string | null;
+          id?: boolean;
+          mercadopago_access_token?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          ativopay_api_key?: string | null
-          ativopay_webhook_secret?: string | null
-          id?: boolean
-          mercadopago_access_token?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          ativopay_api_key?: string | null;
+          ativopay_webhook_secret?: string | null;
+          id?: boolean;
+          mercadopago_access_token?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       prayer_interactions: {
         Row: {
-          created_at: string
-          id: string
-          prayer_request_id: string
-          visitor_fingerprint: string
-        }
+          created_at: string;
+          id: string;
+          prayer_request_id: string;
+          visitor_fingerprint: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          prayer_request_id: string
-          visitor_fingerprint: string
-        }
+          created_at?: string;
+          id?: string;
+          prayer_request_id: string;
+          visitor_fingerprint: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          prayer_request_id?: string
-          visitor_fingerprint?: string
-        }
+          created_at?: string;
+          id?: string;
+          prayer_request_id?: string;
+          visitor_fingerprint?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "prayer_interactions_prayer_request_id_fkey"
-            columns: ["prayer_request_id"]
-            referencedRelation: "prayer_requests"
-            referencedColumns: ["id"]
+            foreignKeyName: "prayer_interactions_prayer_request_id_fkey";
+            columns: ["prayer_request_id"];
+            referencedRelation: "prayer_requests";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       prayer_requests: {
         Row: {
-          account_id: string
-          created_at: string
-          email: string | null
-          id: string
-          is_anonymous: boolean
-          message: string
-          name: string
-          phone: string | null
-          prayer_count: number
-          status: string
-          updated_at: string
-        }
+          account_id: string;
+          created_at: string;
+          email: string | null;
+          id: string;
+          is_anonymous: boolean;
+          message: string;
+          name: string;
+          phone: string | null;
+          prayer_count: number;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          email?: string | null
-          id?: string
-          is_anonymous?: boolean
-          message: string
-          name: string
-          phone?: string | null
-          prayer_count?: number
-          status?: string
-          updated_at?: string
-        }
+          account_id: string;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          is_anonymous?: boolean;
+          message: string;
+          name: string;
+          phone?: string | null;
+          prayer_count?: number;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          email?: string | null
-          id?: string
-          is_anonymous?: boolean
-          message?: string
-          name?: string
-          phone?: string | null
-          prayer_count?: number
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          created_at?: string;
+          email?: string | null;
+          id?: string;
+          is_anonymous?: boolean;
+          message?: string;
+          name?: string;
+          phone?: string | null;
+          prayer_count?: number;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       privacy_policies: {
         Row: {
-          account_id: string
-          content: string
-          created_at: string
-          effective_date: string
-          id: string
-          is_current: boolean
-          version: string
-        }
+          account_id: string;
+          content: string;
+          created_at: string;
+          effective_date: string;
+          id: string;
+          is_current: boolean;
+          version: string;
+        };
         Insert: {
-          account_id: string
-          content: string
-          created_at?: string
-          effective_date: string
-          id?: string
-          is_current?: boolean
-          version: string
-        }
+          account_id: string;
+          content: string;
+          created_at?: string;
+          effective_date: string;
+          id?: string;
+          is_current?: boolean;
+          version: string;
+        };
         Update: {
-          account_id?: string
-          content?: string
-          created_at?: string
-          effective_date?: string
-          id?: string
-          is_current?: boolean
-          version?: string
-        }
+          account_id?: string;
+          content?: string;
+          created_at?: string;
+          effective_date?: string;
+          id?: string;
+          is_current?: boolean;
+          version?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "privacy_policies_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "privacy_policies_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       product_purchases: {
         Row: {
-          account_id: string
-          amount_cents: number
-          created_at: string
-          id: string
-          product_id: string
-          purchased_at: string | null
-          status: string
-          transaction_id: string | null
-          updated_at: string
-        }
+          account_id: string;
+          amount_cents: number;
+          created_at: string;
+          id: string;
+          product_id: string;
+          purchased_at: string | null;
+          status: string;
+          transaction_id: string | null;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          amount_cents?: number
-          created_at?: string
-          id?: string
-          product_id: string
-          purchased_at?: string | null
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-        }
+          account_id: string;
+          amount_cents?: number;
+          created_at?: string;
+          id?: string;
+          product_id: string;
+          purchased_at?: string | null;
+          status?: string;
+          transaction_id?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          created_at?: string
-          id?: string
-          product_id?: string
-          purchased_at?: string | null
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-        }
+          account_id?: string;
+          amount_cents?: number;
+          created_at?: string;
+          id?: string;
+          product_id?: string;
+          purchased_at?: string | null;
+          status?: string;
+          transaction_id?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "product_purchases_product_id_fkey"
-            columns: ["product_id"]
-            referencedRelation: "products"
-            referencedColumns: ["id"]
+            foreignKeyName: "product_purchases_product_id_fkey";
+            columns: ["product_id"];
+            referencedRelation: "products";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "product_purchases_transaction_id_fkey"
-            columns: ["transaction_id"]
-            referencedRelation: "payment_transactions"
-            referencedColumns: ["id"]
+            foreignKeyName: "product_purchases_transaction_id_fkey";
+            columns: ["transaction_id"];
+            referencedRelation: "payment_transactions";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       products: {
         Row: {
-          active: boolean
-          badge: string | null
-          created_at: string
-          description: string
-          external_url: string | null
-          featured: boolean
-          features: Json
-          id: string
-          image_url: string | null
-          name: string
-          price_cents: number
-          slug: string
-          sort_order: number
-          tagline: string
-          updated_at: string
-        }
+          active: boolean;
+          badge: string | null;
+          created_at: string;
+          description: string;
+          external_url: string | null;
+          featured: boolean;
+          features: Json;
+          id: string;
+          image_url: string | null;
+          name: string;
+          price_cents: number;
+          slug: string;
+          sort_order: number;
+          tagline: string;
+          updated_at: string;
+        };
         Insert: {
-          active?: boolean
-          badge?: string | null
-          created_at?: string
-          description?: string
-          external_url?: string | null
-          featured?: boolean
-          features?: Json
-          id?: string
-          image_url?: string | null
-          name: string
-          price_cents?: number
-          slug: string
-          sort_order?: number
-          tagline?: string
-          updated_at?: string
-        }
+          active?: boolean;
+          badge?: string | null;
+          created_at?: string;
+          description?: string;
+          external_url?: string | null;
+          featured?: boolean;
+          features?: Json;
+          id?: string;
+          image_url?: string | null;
+          name: string;
+          price_cents?: number;
+          slug: string;
+          sort_order?: number;
+          tagline?: string;
+          updated_at?: string;
+        };
         Update: {
-          active?: boolean
-          badge?: string | null
-          created_at?: string
-          description?: string
-          external_url?: string | null
-          featured?: boolean
-          features?: Json
-          id?: string
-          image_url?: string | null
-          name?: string
-          price_cents?: number
-          slug?: string
-          sort_order?: number
-          tagline?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          active?: boolean;
+          badge?: string | null;
+          created_at?: string;
+          description?: string;
+          external_url?: string | null;
+          featured?: boolean;
+          features?: Json;
+          id?: string;
+          image_url?: string | null;
+          name?: string;
+          price_cents?: number;
+          slug?: string;
+          sort_order?: number;
+          tagline?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       room_reservations: {
         Row: {
-          account_id: string
-          created_at: string
-          end_at: string
-          id: string
-          location_id: string | null
-          member_id: string | null
-          notes: string | null
-          requester_name: string
-          requester_phone: string | null
-          start_at: string
-          status: string
-          title: string
-          updated_at: string
-        }
+          account_id: string;
+          created_at: string;
+          end_at: string;
+          id: string;
+          location_id: string | null;
+          member_id: string | null;
+          notes: string | null;
+          requester_name: string;
+          requester_phone: string | null;
+          start_at: string;
+          status: string;
+          title: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          end_at: string
-          id?: string
-          location_id?: string | null
-          member_id?: string | null
-          notes?: string | null
-          requester_name: string
-          requester_phone?: string | null
-          start_at: string
-          status?: string
-          title: string
-          updated_at?: string
-        }
+          account_id: string;
+          created_at?: string;
+          end_at: string;
+          id?: string;
+          location_id?: string | null;
+          member_id?: string | null;
+          notes?: string | null;
+          requester_name: string;
+          requester_phone?: string | null;
+          start_at: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          end_at?: string
-          id?: string
-          location_id?: string | null
-          member_id?: string | null
-          notes?: string | null
-          requester_name?: string
-          requester_phone?: string | null
-          start_at?: string
-          status?: string
-          title?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          end_at?: string;
+          id?: string;
+          location_id?: string | null;
+          member_id?: string | null;
+          notes?: string | null;
+          requester_name?: string;
+          requester_phone?: string | null;
+          start_at?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "room_reservations_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "room_reservations_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "room_reservations_location_id_fkey"
-            columns: ["location_id"]
-            referencedRelation: "locations"
-            referencedColumns: ["id"]
+            foreignKeyName: "room_reservations_location_id_fkey";
+            columns: ["location_id"];
+            referencedRelation: "locations";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "room_reservations_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "room_reservations_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       secretaria_request_attachments: {
         Row: {
-          account_id: string
-          content_type: string | null
-          created_at: string
-          file_name: string
-          file_path: string
-          file_size: number
-          id: string
-          request_id: string
-        }
+          account_id: string;
+          content_type: string | null;
+          created_at: string;
+          file_name: string;
+          file_path: string;
+          file_size: number;
+          id: string;
+          request_id: string;
+        };
         Insert: {
-          account_id: string
-          content_type?: string | null
-          created_at?: string
-          file_name: string
-          file_path: string
-          file_size?: number
-          id?: string
-          request_id: string
-        }
+          account_id: string;
+          content_type?: string | null;
+          created_at?: string;
+          file_name: string;
+          file_path: string;
+          file_size?: number;
+          id?: string;
+          request_id: string;
+        };
         Update: {
-          account_id?: string
-          content_type?: string | null
-          created_at?: string
-          file_name?: string
-          file_path?: string
-          file_size?: number
-          id?: string
-          request_id?: string
-        }
+          account_id?: string;
+          content_type?: string | null;
+          created_at?: string;
+          file_name?: string;
+          file_path?: string;
+          file_size?: number;
+          id?: string;
+          request_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "secretaria_request_attachments_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "secretaria_request_attachments_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "secretaria_request_attachments_request_id_fkey"
-            columns: ["request_id"]
-            referencedRelation: "secretaria_requests"
-            referencedColumns: ["id"]
+            foreignKeyName: "secretaria_request_attachments_request_id_fkey";
+            columns: ["request_id"];
+            referencedRelation: "secretaria_requests";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       secretaria_request_events: {
         Row: {
-          account_id: string
-          actor_id: string | null
-          created_at: string
-          event_type: string
-          from_status: string | null
-          id: string
-          metadata: Json
-          request_id: string | null
-          to_status: string | null
-        }
+          account_id: string;
+          actor_id: string | null;
+          created_at: string;
+          event_type: string;
+          from_status: string | null;
+          id: string;
+          metadata: Json;
+          request_id: string | null;
+          to_status: string | null;
+        };
         Insert: {
-          account_id: string
-          actor_id?: string | null
-          created_at?: string
-          event_type: string
-          from_status?: string | null
-          id?: string
-          metadata?: Json
-          request_id?: string | null
-          to_status?: string | null
-        }
+          account_id: string;
+          actor_id?: string | null;
+          created_at?: string;
+          event_type: string;
+          from_status?: string | null;
+          id?: string;
+          metadata?: Json;
+          request_id?: string | null;
+          to_status?: string | null;
+        };
         Update: {
-          account_id?: string
-          actor_id?: string | null
-          created_at?: string
-          event_type?: string
-          from_status?: string | null
-          id?: string
-          metadata?: Json
-          request_id?: string | null
-          to_status?: string | null
-        }
+          account_id?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          event_type?: string;
+          from_status?: string | null;
+          id?: string;
+          metadata?: Json;
+          request_id?: string | null;
+          to_status?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "secretaria_request_events_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "secretaria_request_events_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       secretaria_requests: {
         Row: {
-          account_id: string
-          assignee_name: string | null
-          created_at: string
-          details: string | null
-          due_date: string | null
-          id: string
-          internal_notes: string | null
-          member_id: string | null
-          preferred_date: string | null
-          priority: string
-          request_type: string
-          requester_email: string | null
-          requester_name: string
-          requester_phone: string | null
-          scheduled_at: string | null
-          status: string
-          updated_at: string
-        }
+          account_id: string;
+          assignee_name: string | null;
+          created_at: string;
+          details: string | null;
+          due_date: string | null;
+          id: string;
+          internal_notes: string | null;
+          member_id: string | null;
+          preferred_date: string | null;
+          priority: string;
+          request_type: string;
+          requester_email: string | null;
+          requester_name: string;
+          requester_phone: string | null;
+          scheduled_at: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          assignee_name?: string | null
-          created_at?: string
-          details?: string | null
-          due_date?: string | null
-          id?: string
-          internal_notes?: string | null
-          member_id?: string | null
-          preferred_date?: string | null
-          priority?: string
-          request_type: string
-          requester_email?: string | null
-          requester_name: string
-          requester_phone?: string | null
-          scheduled_at?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id: string;
+          assignee_name?: string | null;
+          created_at?: string;
+          details?: string | null;
+          due_date?: string | null;
+          id?: string;
+          internal_notes?: string | null;
+          member_id?: string | null;
+          preferred_date?: string | null;
+          priority?: string;
+          request_type: string;
+          requester_email?: string | null;
+          requester_name: string;
+          requester_phone?: string | null;
+          scheduled_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          assignee_name?: string | null
-          created_at?: string
-          details?: string | null
-          due_date?: string | null
-          id?: string
-          internal_notes?: string | null
-          member_id?: string | null
-          preferred_date?: string | null
-          priority?: string
-          request_type?: string
-          requester_email?: string | null
-          requester_name?: string
-          requester_phone?: string | null
-          scheduled_at?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          assignee_name?: string | null;
+          created_at?: string;
+          details?: string | null;
+          due_date?: string | null;
+          id?: string;
+          internal_notes?: string | null;
+          member_id?: string | null;
+          preferred_date?: string | null;
+          priority?: string;
+          request_type?: string;
+          requester_email?: string | null;
+          requester_name?: string;
+          requester_phone?: string | null;
+          scheduled_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "secretaria_requests_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "secretaria_requests_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "secretaria_requests_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "secretaria_requests_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       small_group_members: {
         Row: {
-          account_id: string
-          created_at: string
-          group_id: string
-          id: string
-          joined_at: string
-          member_id: string
-          role: string
-        }
+          account_id: string;
+          created_at: string;
+          group_id: string;
+          id: string;
+          joined_at: string;
+          member_id: string;
+          role: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          group_id: string
-          id?: string
-          joined_at?: string
-          member_id: string
-          role?: string
-        }
+          account_id: string;
+          created_at?: string;
+          group_id: string;
+          id?: string;
+          joined_at?: string;
+          member_id: string;
+          role?: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          group_id?: string
-          id?: string
-          joined_at?: string
-          member_id?: string
-          role?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          group_id?: string;
+          id?: string;
+          joined_at?: string;
+          member_id?: string;
+          role?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "small_group_members_group_id_fkey"
-            columns: ["group_id"]
-            referencedRelation: "small_groups"
-            referencedColumns: ["id"]
+            foreignKeyName: "small_group_members_group_id_fkey";
+            columns: ["group_id"];
+            referencedRelation: "small_groups";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "small_group_members_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "small_group_members_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       small_groups: {
         Row: {
-          account_id: string
-          active: boolean
-          address: string | null
-          capacity: number | null
-          created_at: string
-          description: string | null
-          id: string
-          leader_name: string | null
-          leader_phone: string | null
-          name: string
-          neighborhood: string | null
-          sort_order: number
-          start_time: string | null
-          updated_at: string
-          weekday: number | null
-        }
+          account_id: string;
+          active: boolean;
+          address: string | null;
+          capacity: number | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          leader_name: string | null;
+          leader_phone: string | null;
+          name: string;
+          neighborhood: string | null;
+          sort_order: number;
+          start_time: string | null;
+          updated_at: string;
+          weekday: number | null;
+        };
         Insert: {
-          account_id: string
-          active?: boolean
-          address?: string | null
-          capacity?: number | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          leader_name?: string | null
-          leader_phone?: string | null
-          name: string
-          neighborhood?: string | null
-          sort_order?: number
-          start_time?: string | null
-          updated_at?: string
-          weekday?: number | null
-        }
+          account_id: string;
+          active?: boolean;
+          address?: string | null;
+          capacity?: number | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          leader_name?: string | null;
+          leader_phone?: string | null;
+          name: string;
+          neighborhood?: string | null;
+          sort_order?: number;
+          start_time?: string | null;
+          updated_at?: string;
+          weekday?: number | null;
+        };
         Update: {
-          account_id?: string
-          active?: boolean
-          address?: string | null
-          capacity?: number | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          leader_name?: string | null
-          leader_phone?: string | null
-          name?: string
-          neighborhood?: string | null
-          sort_order?: number
-          start_time?: string | null
-          updated_at?: string
-          weekday?: number | null
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          active?: boolean;
+          address?: string | null;
+          capacity?: number | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          leader_name?: string | null;
+          leader_phone?: string | null;
+          name?: string;
+          neighborhood?: string | null;
+          sort_order?: number;
+          start_time?: string | null;
+          updated_at?: string;
+          weekday?: number | null;
+        };
+        Relationships: [];
+      };
       social_deliveries: {
         Row: {
-          account_id: string
-          created_at: string
-          delivered_at: string
-          delivered_by: string | null
-          family_id: string
-          id: string
-          items: string
-          notes: string | null
-        }
+          account_id: string;
+          created_at: string;
+          delivered_at: string;
+          delivered_by: string | null;
+          family_id: string;
+          id: string;
+          items: string;
+          notes: string | null;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          delivered_at?: string
-          delivered_by?: string | null
-          family_id: string
-          id?: string
-          items: string
-          notes?: string | null
-        }
+          account_id: string;
+          created_at?: string;
+          delivered_at?: string;
+          delivered_by?: string | null;
+          family_id: string;
+          id?: string;
+          items: string;
+          notes?: string | null;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          delivered_at?: string
-          delivered_by?: string | null
-          family_id?: string
-          id?: string
-          items?: string
-          notes?: string | null
-        }
+          account_id?: string;
+          created_at?: string;
+          delivered_at?: string;
+          delivered_by?: string | null;
+          family_id?: string;
+          id?: string;
+          items?: string;
+          notes?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "social_deliveries_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "social_deliveries_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "social_deliveries_family_id_fkey"
-            columns: ["family_id"]
-            referencedRelation: "social_families"
-            referencedColumns: ["id"]
+            foreignKeyName: "social_deliveries_family_id_fkey";
+            columns: ["family_id"];
+            referencedRelation: "social_families";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       social_families: {
         Row: {
-          account_id: string
-          address: string | null
-          created_at: string
-          family_name: string
-          family_size: number | null
-          id: string
-          needs: string | null
-          notes: string | null
-          phone: string | null
-          responsible_name: string
-          status: string
-          updated_at: string
-        }
+          account_id: string;
+          address: string | null;
+          created_at: string;
+          family_name: string;
+          family_size: number | null;
+          id: string;
+          needs: string | null;
+          notes: string | null;
+          phone: string | null;
+          responsible_name: string;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          address?: string | null
-          created_at?: string
-          family_name: string
-          family_size?: number | null
-          id?: string
-          needs?: string | null
-          notes?: string | null
-          phone?: string | null
-          responsible_name: string
-          status?: string
-          updated_at?: string
-        }
+          account_id: string;
+          address?: string | null;
+          created_at?: string;
+          family_name: string;
+          family_size?: number | null;
+          id?: string;
+          needs?: string | null;
+          notes?: string | null;
+          phone?: string | null;
+          responsible_name: string;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          address?: string | null
-          created_at?: string
-          family_name?: string
-          family_size?: number | null
-          id?: string
-          needs?: string | null
-          notes?: string | null
-          phone?: string | null
-          responsible_name?: string
-          status?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          address?: string | null;
+          created_at?: string;
+          family_name?: string;
+          family_size?: number | null;
+          id?: string;
+          needs?: string | null;
+          notes?: string | null;
+          phone?: string | null;
+          responsible_name?: string;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "social_families_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "social_families_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       system_updates: {
         Row: {
-          content: string
-          created_at: string
-          created_by: string | null
-          id: string
-          title: string
-          version: string | null
-        }
+          content: string;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          title: string;
+          version: string | null;
+        };
         Insert: {
-          content: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          title: string
-          version?: string | null
-        }
+          content: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          title: string;
+          version?: string | null;
+        };
         Update: {
-          content?: string
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          title?: string
-          version?: string | null
-        }
-        Relationships: []
-      }
+          content?: string;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          title?: string;
+          version?: string | null;
+        };
+        Relationships: [];
+      };
       tithes: {
         Row: {
-          account_id: string
-          amount_cents: number
-          contributed_at: string
-          created_at: string
-          id: string
-          member_id: string
-          notes: string | null
-          status: string
-          updated_at: string
-        }
+          account_id: string;
+          amount_cents: number;
+          contributed_at: string;
+          created_at: string;
+          id: string;
+          member_id: string;
+          notes: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          amount_cents: number
-          contributed_at?: string
-          created_at?: string
-          id?: string
-          member_id: string
-          notes?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id: string;
+          amount_cents: number;
+          contributed_at?: string;
+          created_at?: string;
+          id?: string;
+          member_id: string;
+          notes?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          contributed_at?: string
-          created_at?: string
-          id?: string
-          member_id?: string
-          notes?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          amount_cents?: number;
+          contributed_at?: string;
+          created_at?: string;
+          id?: string;
+          member_id?: string;
+          notes?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "tithes_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "tithes_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "tithes_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "tithes_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       user_roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       visitors: {
         Row: {
-          account_id: string
-          age_range: string | null
-          allow_contact: boolean
-          created_at: string
-          email: string | null
-          how_found: string | null
-          id: string
-          is_first_time: boolean
-          name: string
-          notes: string | null
-          phone: string | null
-          prayer_request: string | null
-          status: string
-          status_changed_at: string
-          updated_at: string
-        }
+          account_id: string;
+          age_range: string | null;
+          allow_contact: boolean;
+          created_at: string;
+          email: string | null;
+          how_found: string | null;
+          id: string;
+          is_first_time: boolean;
+          name: string;
+          notes: string | null;
+          phone: string | null;
+          prayer_request: string | null;
+          status: string;
+          status_changed_at: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          age_range?: string | null
-          allow_contact?: boolean
-          created_at?: string
-          email?: string | null
-          how_found?: string | null
-          id?: string
-          is_first_time?: boolean
-          name: string
-          notes?: string | null
-          phone?: string | null
-          prayer_request?: string | null
-          status?: string
-          status_changed_at?: string
-          updated_at?: string
-        }
+          account_id: string;
+          age_range?: string | null;
+          allow_contact?: boolean;
+          created_at?: string;
+          email?: string | null;
+          how_found?: string | null;
+          id?: string;
+          is_first_time?: boolean;
+          name: string;
+          notes?: string | null;
+          phone?: string | null;
+          prayer_request?: string | null;
+          status?: string;
+          status_changed_at?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          age_range?: string | null
-          allow_contact?: boolean
-          created_at?: string
-          email?: string | null
-          how_found?: string | null
-          id?: string
-          is_first_time?: boolean
-          name?: string
-          notes?: string | null
-          phone?: string | null
-          prayer_request?: string | null
-          status?: string
-          status_changed_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          age_range?: string | null;
+          allow_contact?: boolean;
+          created_at?: string;
+          email?: string | null;
+          how_found?: string | null;
+          id?: string;
+          is_first_time?: boolean;
+          name?: string;
+          notes?: string | null;
+          phone?: string | null;
+          prayer_request?: string | null;
+          status?: string;
+          status_changed_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       volunteer_schedules: {
         Row: {
-          account_id: string
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          notes: string | null
-          updated_at: string
-          volunteer_type: string
-        }
+          account_id: string;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          notes: string | null;
+          updated_at: string;
+          volunteer_type: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          notes?: string | null
-          updated_at?: string
-          volunteer_type: string
-        }
+          account_id: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          notes?: string | null;
+          updated_at?: string;
+          volunteer_type: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          notes?: string | null
-          updated_at?: string
-          volunteer_type?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          notes?: string | null;
+          updated_at?: string;
+          volunteer_type?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "volunteer_schedules_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "volunteer_schedules_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       volunteer_shifts: {
         Row: {
-          account_id: string
-          confirmed: boolean
-          confirmed_at: string | null
-          created_at: string
-          id: string
-          member_id: string
-          notes: string | null
-          schedule_id: string
-          shift_date: string
-          shift_end_time: string | null
-          shift_start_time: string
-          updated_at: string
-        }
+          account_id: string;
+          confirmed: boolean;
+          confirmed_at: string | null;
+          created_at: string;
+          id: string;
+          member_id: string;
+          notes: string | null;
+          schedule_id: string;
+          shift_date: string;
+          shift_end_time: string | null;
+          shift_start_time: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          confirmed?: boolean
-          confirmed_at?: string | null
-          created_at?: string
-          id?: string
-          member_id: string
-          notes?: string | null
-          schedule_id: string
-          shift_date: string
-          shift_end_time?: string | null
-          shift_start_time: string
-          updated_at?: string
-        }
+          account_id: string;
+          confirmed?: boolean;
+          confirmed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          member_id: string;
+          notes?: string | null;
+          schedule_id: string;
+          shift_date: string;
+          shift_end_time?: string | null;
+          shift_start_time: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          confirmed?: boolean
-          confirmed_at?: string | null
-          created_at?: string
-          id?: string
-          member_id?: string
-          notes?: string | null
-          schedule_id?: string
-          shift_date?: string
-          shift_end_time?: string | null
-          shift_start_time?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          confirmed?: boolean;
+          confirmed_at?: string | null;
+          created_at?: string;
+          id?: string;
+          member_id?: string;
+          notes?: string | null;
+          schedule_id?: string;
+          shift_date?: string;
+          shift_end_time?: string | null;
+          shift_start_time?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "volunteer_shifts_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "volunteer_shifts_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "volunteer_shifts_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "volunteer_shifts_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "volunteer_shifts_schedule_id_fkey"
-            columns: ["schedule_id"]
-            referencedRelation: "volunteer_schedules"
-            referencedColumns: ["id"]
+            foreignKeyName: "volunteer_shifts_schedule_id_fkey";
+            columns: ["schedule_id"];
+            referencedRelation: "volunteer_schedules";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       volunteer_unavailability: {
         Row: {
-          account_id: string
-          created_at: string
-          end_date: string
-          id: string
-          member_id: string
-          reason: string | null
-          start_date: string
-        }
+          account_id: string;
+          created_at: string;
+          end_date: string;
+          id: string;
+          member_id: string;
+          reason: string | null;
+          start_date: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          end_date: string
-          id?: string
-          member_id: string
-          reason?: string | null
-          start_date: string
-        }
+          account_id: string;
+          created_at?: string;
+          end_date: string;
+          id?: string;
+          member_id: string;
+          reason?: string | null;
+          start_date: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          end_date?: string
-          id?: string
-          member_id?: string
-          reason?: string | null
-          start_date?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          end_date?: string;
+          id?: string;
+          member_id?: string;
+          reason?: string | null;
+          start_date?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "volunteer_unavailability_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "volunteer_unavailability_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "volunteer_unavailability_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "volunteer_unavailability_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_automation_rules: {
         Row: {
-          account_id: string
-          created_at: string
-          custom_content: string | null
-          days_offset: number | null
-          filters: Json | null
-          id: string
-          is_active: boolean
-          name: string
-          send_hour_brt: number | null
-          template_id: string | null
-          trigger_type: string
-          updated_at: string
-        }
+          account_id: string;
+          created_at: string;
+          custom_content: string | null;
+          days_offset: number | null;
+          filters: Json | null;
+          id: string;
+          is_active: boolean;
+          name: string;
+          send_hour_brt: number | null;
+          template_id: string | null;
+          trigger_type: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          custom_content?: string | null
-          days_offset?: number | null
-          filters?: Json | null
-          id?: string
-          is_active?: boolean
-          name: string
-          send_hour_brt?: number | null
-          template_id?: string | null
-          trigger_type: string
-          updated_at?: string
-        }
+          account_id: string;
+          created_at?: string;
+          custom_content?: string | null;
+          days_offset?: number | null;
+          filters?: Json | null;
+          id?: string;
+          is_active?: boolean;
+          name: string;
+          send_hour_brt?: number | null;
+          template_id?: string | null;
+          trigger_type: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          custom_content?: string | null
-          days_offset?: number | null
-          filters?: Json | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          send_hour_brt?: number | null
-          template_id?: string | null
-          trigger_type?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          custom_content?: string | null;
+          days_offset?: number | null;
+          filters?: Json | null;
+          id?: string;
+          is_active?: boolean;
+          name?: string;
+          send_hour_brt?: number | null;
+          template_id?: string | null;
+          trigger_type?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_automation_rules_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_automation_rules_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "whatsapp_automation_rules_template_id_fkey"
-            columns: ["template_id"]
-            referencedRelation: "whatsapp_template_library"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_automation_rules_template_id_fkey";
+            columns: ["template_id"];
+            referencedRelation: "whatsapp_template_library";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_credit_ledger: {
         Row: {
-          account_id: string
-          balance_after: number
-          created_at: string
-          credits_delta: number
-          entry_type: string
-          id: string
-          idempotency_key: string
-          message_id: string | null
-          metadata: Json
-          purchase_id: string | null
-        }
+          account_id: string;
+          balance_after: number;
+          created_at: string;
+          credits_delta: number;
+          entry_type: string;
+          id: string;
+          idempotency_key: string;
+          message_id: string | null;
+          metadata: Json;
+          purchase_id: string | null;
+        };
         Insert: {
-          account_id: string
-          balance_after: number
-          created_at?: string
-          credits_delta: number
-          entry_type: string
-          id?: string
-          idempotency_key: string
-          message_id?: string | null
-          metadata?: Json
-          purchase_id?: string | null
-        }
+          account_id: string;
+          balance_after: number;
+          created_at?: string;
+          credits_delta: number;
+          entry_type: string;
+          id?: string;
+          idempotency_key: string;
+          message_id?: string | null;
+          metadata?: Json;
+          purchase_id?: string | null;
+        };
         Update: {
-          account_id?: string
-          balance_after?: number
-          created_at?: string
-          credits_delta?: number
-          entry_type?: string
-          id?: string
-          idempotency_key?: string
-          message_id?: string | null
-          metadata?: Json
-          purchase_id?: string | null
-        }
+          account_id?: string;
+          balance_after?: number;
+          created_at?: string;
+          credits_delta?: number;
+          entry_type?: string;
+          id?: string;
+          idempotency_key?: string;
+          message_id?: string | null;
+          metadata?: Json;
+          purchase_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_credit_ledger_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_credit_ledger_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "whatsapp_credit_ledger_purchase_id_fkey"
-            columns: ["purchase_id"]
-            referencedRelation: "whatsapp_credit_purchases"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_credit_ledger_purchase_id_fkey";
+            columns: ["purchase_id"];
+            referencedRelation: "whatsapp_credit_purchases";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_credit_purchases: {
         Row: {
-          account_id: string
-          amount_cents: number
-          created_at: string
-          id: string
-          message_count: number
-          package_id: string | null
-          paid_at: string | null
-          status: string
-          transaction_id: string | null
-          updated_at: string
-        }
+          account_id: string;
+          amount_cents: number;
+          created_at: string;
+          id: string;
+          message_count: number;
+          package_id: string | null;
+          paid_at: string | null;
+          status: string;
+          transaction_id: string | null;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          amount_cents: number
-          created_at?: string
-          id?: string
-          message_count: number
-          package_id?: string | null
-          paid_at?: string | null
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-        }
+          account_id: string;
+          amount_cents: number;
+          created_at?: string;
+          id?: string;
+          message_count: number;
+          package_id?: string | null;
+          paid_at?: string | null;
+          status?: string;
+          transaction_id?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          amount_cents?: number
-          created_at?: string
-          id?: string
-          message_count?: number
-          package_id?: string | null
-          paid_at?: string | null
-          status?: string
-          transaction_id?: string | null
-          updated_at?: string
-        }
+          account_id?: string;
+          amount_cents?: number;
+          created_at?: string;
+          id?: string;
+          message_count?: number;
+          package_id?: string | null;
+          paid_at?: string | null;
+          status?: string;
+          transaction_id?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_credit_purchases_package_id_fkey"
-            columns: ["package_id"]
-            referencedRelation: "whatsapp_packages"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_credit_purchases_package_id_fkey";
+            columns: ["package_id"];
+            referencedRelation: "whatsapp_packages";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_delivery_events: {
         Row: {
-          account_id: string | null
-          created_at: string
-          id: string
-          message_id: string | null
-          occurred_at: string
-          provider: string
-          provider_message_id: string | null
-          provider_status: string
-          raw_payload: Json
-          recipient_phone: string | null
-        }
+          account_id: string | null;
+          created_at: string;
+          id: string;
+          message_id: string | null;
+          occurred_at: string;
+          provider: string;
+          provider_message_id: string | null;
+          provider_status: string;
+          raw_payload: Json;
+          recipient_phone: string | null;
+        };
         Insert: {
-          account_id?: string | null
-          created_at?: string
-          id?: string
-          message_id?: string | null
-          occurred_at?: string
-          provider: string
-          provider_message_id?: string | null
-          provider_status: string
-          raw_payload?: Json
-          recipient_phone?: string | null
-        }
+          account_id?: string | null;
+          created_at?: string;
+          id?: string;
+          message_id?: string | null;
+          occurred_at?: string;
+          provider: string;
+          provider_message_id?: string | null;
+          provider_status: string;
+          raw_payload?: Json;
+          recipient_phone?: string | null;
+        };
         Update: {
-          account_id?: string | null
-          created_at?: string
-          id?: string
-          message_id?: string | null
-          occurred_at?: string
-          provider?: string
-          provider_message_id?: string | null
-          provider_status?: string
-          raw_payload?: Json
-          recipient_phone?: string | null
-        }
+          account_id?: string | null;
+          created_at?: string;
+          id?: string;
+          message_id?: string | null;
+          occurred_at?: string;
+          provider?: string;
+          provider_message_id?: string | null;
+          provider_status?: string;
+          raw_payload?: Json;
+          recipient_phone?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_delivery_events_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_delivery_events_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "whatsapp_delivery_events_message_id_fkey"
-            columns: ["message_id"]
-            referencedRelation: "whatsapp_messages"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_delivery_events_message_id_fkey";
+            columns: ["message_id"];
+            referencedRelation: "whatsapp_messages";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_messages: {
         Row: {
-          account_id: string
-          content: string
-          cost_credits: number
-          created_at: string
-          credit_refunded_at: string | null
-          credit_reserved_at: string | null
-          delivered_at: string | null
-          delivery_attempts: number
-          error_message: string | null
-          id: string
-          kind: string
-          locked_until: string | null
-          member_id: string | null
-          phone: string
-          provider: string | null
-          provider_delivery_status: string | null
-          provider_message_id: string | null
-          provider_payload: Json
-          provider_status_at: string | null
-          read_at: string | null
-          recipient_name: string | null
-          scheduled_date: string
-          scheduled_for: string
-          sent_at: string | null
-          status: string
-          updated_at: string
-        }
+          account_id: string;
+          content: string;
+          cost_credits: number;
+          created_at: string;
+          credit_refunded_at: string | null;
+          credit_reserved_at: string | null;
+          delivered_at: string | null;
+          delivery_attempts: number;
+          error_message: string | null;
+          id: string;
+          kind: string;
+          locked_until: string | null;
+          member_id: string | null;
+          phone: string;
+          provider: string | null;
+          provider_delivery_status: string | null;
+          provider_message_id: string | null;
+          provider_payload: Json;
+          provider_status_at: string | null;
+          read_at: string | null;
+          recipient_name: string | null;
+          scheduled_date: string;
+          scheduled_for: string;
+          sent_at: string | null;
+          status: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          content: string
-          cost_credits?: number
-          created_at?: string
-          credit_refunded_at?: string | null
-          credit_reserved_at?: string | null
-          delivered_at?: string | null
-          delivery_attempts?: number
-          error_message?: string | null
-          id?: string
-          kind?: string
-          locked_until?: string | null
-          member_id?: string | null
-          phone: string
-          provider?: string | null
-          provider_delivery_status?: string | null
-          provider_message_id?: string | null
-          provider_payload?: Json
-          provider_status_at?: string | null
-          read_at?: string | null
-          recipient_name?: string | null
-          scheduled_date?: string
-          scheduled_for?: string
-          sent_at?: string | null
-          status?: string
-          updated_at?: string
-        }
+          account_id: string;
+          content: string;
+          cost_credits?: number;
+          created_at?: string;
+          credit_refunded_at?: string | null;
+          credit_reserved_at?: string | null;
+          delivered_at?: string | null;
+          delivery_attempts?: number;
+          error_message?: string | null;
+          id?: string;
+          kind?: string;
+          locked_until?: string | null;
+          member_id?: string | null;
+          phone: string;
+          provider?: string | null;
+          provider_delivery_status?: string | null;
+          provider_message_id?: string | null;
+          provider_payload?: Json;
+          provider_status_at?: string | null;
+          read_at?: string | null;
+          recipient_name?: string | null;
+          scheduled_date?: string;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          content?: string
-          cost_credits?: number
-          created_at?: string
-          credit_refunded_at?: string | null
-          credit_reserved_at?: string | null
-          delivered_at?: string | null
-          delivery_attempts?: number
-          error_message?: string | null
-          id?: string
-          kind?: string
-          locked_until?: string | null
-          member_id?: string | null
-          phone?: string
-          provider?: string | null
-          provider_delivery_status?: string | null
-          provider_message_id?: string | null
-          provider_payload?: Json
-          provider_status_at?: string | null
-          read_at?: string | null
-          recipient_name?: string | null
-          scheduled_date?: string
-          scheduled_for?: string
-          sent_at?: string | null
-          status?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          content?: string;
+          cost_credits?: number;
+          created_at?: string;
+          credit_refunded_at?: string | null;
+          credit_reserved_at?: string | null;
+          delivered_at?: string | null;
+          delivery_attempts?: number;
+          error_message?: string | null;
+          id?: string;
+          kind?: string;
+          locked_until?: string | null;
+          member_id?: string | null;
+          phone?: string;
+          provider?: string | null;
+          provider_delivery_status?: string | null;
+          provider_message_id?: string | null;
+          provider_payload?: Json;
+          provider_status_at?: string | null;
+          read_at?: string | null;
+          recipient_name?: string | null;
+          scheduled_date?: string;
+          scheduled_for?: string;
+          sent_at?: string | null;
+          status?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       whatsapp_opt_outs: {
         Row: {
-          account_id: string
-          created_at: string
-          id: string
-          member_id: string | null
-          message_id: string | null
-          metadata: Json
-          phone_normalized: string
-          reason: string | null
-          source: string
-          updated_at: string
-        }
+          account_id: string;
+          created_at: string;
+          id: string;
+          member_id: string | null;
+          message_id: string | null;
+          metadata: Json;
+          phone_normalized: string;
+          reason: string | null;
+          source: string;
+          updated_at: string;
+        };
         Insert: {
-          account_id: string
-          created_at?: string
-          id?: string
-          member_id?: string | null
-          message_id?: string | null
-          metadata?: Json
-          phone_normalized: string
-          reason?: string | null
-          source?: string
-          updated_at?: string
-        }
+          account_id: string;
+          created_at?: string;
+          id?: string;
+          member_id?: string | null;
+          message_id?: string | null;
+          metadata?: Json;
+          phone_normalized: string;
+          reason?: string | null;
+          source?: string;
+          updated_at?: string;
+        };
         Update: {
-          account_id?: string
-          created_at?: string
-          id?: string
-          member_id?: string | null
-          message_id?: string | null
-          metadata?: Json
-          phone_normalized?: string
-          reason?: string | null
-          source?: string
-          updated_at?: string
-        }
+          account_id?: string;
+          created_at?: string;
+          id?: string;
+          member_id?: string | null;
+          message_id?: string | null;
+          metadata?: Json;
+          phone_normalized?: string;
+          reason?: string | null;
+          source?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_opt_outs_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_opt_outs_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "whatsapp_opt_outs_member_id_fkey"
-            columns: ["member_id"]
-            referencedRelation: "members"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_opt_outs_member_id_fkey";
+            columns: ["member_id"];
+            referencedRelation: "members";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_packages: {
         Row: {
-          active: boolean
-          created_at: string
-          description: string
-          id: string
-          message_count: number
-          name: string
-          price_cents: number
-          sort_order: number
-          updated_at: string
-        }
+          active: boolean;
+          created_at: string;
+          description: string;
+          id: string;
+          message_count: number;
+          name: string;
+          price_cents: number;
+          sort_order: number;
+          updated_at: string;
+        };
         Insert: {
-          active?: boolean
-          created_at?: string
-          description?: string
-          id?: string
-          message_count: number
-          name: string
-          price_cents: number
-          sort_order?: number
-          updated_at?: string
-        }
+          active?: boolean;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          message_count: number;
+          name: string;
+          price_cents: number;
+          sort_order?: number;
+          updated_at?: string;
+        };
         Update: {
-          active?: boolean
-          created_at?: string
-          description?: string
-          id?: string
-          message_count?: number
-          name?: string
-          price_cents?: number
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          active?: boolean;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          message_count?: number;
+          name?: string;
+          price_cents?: number;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       whatsapp_provider_connections: {
         Row: {
-          access_token_secret_name: string
-          account_id: string
-          active: boolean
-          api_base_url: string | null
-          business_account_id: string | null
-          created_at: string
-          instance_id: string | null
-          last_checked_at: string | null
-          last_error: string | null
-          phone_number_id: string | null
-          provider: string
-          sender_phone: string | null
-          updated_at: string
-          webhook_secret_name: string | null
-        }
+          access_token_secret_name: string;
+          account_id: string;
+          active: boolean;
+          api_base_url: string | null;
+          business_account_id: string | null;
+          created_at: string;
+          instance_id: string | null;
+          last_checked_at: string | null;
+          last_error: string | null;
+          phone_number_id: string | null;
+          provider: string;
+          sender_phone: string | null;
+          updated_at: string;
+          webhook_secret_name: string | null;
+        };
         Insert: {
-          access_token_secret_name: string
-          account_id: string
-          active?: boolean
-          api_base_url?: string | null
-          business_account_id?: string | null
-          created_at?: string
-          instance_id?: string | null
-          last_checked_at?: string | null
-          last_error?: string | null
-          phone_number_id?: string | null
-          provider: string
-          sender_phone?: string | null
-          updated_at?: string
-          webhook_secret_name?: string | null
-        }
+          access_token_secret_name: string;
+          account_id: string;
+          active?: boolean;
+          api_base_url?: string | null;
+          business_account_id?: string | null;
+          created_at?: string;
+          instance_id?: string | null;
+          last_checked_at?: string | null;
+          last_error?: string | null;
+          phone_number_id?: string | null;
+          provider: string;
+          sender_phone?: string | null;
+          updated_at?: string;
+          webhook_secret_name?: string | null;
+        };
         Update: {
-          access_token_secret_name?: string
-          account_id?: string
-          active?: boolean
-          api_base_url?: string | null
-          business_account_id?: string | null
-          created_at?: string
-          instance_id?: string | null
-          last_checked_at?: string | null
-          last_error?: string | null
-          phone_number_id?: string | null
-          provider?: string
-          sender_phone?: string | null
-          updated_at?: string
-          webhook_secret_name?: string | null
-        }
+          access_token_secret_name?: string;
+          account_id?: string;
+          active?: boolean;
+          api_base_url?: string | null;
+          business_account_id?: string | null;
+          created_at?: string;
+          instance_id?: string | null;
+          last_checked_at?: string | null;
+          last_error?: string | null;
+          phone_number_id?: string | null;
+          provider?: string;
+          sender_phone?: string | null;
+          updated_at?: string;
+          webhook_secret_name?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_provider_connections_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_provider_connections_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       whatsapp_settings: {
         Row: {
-          account_id: string
-          birthday_enabled: boolean
-          birthday_template: string
-          campaign_update_enabled: boolean | null
-          campaign_update_template: string | null
-          celula_reminder_enabled: boolean
-          celula_reminder_template: string
-          created_at: string
-          credits_balance: number
-          culto_reminder_enabled: boolean
-          culto_reminder_template: string
-          enabled: boolean
-          event_confirmation_enabled: boolean | null
-          event_confirmation_template: string | null
-          event_reminder_enabled: boolean | null
-          event_reminder_template: string | null
-          new_visitor_enabled: boolean | null
-          new_visitor_template: string | null
-          newsletter_enabled: boolean
-          newsletter_template: string
-          prayer_request_enabled: boolean
-          prayer_request_template: string
-          schedule_change_enabled: boolean | null
-          schedule_change_template: string | null
-          send_hour_brt: number
-          sender_name: string | null
-          tithe_reminder_enabled: boolean
-          tithe_reminder_template: string
-          updated_at: string
-          volunteer_confirmation_enabled: boolean | null
-          volunteer_confirmation_template: string | null
-          weekly_bulletin_enabled: boolean | null
-          weekly_bulletin_template: string | null
-          welcome_enabled: boolean
-          welcome_template: string
-        }
+          account_id: string;
+          birthday_enabled: boolean;
+          birthday_template: string;
+          campaign_update_enabled: boolean | null;
+          campaign_update_template: string | null;
+          celula_reminder_enabled: boolean;
+          celula_reminder_template: string;
+          created_at: string;
+          credits_balance: number;
+          culto_reminder_enabled: boolean;
+          culto_reminder_template: string;
+          enabled: boolean;
+          event_confirmation_enabled: boolean | null;
+          event_confirmation_template: string | null;
+          event_reminder_enabled: boolean | null;
+          event_reminder_template: string | null;
+          new_visitor_enabled: boolean | null;
+          new_visitor_template: string | null;
+          newsletter_enabled: boolean;
+          newsletter_template: string;
+          prayer_request_enabled: boolean;
+          prayer_request_template: string;
+          schedule_change_enabled: boolean | null;
+          schedule_change_template: string | null;
+          send_hour_brt: number;
+          sender_name: string | null;
+          tithe_reminder_enabled: boolean;
+          tithe_reminder_template: string;
+          updated_at: string;
+          volunteer_confirmation_enabled: boolean | null;
+          volunteer_confirmation_template: string | null;
+          weekly_bulletin_enabled: boolean | null;
+          weekly_bulletin_template: string | null;
+          welcome_enabled: boolean;
+          welcome_template: string;
+        };
         Insert: {
-          account_id: string
-          birthday_enabled?: boolean
-          birthday_template?: string
-          campaign_update_enabled?: boolean | null
-          campaign_update_template?: string | null
-          celula_reminder_enabled?: boolean
-          celula_reminder_template?: string
-          created_at?: string
-          credits_balance?: number
-          culto_reminder_enabled?: boolean
-          culto_reminder_template?: string
-          enabled?: boolean
-          event_confirmation_enabled?: boolean | null
-          event_confirmation_template?: string | null
-          event_reminder_enabled?: boolean | null
-          event_reminder_template?: string | null
-          new_visitor_enabled?: boolean | null
-          new_visitor_template?: string | null
-          newsletter_enabled?: boolean
-          newsletter_template?: string
-          prayer_request_enabled?: boolean
-          prayer_request_template?: string
-          schedule_change_enabled?: boolean | null
-          schedule_change_template?: string | null
-          send_hour_brt?: number
-          sender_name?: string | null
-          tithe_reminder_enabled?: boolean
-          tithe_reminder_template?: string
-          updated_at?: string
-          volunteer_confirmation_enabled?: boolean | null
-          volunteer_confirmation_template?: string | null
-          weekly_bulletin_enabled?: boolean | null
-          weekly_bulletin_template?: string | null
-          welcome_enabled?: boolean
-          welcome_template?: string
-        }
+          account_id: string;
+          birthday_enabled?: boolean;
+          birthday_template?: string;
+          campaign_update_enabled?: boolean | null;
+          campaign_update_template?: string | null;
+          celula_reminder_enabled?: boolean;
+          celula_reminder_template?: string;
+          created_at?: string;
+          credits_balance?: number;
+          culto_reminder_enabled?: boolean;
+          culto_reminder_template?: string;
+          enabled?: boolean;
+          event_confirmation_enabled?: boolean | null;
+          event_confirmation_template?: string | null;
+          event_reminder_enabled?: boolean | null;
+          event_reminder_template?: string | null;
+          new_visitor_enabled?: boolean | null;
+          new_visitor_template?: string | null;
+          newsletter_enabled?: boolean;
+          newsletter_template?: string;
+          prayer_request_enabled?: boolean;
+          prayer_request_template?: string;
+          schedule_change_enabled?: boolean | null;
+          schedule_change_template?: string | null;
+          send_hour_brt?: number;
+          sender_name?: string | null;
+          tithe_reminder_enabled?: boolean;
+          tithe_reminder_template?: string;
+          updated_at?: string;
+          volunteer_confirmation_enabled?: boolean | null;
+          volunteer_confirmation_template?: string | null;
+          weekly_bulletin_enabled?: boolean | null;
+          weekly_bulletin_template?: string | null;
+          welcome_enabled?: boolean;
+          welcome_template?: string;
+        };
         Update: {
-          account_id?: string
-          birthday_enabled?: boolean
-          birthday_template?: string
-          campaign_update_enabled?: boolean | null
-          campaign_update_template?: string | null
-          celula_reminder_enabled?: boolean
-          celula_reminder_template?: string
-          created_at?: string
-          credits_balance?: number
-          culto_reminder_enabled?: boolean
-          culto_reminder_template?: string
-          enabled?: boolean
-          event_confirmation_enabled?: boolean | null
-          event_confirmation_template?: string | null
-          event_reminder_enabled?: boolean | null
-          event_reminder_template?: string | null
-          new_visitor_enabled?: boolean | null
-          new_visitor_template?: string | null
-          newsletter_enabled?: boolean
-          newsletter_template?: string
-          prayer_request_enabled?: boolean
-          prayer_request_template?: string
-          schedule_change_enabled?: boolean | null
-          schedule_change_template?: string | null
-          send_hour_brt?: number
-          sender_name?: string | null
-          tithe_reminder_enabled?: boolean
-          tithe_reminder_template?: string
-          updated_at?: string
-          volunteer_confirmation_enabled?: boolean | null
-          volunteer_confirmation_template?: string | null
-          weekly_bulletin_enabled?: boolean | null
-          weekly_bulletin_template?: string | null
-          welcome_enabled?: boolean
-          welcome_template?: string
-        }
-        Relationships: []
-      }
+          account_id?: string;
+          birthday_enabled?: boolean;
+          birthday_template?: string;
+          campaign_update_enabled?: boolean | null;
+          campaign_update_template?: string | null;
+          celula_reminder_enabled?: boolean;
+          celula_reminder_template?: string;
+          created_at?: string;
+          credits_balance?: number;
+          culto_reminder_enabled?: boolean;
+          culto_reminder_template?: string;
+          enabled?: boolean;
+          event_confirmation_enabled?: boolean | null;
+          event_confirmation_template?: string | null;
+          event_reminder_enabled?: boolean | null;
+          event_reminder_template?: string | null;
+          new_visitor_enabled?: boolean | null;
+          new_visitor_template?: string | null;
+          newsletter_enabled?: boolean;
+          newsletter_template?: string;
+          prayer_request_enabled?: boolean;
+          prayer_request_template?: string;
+          schedule_change_enabled?: boolean | null;
+          schedule_change_template?: string | null;
+          send_hour_brt?: number;
+          sender_name?: string | null;
+          tithe_reminder_enabled?: boolean;
+          tithe_reminder_template?: string;
+          updated_at?: string;
+          volunteer_confirmation_enabled?: boolean | null;
+          volunteer_confirmation_template?: string | null;
+          weekly_bulletin_enabled?: boolean | null;
+          weekly_bulletin_template?: string | null;
+          welcome_enabled?: boolean;
+          welcome_template?: string;
+        };
+        Relationships: [];
+      };
       whatsapp_template_library: {
         Row: {
-          account_id: string
-          content: string
-          created_at: string
-          id: string
-          is_active: boolean
-          kind: string
-          name: string
-          preview: string | null
-          updated_at: string
-          usage_count: number
-        }
+          account_id: string;
+          content: string;
+          created_at: string;
+          id: string;
+          is_active: boolean;
+          kind: string;
+          name: string;
+          preview: string | null;
+          updated_at: string;
+          usage_count: number;
+        };
         Insert: {
-          account_id: string
-          content: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          kind: string
-          name: string
-          preview?: string | null
-          updated_at?: string
-          usage_count?: number
-        }
+          account_id: string;
+          content: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          kind: string;
+          name: string;
+          preview?: string | null;
+          updated_at?: string;
+          usage_count?: number;
+        };
         Update: {
-          account_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          is_active?: boolean
-          kind?: string
-          name?: string
-          preview?: string | null
-          updated_at?: string
-          usage_count?: number
-        }
+          account_id?: string;
+          content?: string;
+          created_at?: string;
+          id?: string;
+          is_active?: boolean;
+          kind?: string;
+          name?: string;
+          preview?: string | null;
+          updated_at?: string;
+          usage_count?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "whatsapp_template_library_account_id_fkey"
-            columns: ["account_id"]
-            referencedRelation: "accounts"
-            referencedColumns: ["id"]
+            foreignKeyName: "whatsapp_template_library_account_id_fkey";
+            columns: ["account_id"];
+            referencedRelation: "accounts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
-    }
+        ];
+      };
+    };
     Views: {
-      [_ in never]: never
-    }
+      [_ in never]: never;
+    };
     Functions: {
       admin_grant_whatsapp_credits: {
         Args: {
-          p_account_id: string
-          p_amount_cents?: number
-          p_credits: number
-          p_metadata?: Json
-        }
+          p_account_id: string;
+          p_amount_cents?: number;
+          p_credits: number;
+          p_metadata?: Json;
+        };
         Returns: {
-          balance: number
-          ledger_id: string
-          purchase_id: string
-        }[]
-      }
+          balance: number;
+          ledger_id: string;
+          purchase_id: string;
+        }[];
+      };
       claim_whatsapp_messages: {
-        Args: { p_limit?: number; p_lock_seconds?: number }
+        Args: { p_limit?: number; p_lock_seconds?: number };
         Returns: {
-          account_id: string
-          content: string
-          cost_credits: number
-          delivery_attempts: number
-          id: string
-          member_id: string
-          phone: string
-        }[]
-      }
+          account_id: string;
+          content: string;
+          cost_credits: number;
+          delivery_attempts: number;
+          id: string;
+          member_id: string;
+          phone: string;
+        }[];
+      };
       complete_whatsapp_credit_purchase: {
-        Args: { p_metadata?: Json; p_purchase_id: string }
+        Args: { p_metadata?: Json; p_purchase_id: string };
         Returns: {
-          balance: number
-          ledger_id: string
-          reason: string
-        }[]
-      }
-      generate_site_id: { Args: never; Returns: string }
+          balance: number;
+          ledger_id: string;
+          reason: string;
+        }[];
+      };
+      generate_site_id: { Args: never; Returns: string };
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
+          _role: Database["public"]["Enums"]["app_role"];
+          _user_id: string;
+        };
+        Returns: boolean;
+      };
       is_account_member: {
-        Args: { _account_id: string; _user_id: string }
-        Returns: boolean
-      }
+        Args: { _account_id: string; _user_id: string };
+        Returns: boolean;
+      };
       is_account_owner: {
-        Args: { _account_id: string; _user_id: string }
-        Returns: boolean
-      }
-      normalize_whatsapp_phone: { Args: { p_phone: string }; Returns: string }
+        Args: { _account_id: string; _user_id: string };
+        Returns: boolean;
+      };
+      normalize_whatsapp_phone: { Args: { p_phone: string }; Returns: string };
       record_whatsapp_opt_out: {
         Args: {
-          p_account_id: string
-          p_member_id?: string
-          p_message_id?: string
-          p_metadata?: Json
-          p_phone: string
-          p_reason?: string
-          p_source?: string
-        }
+          p_account_id: string;
+          p_member_id?: string;
+          p_message_id?: string;
+          p_metadata?: Json;
+          p_phone: string;
+          p_reason?: string;
+          p_source?: string;
+        };
         Returns: {
-          opt_out_id: string
-          phone_normalized: string
-        }[]
-      }
+          opt_out_id: string;
+          phone_normalized: string;
+        }[];
+      };
       refund_whatsapp_message_credits: {
         Args: {
-          p_account_id: string
-          p_idempotency_key: string
-          p_message_id: string
-          p_metadata?: Json
-        }
+          p_account_id: string;
+          p_idempotency_key: string;
+          p_message_id: string;
+          p_metadata?: Json;
+        };
         Returns: {
-          balance: number
-          ledger_id: string
-          ok: boolean
-          reason: string
-        }[]
-      }
+          balance: number;
+          ledger_id: string;
+          ok: boolean;
+          reason: string;
+        }[];
+      };
       reserve_whatsapp_credits: {
         Args: {
-          p_account_id: string
-          p_cost: number
-          p_idempotency_key: string
-          p_message_id: string
-          p_metadata?: Json
-        }
+          p_account_id: string;
+          p_cost: number;
+          p_idempotency_key: string;
+          p_message_id: string;
+          p_metadata?: Json;
+        };
         Returns: {
-          balance: number
-          ledger_id: string
-          ok: boolean
-          reason: string
-        }[]
-      }
-    }
+          balance: number;
+          ledger_id: string;
+          ok: boolean;
+          reason: string;
+        }[];
+      };
+    };
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user";
       religion_profile:
         | "catolico"
         | "evangelico"
         | "adventista"
         | "batista"
         | "pentecostal"
-        | "comunidade_crista"
-      subscription_status: "trial" | "active" | "past_due" | "canceled"
-    }
+        | "comunidade_crista";
+      subscription_status: "trial" | "active" | "past_due" | "canceled";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
@@ -4169,4 +4341,4 @@ export const Constants = {
       subscription_status: ["trial", "active", "past_due", "canceled"],
     },
   },
-} as const
+} as const;

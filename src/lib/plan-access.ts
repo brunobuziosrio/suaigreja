@@ -33,6 +33,7 @@ export const MODULE_CATALOG: ModuleAccess[] = [
   { id: "visitors", label: "Visitantes", path: "/visitantes", minimumTier: "pro", status: "ready", sellable: true },
   { id: "events", label: "Eventos", path: "/eventos", minimumTier: "pro", status: "core", sellable: true },
   { id: "checkin", label: "Check-in", path: "/checkin", minimumTier: "pro", status: "ready", sellable: true },
+  { id: "child_checkin", label: "Check-in Infantil Seguro", path: "/checkin-infantil", minimumTier: "premium", status: "ready", sellable: true },
   { id: "campaigns", label: "Campanhas e contribuições", path: "/campanhas", minimumTier: "pro", status: "core", sellable: true },
   { id: "small_groups", label: "Células, grupos e pastorais", path: "/celulas", minimumTier: "premium", status: "ready", sellable: true },
   { id: "education", label: "Ensino e turmas", path: "/ebd", minimumTier: "premium", status: "ready", sellable: true },

@@ -120,6 +120,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
         { title: "Agenda", url: "/agenda", icon: CalendarDays },
         { title: "Eventos", url: "/eventos", icon: CalendarHeart },
         { title: "Check-in", url: "/checkin", icon: QrCode },
+        { title: "Check-in Infantil", url: "/checkin-infantil", icon: ShieldCheck },
         { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },
         { title: "Locais", url: "/locations", icon: MapPin },
         { title: "Reserva de Ambientes", url: "/reservas", icon: CalendarClock },

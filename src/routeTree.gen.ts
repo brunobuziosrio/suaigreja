@@ -62,6 +62,7 @@ import { Route as AuthenticatedDecisoesRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedContasBancariasRouteImport } from './routes/_authenticated.contas-bancarias'
 import { Route as AuthenticatedCongregacoesRouteImport } from './routes/_authenticated.congregacoes'
+import { Route as AuthenticatedCheckinInfantilRouteImport } from './routes/_authenticated.checkin-infantil'
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated.checkin'
 import { Route as AuthenticatedCelulasRouteImport } from './routes/_authenticated.celulas'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
@@ -362,6 +363,12 @@ const AuthenticatedCongregacoesRoute =
     path: '/congregacoes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedCheckinInfantilRoute =
+  AuthenticatedCheckinInfantilRouteImport.update({
+    id: '/checkin-infantil',
+    path: '/checkin-infantil',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCheckinRoute = AuthenticatedCheckinRouteImport.update({
   id: '/checkin',
   path: '/checkin',
@@ -525,6 +532,7 @@ export interface FileRoutesByFullPath {
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
+  '/checkin-infantil': typeof AuthenticatedCheckinInfantilRoute
   '/congregacoes': typeof AuthenticatedCongregacoesRoute
   '/contas-bancarias': typeof AuthenticatedContasBancariasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -606,6 +614,7 @@ export interface FileRoutesByTo {
   '/campanhas': typeof AuthenticatedCampanhasRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
+  '/checkin-infantil': typeof AuthenticatedCheckinInfantilRoute
   '/congregacoes': typeof AuthenticatedCongregacoesRoute
   '/contas-bancarias': typeof AuthenticatedContasBancariasRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -689,6 +698,7 @@ export interface FileRoutesById {
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
   '/_authenticated/celulas': typeof AuthenticatedCelulasRoute
   '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
+  '/_authenticated/checkin-infantil': typeof AuthenticatedCheckinInfantilRoute
   '/_authenticated/congregacoes': typeof AuthenticatedCongregacoesRoute
   '/_authenticated/contas-bancarias': typeof AuthenticatedContasBancariasRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -772,6 +782,7 @@ export interface FileRouteTypes {
     | '/campanhas'
     | '/celulas'
     | '/checkin'
+    | '/checkin-infantil'
     | '/congregacoes'
     | '/contas-bancarias'
     | '/dashboard'
@@ -853,6 +864,7 @@ export interface FileRouteTypes {
     | '/campanhas'
     | '/celulas'
     | '/checkin'
+    | '/checkin-infantil'
     | '/congregacoes'
     | '/contas-bancarias'
     | '/dashboard'
@@ -935,6 +947,7 @@ export interface FileRouteTypes {
     | '/_authenticated/campanhas'
     | '/_authenticated/celulas'
     | '/_authenticated/checkin'
+    | '/_authenticated/checkin-infantil'
     | '/_authenticated/congregacoes'
     | '/_authenticated/contas-bancarias'
     | '/_authenticated/dashboard'
@@ -1410,6 +1423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCongregacoesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/checkin-infantil': {
+      id: '/_authenticated/checkin-infantil'
+      path: '/checkin-infantil'
+      fullPath: '/checkin-infantil'
+      preLoaderRoute: typeof AuthenticatedCheckinInfantilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/checkin': {
       id: '/_authenticated/checkin'
       path: '/checkin'
@@ -1625,6 +1645,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
   AuthenticatedCelulasRoute: typeof AuthenticatedCelulasRoute
   AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
+  AuthenticatedCheckinInfantilRoute: typeof AuthenticatedCheckinInfantilRoute
   AuthenticatedCongregacoesRoute: typeof AuthenticatedCongregacoesRoute
   AuthenticatedContasBancariasRoute: typeof AuthenticatedContasBancariasRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -1676,6 +1697,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
   AuthenticatedCelulasRoute: AuthenticatedCelulasRoute,
   AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
+  AuthenticatedCheckinInfantilRoute: AuthenticatedCheckinInfantilRoute,
   AuthenticatedCongregacoesRoute: AuthenticatedCongregacoesRoute,
   AuthenticatedContasBancariasRoute: AuthenticatedContasBancariasRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
