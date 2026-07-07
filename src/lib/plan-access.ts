@@ -29,6 +29,7 @@ export const MODULE_CATALOG: ModuleAccess[] = [
   { id: "reports", label: "Relatórios", path: "/relatorios", minimumTier: "pro", status: "ready", sellable: true },
   { id: "whatsapp", label: "WhatsApp", path: "/whatsapp", minimumTier: "pro", status: "beta", sellable: true },
   { id: "members", label: "Membros e pessoas", path: "/membros", minimumTier: "pro", status: "core", sellable: true },
+  { id: "congregations", label: "Multiunidade e congregações", path: "/congregacoes", minimumTier: "premium", status: "ready", sellable: true },
   { id: "visitors", label: "Visitantes", path: "/visitantes", minimumTier: "pro", status: "ready", sellable: true },
   { id: "events", label: "Eventos", path: "/eventos", minimumTier: "pro", status: "core", sellable: true },
   { id: "checkin", label: "Check-in", path: "/checkin", minimumTier: "pro", status: "ready", sellable: true },

@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listMembers, upsertMember, deleteMember, importMembersCsv } from "@/lib/members.functions";
 import { getMyAccount } from "@/lib/account.functions";
+import { listCongregations } from "@/lib/congregations.functions";
 import { getReligionTerms } from "@/lib/religion-profiles";
 import { supabase } from "@/integrations/supabase/client";
 import { buildCsv } from "@/lib/csv";
@@ -64,6 +65,7 @@ type Form = {
   notes: string;
   cpf: string;
   congregation: string;
+  congregation_id: string;
   is_tither: boolean;
   whatsapp_consent: boolean;
 };
@@ -72,7 +74,7 @@ const empty: Form = {
   full_name: "", photo_url: "", email: "", phone: "", birth_date: "",
   gender: "", marital_status: "", role: "membro", member_since: "",
   status: "ativo", address_city: "", address_state: "", notes: "",
-  cpf: "", congregation: "", is_tither: false, whatsapp_consent: false,
+  cpf: "", congregation: "", congregation_id: "", is_tither: false, whatsapp_consent: false,
 };
 
 const ROLES = ["membro", "visitante", "lider", "diacono", "obreiro", "pastor"];
@@ -135,10 +137,12 @@ function MembersPage() {
   const qc = useQueryClient();
   const fetchList = useServerFn(listMembers);
   const fetchAccount = useServerFn(getMyAccount);
+  const fetchCongregations = useServerFn(listCongregations);
   const save = useServerFn(upsertMember);
   const remove = useServerFn(deleteMember);
   const { data: items = [], isLoading } = useQuery({ queryKey: ["members"], queryFn: () => fetchList() });
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
+  const { data: congregations = [] } = useQuery({ queryKey: ["congregations"], queryFn: () => fetchCongregations() });
   const terms = getReligionTerms(account?.religion_profile);
 
   const [open, setOpen] = useState(false);
@@ -189,6 +193,7 @@ function MembersPage() {
         notes: input.notes.trim() || null,
         cpf: input.cpf.trim() || null,
         congregation: input.congregation.trim() || null,
+        congregation_id: input.congregation_id || null,
         is_tither: input.is_tither,
         whatsapp_consent: input.whatsapp_consent,
       },
@@ -430,7 +435,7 @@ function MembersPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>{capitalize(terms.institution)} / congregacao</Label>
-                        <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" />
+                        {congregations.length > 0 ? <Select value={form.congregation_id || "_"} onValueChange={(id) => { const selected = congregations.find(c => c.id === id); setForm({ ...form, congregation_id: id === "_" ? "" : id, congregation: selected?.name ?? "" }); }}><SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger><SelectContent><SelectItem value="_">Sem unidade</SelectItem>{congregations.filter(c => c.active).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select> : <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" />}
                       </div>
                     </div>
                     <div className="flex items-center justify-between rounded-md border p-3">
@@ -640,7 +645,7 @@ function MembersPage() {
                         member_since: m.member_since ?? "", status: m.status,
                         address_city: m.address_city ?? "", address_state: m.address_state ?? "",
                         notes: m.notes ?? "",
-                      cpf: (m as any).cpf ?? "", congregation: (m as any).congregation ?? "",
+                      cpf: (m as any).cpf ?? "", congregation: (m as any).congregation ?? "", congregation_id: (m as any).congregation_id ?? "",
                       is_tither: (m as any).is_tither ?? false,
                       whatsapp_consent: (m as any).whatsapp_consent ?? false,
                     });

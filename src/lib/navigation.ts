@@ -46,6 +46,7 @@ import {
   Users2,
   WalletCards,
   ClipboardList,
+  Building2,
 } from "lucide-react";
 import type { getReligionTerms } from "@/lib/religion-profiles";
 
@@ -99,6 +100,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       icon: Users,
       items: [
         { title: terms.people, url: "/membros", icon: IdCard },
+        { title: "Congregações", url: "/congregacoes", icon: Building2 },
         { title: "Jornada Espiritual", url: "/jornada-espiritual", icon: Sprout },
         { title: "Vínculo Familiar", url: "/familias", icon: Users2 },
         { title: "Ministérios", url: "/ministerios", icon: Users2 },

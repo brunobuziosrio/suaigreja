@@ -2,6 +2,16 @@
 
 Atualizado em: 2026-07-01
 
+## Referencias de mercado e produto
+
+Usar estas referencias em pesquisas futuras de design, organizacao de modulos,
+linguagem comercial e ideias de conteudo. Nao copiar identidade visual ou textos;
+analisar padroes, fluxos e posicionamento para adaptar ao produto:
+
+- Adm Igrejas — https://adm-igrejas.com.br/
+- MyChurch — https://www.mychurchlab.net/
+- Gereigreja — https://gereigreja.site/
+
 Este documento guarda ideias para evoluir o SaaS de gestao religiosa. Ele serve
 como referencia de pesquisa, priorizacao e inspiracao futura. Nem tudo aqui deve
 ser implementado de uma vez; a regra e validar valor comercial, simplicidade para
