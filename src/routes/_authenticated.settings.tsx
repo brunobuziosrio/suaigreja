@@ -428,7 +428,7 @@ function SettingsPage() {
                   aria-current={selected ? "page" : undefined}
                   onClick={() => setActiveSection(section.id)}
                   className={cn(
-                    "flex min-h-12 min-w-[190px] items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:w-full lg:min-w-0",
+                    "flex min-h-12 w-[180px] shrink-0 items-center gap-3 rounded-lg border px-3 py-2 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-[190px] lg:w-full lg:min-w-0 lg:shrink",
                     selected
                       ? "border-primary/30 bg-primary/10 text-foreground"
                       : "border-transparent text-muted-foreground hover:border-border hover:bg-background hover:text-foreground",
@@ -461,9 +461,14 @@ function SettingsPage() {
                     <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                       Código fixo (sempre funciona)
                     </Label>
-                    <div className="flex gap-2">
-                      <Input readOnly value={fixedUrl} className="font-mono text-sm" />
-                      <Button variant="outline" type="button" onClick={() => copy(fixedUrl)}>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Input readOnly value={fixedUrl} className="min-w-0 flex-1 font-mono text-sm" />
+                      <Button
+                        variant="outline"
+                        type="button"
+                        onClick={() => copy(fixedUrl)}
+                        className="w-full sm:w-auto"
+                      >
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
@@ -476,8 +481,8 @@ function SettingsPage() {
                       <span className="font-mono">{publicOrigin}/a/matriz-sp</span>. Use de 3 a 40
                       letras minúsculas, números ou hífen.
                     </p>
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center rounded-md border bg-muted/40 pl-3 pr-1 flex-1 focus-within:ring-1 focus-within:ring-ring">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 flex-1 items-center rounded-md border bg-muted/40 pl-3 pr-1 focus-within:ring-1 focus-within:ring-ring">
                         <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
                           {publicOrigin}/a/
                         </span>
@@ -506,6 +511,7 @@ function SettingsPage() {
                       <Button
                         type="button"
                         onClick={() => slugMut.mutate(normalizedInput || null)}
+                        className="w-full sm:w-auto"
                         disabled={
                           slugMut.isPending ||
                           normalizedInput === currentSlug ||
@@ -518,6 +524,7 @@ function SettingsPage() {
                         <Button
                           type="button"
                           variant="outline"
+                          className="w-full sm:w-auto"
                           onClick={() => {
                             setSlugInput("");
                             slugMut.mutate(null);
@@ -540,9 +547,14 @@ function SettingsPage() {
                         <Label className="text-xs uppercase tracking-wide text-muted-foreground">
                           Endereço atual
                         </Label>
-                        <div className="flex gap-2">
-                          <Input readOnly value={slugUrl} className="font-mono text-sm" />
-                          <Button variant="outline" type="button" onClick={() => copy(slugUrl)}>
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <Input readOnly value={slugUrl} className="min-w-0 flex-1 font-mono text-sm" />
+                          <Button
+                            variant="outline"
+                            type="button"
+                            onClick={() => copy(slugUrl)}
+                            className="w-full sm:w-auto"
+                          >
                             <Copy className="h-4 w-4" />
                           </Button>
                         </div>
@@ -597,7 +609,11 @@ function SettingsPage() {
 
                 <Card className="p-4">
                   <div className="flex justify-end">
-                    <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
+                    <Button
+                      className="w-full sm:w-auto"
+                      onClick={() => mut.mutate()}
+                      disabled={mut.isPending || isLoading}
+                    >
                       {mut.isPending ? "Salvando..." : "Salvar instituição"}
                     </Button>
                   </div>
@@ -638,7 +654,7 @@ function SettingsPage() {
                     </p>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-4 py-2 border-t">
+                    <div className="flex flex-col gap-3 py-2 border-t sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <Label htmlFor="show_end_time" className="text-sm">
                           Hora de término
@@ -653,7 +669,7 @@ function SettingsPage() {
                         onCheckedChange={(v) => setForm({ ...form, show_end_time: v })}
                       />
                     </div>
-                    <div className="flex items-start justify-between gap-4 py-2 border-t">
+                    <div className="flex flex-col gap-3 py-2 border-t sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <Label htmlFor="show_live_fields" className="text-sm">
                           Transmissão ao vivo
@@ -668,7 +684,7 @@ function SettingsPage() {
                         onCheckedChange={(v) => setForm({ ...form, show_live_fields: v })}
                       />
                     </div>
-                    <div className="flex items-start justify-between gap-4 py-2 border-t">
+                    <div className="flex flex-col gap-3 py-2 border-t sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <Label htmlFor="force_show_type" className="text-sm">
                           Mostrar tipo em todos os eventos
@@ -740,7 +756,7 @@ function SettingsPage() {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-2 rounded-md border p-2">
+                    <div className="flex w-full items-center gap-2 rounded-md border p-2 sm:w-fit">
                       <input
                         id="primary_color"
                         type="color"
@@ -761,6 +777,7 @@ function SettingsPage() {
                       type="button"
                       onClick={() => setForm({ ...form, primary_color: DEFAULT_COLOR })}
                       disabled={isLoading || form.primary_color === DEFAULT_COLOR}
+                      className="w-full sm:w-auto"
                     >
                       <RotateCcw className="h-4 w-4 mr-2" />
                       Restaurar cor padrão
@@ -1692,7 +1709,7 @@ function MercadoPagoSection() {
 
       {!isLoading && connection?.connected ? (
         <div className="rounded-md border bg-muted/40 p-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm">
+          <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center">
             <Check className="h-4 w-4 text-green-600" />
             Conectado
           </div>
@@ -1726,6 +1743,7 @@ function MercadoPagoSection() {
           </div>
           <div className="sm:col-span-2 flex justify-end">
             <Button
+              className="w-full sm:w-auto"
               onClick={() => saveMut.mutate()}
               disabled={saveMut.isPending || accessToken.trim().length < 10}
             >
@@ -1909,7 +1927,7 @@ function MemberCardSettingsCard({
 
           <div className="space-y-2">
             <Label>Cor da faixa de destaque (vermelha por padrão)</Label>
-            <div className="flex items-center gap-2 rounded-md border p-2 w-fit">
+            <div className="flex w-full items-center gap-2 rounded-md border p-2 sm:w-fit">
               <input
                 type="color"
                 value={form.card_accent_color}
