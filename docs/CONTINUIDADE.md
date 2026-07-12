@@ -17,6 +17,13 @@ este arquivo e rode os comandos de verificação abaixo dentro de `app/`.
 - O produto já tem núcleo vendável amplo: site público, membros, eventos, doações,
   campanhas, WhatsApp, secretaria digital, planos, permissões, LGPD, domínio/PWA e
   painel admin.
+- Os arquivos `.md` foram revisados e organizados assim:
+  - `CONTINUIDADE.md`: fonte principal para retomar execução.
+  - `IDEIAS_IMPLEMENTACOES.md`: backlog de ideias e inspiração de produto, sem virar
+    fila obrigatória imediata.
+  - `ESTADO_ATUAL.md`: inventário histórico grande de implementado x pendente.
+  - `ROADMAP_IMPLEMENTACAO.md`: histórico de entregas maiores e roadmap antigo.
+  - arquivos por data/relatório ficam como histórico, não como comando de retomada.
 - O trabalho recente foi principalmente saneamento técnico em `src/lib`:
   formatação, remoção de `any` explícito e migração de `createServerFn().inputValidator()`
   para `.validator()`.
@@ -36,39 +43,36 @@ este arquivo e rode os comandos de verificação abaixo dentro de `app/`.
   dívida técnica sem impedir build/deploy.
 - Decisão de checkpoint: `dist/` não entra em commit. É artefato de build/deploy,
   muda muitos hashes e deve ser gerado por `npm run build` quando necessário.
-- `npm run build` vinha passando após cada lote registrado.
-- `npm run lint` global ainda não deve ser usado como única referência, porque o
-  histórico mostra dívida técnica antiga espalhada. Validar por arquivo/lote e só
-  depois tentar o lint global.
+- Checkpoint limpo feito em 2026-07-12:
+  - repo do produto (`app/.git`): `ad1e5f1 chore: checkpoint saneamento e financeiro`;
+  - repo da raiz: `52b1bd3 chore: checkpoint raiz saas igreja`;
+  - `app/` está limpo e a raiz aponta para o commit `ad1e5f1`.
+- `npm run build` passou no checkpoint.
+- `npm run lint` global passou com warnings, sem erros. Os avisos restantes são dívida
+  técnica conhecida, principalmente `any` antigo e hooks/dependências.
 
 ## Mudanças locais pendentes em `app/`
 
-O worktree está sujo e não deve ser commitado sem revisão. Pontos principais:
+Nenhuma pendência local conhecida no checkpoint `ad1e5f1`.
 
-- Muitos arquivos em `src/lib/*.functions.ts` foram alterados por saneamento.
-- Rotas alteradas: dashboard, livro caixa, membros, settings e carteirinha pública.
-- `src/components/member-card.tsx` alterado.
-- `dist/` foi restaurado antes do checkpoint; não deve entrar no commit.
-- Novas migrations ainda não rastreadas:
-  - `supabase/migrations/20260707193000_financial_entries_congregations.sql`
-  - `supabase/migrations/20260708110000_financial_entries_reconciliation.sql`
-- Docs novos/alterados:
-  - `docs/RETOMADA_2026-07-10.md`
-  - `docs/RELATORIO_INSTAGRAM_ZION_CONVECTA.md`
-  - `docs/ESTADO_ATUAL.md`
+Se aparecer sujeira nova no Git, revisar antes de continuar:
+
+```powershell
+git -C app status --short
+git status --short
+```
 
 ## Pendências técnicas imediatas
 
 Prioridade para finalizar e parar de abrir frentes novas:
 
-1. Revisar o diff local por grupos pequenos.
-2. Separar ou ignorar `dist/` conforme a estratégia de deploy usada. Não misturar
-   alteração de fonte com asset gerado sem necessidade.
-3. Validar as duas migrations financeiras novas localmente e confirmar se já foram
-   aplicadas em produção antes de deploy.
-4. Validar visualmente o card "Resumo financeiro do mês" no dashboard com uma
+1. Validar as migrations financeiras recentes localmente e confirmar se já foram
+   aplicadas em produção antes de deploy, se ainda não houver registro confiável.
+2. Validar visualmente o card "Resumo financeiro do mês" no dashboard com uma
    conta Premium com lançamentos no Livro Caixa.
-5. Organizar commit/checkpoint claro sem `dist`.
+3. Testar fluxo financeiro novo em navegador real: Livro Caixa, filtros, CSV,
+   conciliação/repasses se habilitados.
+4. Manter `dist/` fora de commit; gerar por build/deploy quando necessário.
 
 ## Pendências de produto para venda
 
