@@ -87,3 +87,19 @@ export async function resolveAtivoPayWebhookSecret(): Promise<string> {
   cachedAtivoPayWebhookSecret = { value, expiresAt: now + CACHE_TTL_MS };
   return value;
 }
+
+export async function buildAtivoPayPostbackUrl(host: string | null | undefined): Promise<string> {
+  if (!host) throw new Error("Não foi possível determinar o domínio para o webhook da AtivoPay.");
+
+  const secret = await resolveAtivoPayWebhookSecret();
+  if (!secret) {
+    throw new Error(
+      "O segredo do webhook da AtivoPay ainda não foi configurado. Configure em Configurações > Plataforma.",
+    );
+  }
+
+  const protocol = host.includes("localhost") ? "http" : "https";
+  const url = new URL(`${protocol}://${host}/api/public/ativopay-webhook`);
+  url.searchParams.set("secret", secret);
+  return url.toString();
+}

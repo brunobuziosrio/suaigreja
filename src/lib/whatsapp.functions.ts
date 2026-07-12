@@ -11,7 +11,10 @@ import { z } from "zod";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import {
+  buildAtivoPayPostbackUrl,
+  resolveAtivoPayApiKey,
+} from "@/lib/admin-payment-settings.functions";
 import {
   createWhatsappMessageId,
   refundWhatsappMessageCredits,
@@ -224,9 +227,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
       .single();
     if (purchaseError) throw new Error(purchaseError.message);
 
-    const host = getRequestHost();
-    const protocol = host?.includes("localhost") ? "http" : "https";
-    const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;
+    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
       typeof claims.user_metadata === "object" &&

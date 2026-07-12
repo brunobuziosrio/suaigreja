@@ -109,7 +109,9 @@ export const Route = createFileRoute("/api/public/ativopay-webhook")({
       POST: async ({ request }) => {
         const expectedSecret = await resolveAtivoPayWebhookSecret();
         if (!expectedSecret) return json({ error: "webhook not configured" }, 500);
-        const received = request.headers.get("x-webhook-secret");
+        const url = new URL(request.url);
+        const received =
+          request.headers.get("x-webhook-secret") ?? url.searchParams.get("secret");
         if (received !== expectedSecret) return json({ error: "unauthorized" }, 401);
 
         const payload = (await request.json().catch(() => null)) as Record<string, unknown> | null;

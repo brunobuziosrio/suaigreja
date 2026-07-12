@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import {
+  buildAtivoPayPostbackUrl,
+  resolveAtivoPayApiKey,
+} from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import QRCode from "qrcode";
 import { z } from "zod";
@@ -90,9 +93,7 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
     if (!product || !product.active) throw new Error("Produto indisponível.");
     if (product.price_cents <= 0) throw new Error("Produto sem preço definido.");
 
-    const host = getRequestHost();
-    const protocol = host?.includes("localhost") ? "http" : "https";
-    const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;
+    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
       typeof claims.user_metadata === "object" &&

@@ -2,7 +2,10 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import {
+  buildAtivoPayPostbackUrl,
+  resolveAtivoPayApiKey,
+} from "@/lib/admin-payment-settings.functions";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import QRCode from "qrcode";
@@ -342,9 +345,7 @@ export const registerForEvent = createServerFn({ method: "POST" })
       };
     }
 
-    const host = getRequestHost();
-    const protocol = host?.includes("localhost") ? "http" : "https";
-    const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;
+    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
 
     const response = await fetch(`${ATIVOPAY_BASE_URL}/api/user/transactions`, {
       method: "POST",

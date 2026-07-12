@@ -3,7 +3,10 @@ import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
-import { resolveAtivoPayApiKey } from "@/lib/admin-payment-settings.functions";
+import {
+  buildAtivoPayPostbackUrl,
+  resolveAtivoPayApiKey,
+} from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import QRCode from "qrcode";
 import { z } from "zod";
@@ -143,9 +146,7 @@ export const createPixPayment = createServerFn({ method: "POST" })
       return existingPending;
     }
 
-    const host = getRequestHost();
-    const protocol = host?.includes("localhost") ? "http" : "https";
-    const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;
+    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
       typeof claims.user_metadata === "object" &&
