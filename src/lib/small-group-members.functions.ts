@@ -24,7 +24,7 @@ export type SmallGroupMemberRow = {
 
 export const listSmallGroupMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ group_id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ group_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "small_groups", "view");
@@ -41,12 +41,14 @@ export const listSmallGroupMembers = createServerFn({ method: "GET" })
 
 export const addSmallGroupMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      group_id: z.string().uuid(),
-      member_id: z.string().uuid(),
-      role: z.string().max(40).optional().default("membro"),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        group_id: z.string().uuid(),
+        member_id: z.string().uuid(),
+        role: z.string().max(40).optional().default("membro"),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
@@ -75,7 +77,7 @@ export const addSmallGroupMember = createServerFn({ method: "POST" })
 
 export const setSmallGroupMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), role: z.string().min(1).max(40) }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid(), role: z.string().min(1).max(40) }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "small_groups", "edit");
@@ -91,7 +93,7 @@ export const setSmallGroupMemberRole = createServerFn({ method: "POST" })
 
 export const removeSmallGroupMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "small_groups", "delete");

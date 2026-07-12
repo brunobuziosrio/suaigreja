@@ -24,7 +24,14 @@ import {
 import { listEvents } from "@/lib/events.functions";
 import { listTypes } from "@/lib/types.functions";
 import { PublicAgendaView } from "@/components/public-agenda-view";
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  type RefObject,
+  type SetStateAction,
+} from "react";
 import { toast } from "sonner";
 import {
   Building2,
@@ -41,28 +48,93 @@ import {
 import { useBranding } from "@/hooks/use-branding";
 import { adminUpdateBranding } from "@/lib/branding.functions";
 import { getIsAdmin } from "@/lib/admin.functions";
-import { getPlatformPaymentSettings, updatePlatformPaymentSettings } from "@/lib/admin-payment-settings.functions";
+import {
+  getPlatformPaymentSettings,
+  updatePlatformPaymentSettings,
+} from "@/lib/admin-payment-settings.functions";
 import {
   getMyMercadoPagoConnection,
   saveMercadoPagoConnection,
   disconnectMercadoPago,
 } from "@/lib/mercadopago-connections.functions";
 import { supabase } from "@/integrations/supabase/client";
-import { useRef } from "react";
 import { MemberCard } from "@/components/member-card";
 
 const DEFAULT_COLOR = "#467da5";
 
 const SETTINGS_SECTIONS = [
-  { id: "institution", label: "Instituição", description: "Endereço, identidade e tradição", icon: Building2 },
-  { id: "domain", label: "Domínio e PWA", description: "Domínio próprio e app instalável", icon: Globe },
-  { id: "agenda", label: "Agenda pública", description: "Campos, textos e aparência", icon: CalendarCog },
+  {
+    id: "institution",
+    label: "Instituição",
+    description: "Endereço, identidade e tradição",
+    icon: Building2,
+  },
+  {
+    id: "domain",
+    label: "Domínio e PWA",
+    description: "Domínio próprio e app instalável",
+    icon: Globe,
+  },
+  {
+    id: "agenda",
+    label: "Agenda pública",
+    description: "Campos, textos e aparência",
+    icon: CalendarCog,
+  },
   { id: "donations", label: "Doações", description: "Contas e recebimentos", icon: Landmark },
   { id: "member-card", label: "Carteirinha", description: "Identidade do membro", icon: IdCard },
   { id: "preview", label: "Prévia", description: "Resultado publicado", icon: Eye },
 ] as const;
 
 type SettingsSection = (typeof SETTINGS_SECTIONS)[number]["id"];
+
+type SettingsForm = {
+  brand_title: string;
+  brand_today_title: string;
+  brand_subtitle: string;
+  brand_empty_message: string;
+  primary_color: string;
+  brand_logo_url: string;
+  brand_logo_height_px: number;
+  brand_footer_logo_url: string;
+  card_logo_url: string;
+  card_logo_height_px: number;
+  card_accent_color: string;
+  card_footer_text: string;
+  card_title_size_px: number;
+  card_footer_size_px: number;
+  card_field_size_px: number;
+  card_label_size_px: number;
+  show_end_time: boolean;
+  show_live_fields: boolean;
+  force_show_type: boolean;
+  religion_profile: ReligionProfile;
+};
+
+type AccountSettingsData = NonNullable<Awaited<ReturnType<typeof getMyAccount>>> & {
+  card_logo_url?: string | null;
+  card_logo_height_px?: number | null;
+  card_accent_color?: string | null;
+  card_footer_text?: string | null;
+  card_title_size_px?: number | null;
+  card_footer_size_px?: number | null;
+  card_field_size_px?: number | null;
+  card_label_size_px?: number | null;
+  custom_domain?: string | null;
+  custom_domain_status?: string | null;
+  custom_domain_verification_token?: string | null;
+  custom_domain_error?: string | null;
+  managed_domain_requested_name?: string | null;
+  managed_domain_status?: string | null;
+  managed_domain_holder_name?: string | null;
+  managed_domain_holder_document?: string | null;
+  managed_domain_holder_email?: string | null;
+  managed_domain_holder_phone?: string | null;
+  managed_domain_holder_address?: string | null;
+  managed_domain_notes?: string | null;
+};
+
+type SetSettingsForm = Dispatch<SetStateAction<SettingsForm>>;
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -105,8 +177,9 @@ function SettingsPage() {
 
   const { data: account, isLoading } = useQuery({
     queryKey: ["my-account"],
-    queryFn: () => getAccount(),
+    queryFn: async () => (await getAccount()) as AccountSettingsData | null,
   });
+  const accountSettings = account;
 
   // Load next ~30 days of real events so the preview matches the public site exactly.
   const { data: previewEvents } = useQuery({
@@ -116,8 +189,7 @@ function SettingsPage() {
       const today = new Date();
       const end = new Date();
       end.setDate(end.getDate() + 30);
-      const fmt = (d: Date) =>
-        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       return fetchEvents({ data: { from: fmt(today), to: fmt(end) } });
     },
   });
@@ -127,7 +199,7 @@ function SettingsPage() {
     queryFn: () => fetchTypes(),
   });
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SettingsForm>({
     brand_title: "",
     brand_today_title: "",
     brand_subtitle: "",
@@ -152,33 +224,33 @@ function SettingsPage() {
   });
 
   useEffect(() => {
-    if (account) {
+    if (accountSettings) {
       setForm({
-        brand_title: account.brand_title ?? "",
-        brand_today_title: account.brand_today_title ?? "Celebrações de hoje",
-        brand_subtitle: account.brand_subtitle ?? "",
-        brand_empty_message: account.brand_empty_message ?? "",
-        primary_color: account.primary_color ?? DEFAULT_COLOR,
-        brand_logo_url: account.brand_logo_url ?? "",
-        brand_logo_height_px: account.brand_logo_height_px ?? 32,
-        brand_footer_logo_url: account.brand_footer_logo_url ?? "",
-        card_logo_url: (account as any).card_logo_url ?? "",
-        card_logo_height_px: (account as any).card_logo_height_px ?? 72,
-        card_accent_color: (account as any).card_accent_color ?? "#c8102e",
+        brand_title: accountSettings.brand_title ?? "",
+        brand_today_title: accountSettings.brand_today_title ?? "Celebrações de hoje",
+        brand_subtitle: accountSettings.brand_subtitle ?? "",
+        brand_empty_message: accountSettings.brand_empty_message ?? "",
+        primary_color: accountSettings.primary_color ?? DEFAULT_COLOR,
+        brand_logo_url: accountSettings.brand_logo_url ?? "",
+        brand_logo_height_px: accountSettings.brand_logo_height_px ?? 32,
+        brand_footer_logo_url: accountSettings.brand_footer_logo_url ?? "",
+        card_logo_url: accountSettings.card_logo_url ?? "",
+        card_logo_height_px: accountSettings.card_logo_height_px ?? 72,
+        card_accent_color: accountSettings.card_accent_color ?? "#c8102e",
         card_footer_text:
-          (account as any).card_footer_text ??
+          accountSettings.card_footer_text ??
           "É assegurada nos termos da lei, a prestação de assistência religiosa nas entidades civis e militares de internação coletiva. Art 5º, VII, Constituição Federal.",
-        card_title_size_px: (account as any).card_title_size_px ?? 36,
-        card_footer_size_px: (account as any).card_footer_size_px ?? 12,
-        card_field_size_px: (account as any).card_field_size_px ?? 15,
-        card_label_size_px: (account as any).card_label_size_px ?? 13,
-        show_end_time: account.show_end_time ?? false,
-        show_live_fields: account.show_live_fields ?? true,
-        force_show_type: account.force_show_type ?? false,
-        religion_profile: (account.religion_profile ?? "catolico") as ReligionProfile,
+        card_title_size_px: accountSettings.card_title_size_px ?? 36,
+        card_footer_size_px: accountSettings.card_footer_size_px ?? 12,
+        card_field_size_px: accountSettings.card_field_size_px ?? 15,
+        card_label_size_px: accountSettings.card_label_size_px ?? 13,
+        show_end_time: accountSettings.show_end_time ?? false,
+        show_live_fields: accountSettings.show_live_fields ?? true,
+        force_show_type: accountSettings.force_show_type ?? false,
+        religion_profile: (accountSettings.religion_profile ?? "catolico") as ReligionProfile,
       });
     }
-  }, [account]);
+  }, [accountSettings]);
 
   const mut = useMutation({
     mutationFn: () => saveAccountSettings(),
@@ -251,8 +323,8 @@ function SettingsPage() {
 
   const [domainInput, setDomainInput] = useState("");
   useEffect(() => {
-    setDomainInput(((account as any)?.custom_domain ?? "") as string);
-  }, [(account as any)?.custom_domain]);
+    setDomainInput(accountSettings?.custom_domain ?? "");
+  }, [accountSettings?.custom_domain]);
 
   const domainMut = useMutation({
     mutationFn: (domain: string | null) => saveDomain({ data: { domain } }),
@@ -287,22 +359,22 @@ function SettingsPage() {
 
   useEffect(() => {
     setManagedDomainForm({
-      domain: ((account as any)?.managed_domain_requested_name ?? "") as string,
-      holder_name: ((account as any)?.managed_domain_holder_name ?? "") as string,
-      holder_document: ((account as any)?.managed_domain_holder_document ?? "") as string,
-      holder_email: ((account as any)?.managed_domain_holder_email ?? "") as string,
-      holder_phone: ((account as any)?.managed_domain_holder_phone ?? "") as string,
-      holder_address: ((account as any)?.managed_domain_holder_address ?? "") as string,
-      notes: ((account as any)?.managed_domain_notes ?? "") as string,
+      domain: accountSettings?.managed_domain_requested_name ?? "",
+      holder_name: accountSettings?.managed_domain_holder_name ?? "",
+      holder_document: accountSettings?.managed_domain_holder_document ?? "",
+      holder_email: accountSettings?.managed_domain_holder_email ?? "",
+      holder_phone: accountSettings?.managed_domain_holder_phone ?? "",
+      holder_address: accountSettings?.managed_domain_holder_address ?? "",
+      notes: accountSettings?.managed_domain_notes ?? "",
     });
   }, [
-    (account as any)?.managed_domain_requested_name,
-    (account as any)?.managed_domain_holder_name,
-    (account as any)?.managed_domain_holder_document,
-    (account as any)?.managed_domain_holder_email,
-    (account as any)?.managed_domain_holder_phone,
-    (account as any)?.managed_domain_holder_address,
-    (account as any)?.managed_domain_notes,
+    accountSettings?.managed_domain_requested_name,
+    accountSettings?.managed_domain_holder_name,
+    accountSettings?.managed_domain_holder_document,
+    accountSettings?.managed_domain_holder_email,
+    accountSettings?.managed_domain_holder_phone,
+    accountSettings?.managed_domain_holder_address,
+    accountSettings?.managed_domain_notes,
   ]);
 
   const managedDomainMut = useMutation({
@@ -375,386 +447,401 @@ function SettingsPage() {
           </nav>
 
           <section aria-live="polite" className="min-w-0 space-y-6">
-        {activeSection === "institution" && <>
+            {activeSection === "institution" && (
+              <>
+                <Card className="p-6 space-y-5">
+                  <div>
+                    <h2 className="text-base font-semibold">Endereço público</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O endereço onde sua agenda fica disponível na internet.
+                    </p>
+                  </div>
 
-        <Card className="p-6 space-y-5">
-          <div>
-            <h2 className="text-base font-semibold">Endereço público</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              O endereço onde sua agenda fica disponível na internet.
-            </p>
-          </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Código fixo (sempre funciona)
+                    </Label>
+                    <div className="flex gap-2">
+                      <Input readOnly value={fixedUrl} className="font-mono text-sm" />
+                      <Button variant="outline" type="button" onClick={() => copy(fixedUrl)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-              Código fixo (sempre funciona)
-            </Label>
-            <div className="flex gap-2">
-              <Input readOnly value={fixedUrl} className="font-mono text-sm" />
-              <Button variant="outline" type="button" onClick={() => copy(fixedUrl)}>
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+                  <div className="space-y-2 pt-2 border-t">
+                    <Label htmlFor="custom_slug">Nome curto da igreja (opcional)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Crie um endereço mais bonito, ex:{" "}
+                      <span className="font-mono">{publicOrigin}/a/matriz-sp</span>. Use de 3 a 40
+                      letras minúsculas, números ou hífen.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center rounded-md border bg-muted/40 pl-3 pr-1 flex-1 focus-within:ring-1 focus-within:ring-ring">
+                        <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+                          {publicOrigin}/a/
+                        </span>
+                        <Input
+                          id="custom_slug"
+                          value={slugInput}
+                          onChange={(e) =>
+                            setSlugInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))
+                          }
+                          placeholder="minha-igreja"
+                          maxLength={40}
+                          className="border-0 shadow-none focus-visible:ring-0 font-mono text-sm bg-transparent"
+                        />
+                        <div className="pr-2">
+                          {slugStatus.kind === "checking" && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                          )}
+                          {slugStatus.kind === "available" && (
+                            <Check className="h-4 w-4 text-green-600" />
+                          )}
+                          {(slugStatus.kind === "taken" || slugStatus.kind === "invalid") && (
+                            <X className="h-4 w-4 text-destructive" />
+                          )}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={() => slugMut.mutate(normalizedInput || null)}
+                        disabled={
+                          slugMut.isPending ||
+                          normalizedInput === currentSlug ||
+                          (normalizedInput !== "" && slugStatus.kind !== "available")
+                        }
+                      >
+                        {slugMut.isPending ? "Salvando..." : "Salvar"}
+                      </Button>
+                      {currentSlug && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setSlugInput("");
+                            slugMut.mutate(null);
+                          }}
+                          disabled={slugMut.isPending}
+                        >
+                          Remover
+                        </Button>
+                      )}
+                    </div>
+                    {(slugStatus.kind === "taken" || slugStatus.kind === "invalid") && (
+                      <p className="text-xs text-destructive">{slugStatus.reason}</p>
+                    )}
+                    {slugStatus.kind === "available" && (
+                      <p className="text-xs text-green-600">Disponível</p>
+                    )}
 
-          <div className="space-y-2 pt-2 border-t">
-            <Label htmlFor="custom_slug">
-              Nome curto da igreja (opcional)
-            </Label>
-            <p className="text-xs text-muted-foreground">
-              Crie um endereço mais bonito, ex:{" "}
-              <span className="font-mono">{publicOrigin}/a/matriz-sp</span>. Use de
-              3 a 40 letras minúsculas, números ou hífen.
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center rounded-md border bg-muted/40 pl-3 pr-1 flex-1 focus-within:ring-1 focus-within:ring-ring">
-                <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
-                  {publicOrigin}/a/
-                </span>
-                <Input
-                  id="custom_slug"
-                  value={slugInput}
-                  onChange={(e) =>
-                    setSlugInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))
-                  }
-                  placeholder="minha-igreja"
-                  maxLength={40}
-                  className="border-0 shadow-none focus-visible:ring-0 font-mono text-sm bg-transparent"
+                    {currentSlug && (
+                      <div className="space-y-2 pt-3">
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Endereço atual
+                        </Label>
+                        <div className="flex gap-2">
+                          <Input readOnly value={slugUrl} className="font-mono text-sm" />
+                          <Button variant="outline" type="button" onClick={() => copy(slugUrl)}>
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-xs text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-md p-2 mt-2">
+                      ⚠️ Atenção: ao alterar ou remover o nome curto, links antigos compartilhados
+                      com o nome anterior <strong>param de funcionar</strong>. O código fixo acima
+                      continua funcionando sempre.
+                    </p>
+                  </div>
+                </Card>
+
+                <ChurchIdentityCard
+                  form={form}
+                  setForm={setForm}
+                  isLoading={isLoading}
+                  uploading={logoUploading}
+                  setUploading={setLogoUploading}
+                  inputRef={logoInputRef}
+                  uploadAsset={uploadAsset}
+                  saveSettings={saveAccountSettings}
                 />
-                <div className="pr-2">
-                  {slugStatus.kind === "checking" && (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  )}
-                  {slugStatus.kind === "available" && (
-                    <Check className="h-4 w-4 text-green-600" />
-                  )}
-                  {(slugStatus.kind === "taken" || slugStatus.kind === "invalid") && (
-                    <X className="h-4 w-4 text-destructive" />
-                  )}
-                </div>
-              </div>
-              <Button
-                type="button"
-                onClick={() => slugMut.mutate(normalizedInput || null)}
-                disabled={
-                  slugMut.isPending ||
-                  normalizedInput === currentSlug ||
-                  (normalizedInput !== "" && slugStatus.kind !== "available")
-                }
-              >
-                {slugMut.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-              {currentSlug && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setSlugInput("");
-                    slugMut.mutate(null);
-                  }}
-                  disabled={slugMut.isPending}
-                >
-                  Remover
-                </Button>
-              )}
-            </div>
-            {(slugStatus.kind === "taken" || slugStatus.kind === "invalid") && (
-              <p className="text-xs text-destructive">{slugStatus.reason}</p>
-            )}
-            {slugStatus.kind === "available" && (
-              <p className="text-xs text-green-600">Disponível</p>
+
+                <Card className="p-6 space-y-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Perfil da instituição</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      O perfil define o vocabulário usado no sistema (ex: missa, culto, reunião).
+                    </p>
+                  </div>
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {RELIGION_PROFILES.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setForm({ ...form, religion_profile: p.id })}
+                        className={cn(
+                          "text-left rounded-md border p-3 transition-colors",
+                          form.religion_profile === p.id
+                            ? "border-primary bg-primary/5"
+                            : "hover:border-primary/50",
+                        )}
+                      >
+                        <div className="font-medium text-sm">{p.label}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{p.description}</div>
+                      </button>
+                    ))}
+                  </div>
+                </Card>
+
+                <Card className="p-4">
+                  <div className="flex justify-end">
+                    <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
+                      {mut.isPending ? "Salvando..." : "Salvar instituição"}
+                    </Button>
+                  </div>
+                </Card>
+              </>
             )}
 
-            {currentSlug && (
-              <div className="space-y-2 pt-3">
-                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Endereço atual
-                </Label>
-                <div className="flex gap-2">
-                  <Input readOnly value={slugUrl} className="font-mono text-sm" />
-                  <Button variant="outline" type="button" onClick={() => copy(slugUrl)}>
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+            {activeSection === "domain" && (
+              <DomainPwaSection
+                account={account}
+                value={domainInput}
+                setValue={setDomainInput}
+                saving={domainMut.isPending}
+                verifying={verifyDomainMut.isPending}
+                onSave={() => domainMut.mutate(domainInput.trim() || null)}
+                onRemove={() => {
+                  setDomainInput("");
+                  domainMut.mutate(null);
+                }}
+                onVerify={() => verifyDomainMut.mutate()}
+                managedForm={managedDomainForm}
+                setManagedForm={setManagedDomainForm}
+                savingManaged={managedDomainMut.isPending}
+                removingManaged={cancelManagedDomainMut.isPending}
+                onSaveManaged={() => managedDomainMut.mutate()}
+                onRemoveManaged={() => cancelManagedDomainMut.mutate()}
+                copy={copy}
+              />
             )}
 
-            <p className="text-xs text-amber-700 dark:text-amber-500 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/50 rounded-md p-2 mt-2">
-              ⚠️ Atenção: ao alterar ou remover o nome curto, links antigos
-              compartilhados com o nome anterior <strong>param de funcionar</strong>.
-              O código fixo acima continua funcionando sempre.
-            </p>
-          </div>
-        </Card>
+            {activeSection === "agenda" && (
+              <>
+                <Card className="p-6 space-y-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Campos do formulário</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Ative ou desative campos do painel de cadastro de eventos.
+                    </p>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between gap-4 py-2 border-t">
+                      <div>
+                        <Label htmlFor="show_end_time" className="text-sm">
+                          Hora de término
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Exibe um campo de hora de término no cadastro.
+                        </p>
+                      </div>
+                      <Switch
+                        id="show_end_time"
+                        checked={form.show_end_time}
+                        onCheckedChange={(v) => setForm({ ...form, show_end_time: v })}
+                      />
+                    </div>
+                    <div className="flex items-start justify-between gap-4 py-2 border-t">
+                      <div>
+                        <Label htmlFor="show_live_fields" className="text-sm">
+                          Transmissão ao vivo
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Exibe os campos de live e link de transmissão em cada evento.
+                        </p>
+                      </div>
+                      <Switch
+                        id="show_live_fields"
+                        checked={form.show_live_fields}
+                        onCheckedChange={(v) => setForm({ ...form, show_live_fields: v })}
+                      />
+                    </div>
+                    <div className="flex items-start justify-between gap-4 py-2 border-t">
+                      <div>
+                        <Label htmlFor="force_show_type" className="text-sm">
+                          Mostrar tipo em todos os eventos
+                        </Label>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Exibe o badge do tipo (ex: "Missa") em todos os eventos da agenda pública,
+                          mesmo nos que não marcaram "Mostrar tipo" individualmente.
+                        </p>
+                      </div>
+                      <Switch
+                        id="force_show_type"
+                        checked={form.force_show_type}
+                        onCheckedChange={(v) => setForm({ ...form, force_show_type: v })}
+                      />
+                    </div>
+                  </div>
+                </Card>
 
-        <ChurchIdentityCard
-          form={form}
-          setForm={setForm}
-          isLoading={isLoading}
-          uploading={logoUploading}
-          setUploading={setLogoUploading}
-          inputRef={logoInputRef}
-          uploadAsset={uploadAsset}
-          saveSettings={saveAccountSettings}
-        />
+                <Card className="p-6 space-y-5">
+                  <div>
+                    <h2 className="text-base font-semibold">Textos da agenda no site</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Defina os títulos exibidos na agenda pública. O nome da igreja é editado no
+                      card <strong>Identidade da igreja</strong> acima.
+                    </p>
+                  </div>
 
-        <Card className="p-6 space-y-4">
-          <div>
-            <h2 className="text-base font-semibold">Perfil da instituição</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              O perfil define o vocabulário usado no sistema (ex: missa, culto, reunião).
-            </p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {RELIGION_PROFILES.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setForm({ ...form, religion_profile: p.id })}
-                className={cn(
-                  "text-left rounded-md border p-3 transition-colors",
-                  form.religion_profile === p.id
-                    ? "border-primary bg-primary/5"
-                    : "hover:border-primary/50",
-                )}
-              >
-                <div className="font-medium text-sm">{p.label}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{p.description}</div>
-              </button>
-            ))}
-          </div>
-        </Card>
+                  <div className="space-y-2">
+                    <Label htmlFor="brand_today_title">Título na agenda somente de hoje</Label>
+                    <Input
+                      id="brand_today_title"
+                      value={form.brand_today_title}
+                      onChange={(e) => setForm({ ...form, brand_today_title: e.target.value })}
+                      placeholder="Celebrações de hoje"
+                      disabled={isLoading}
+                    />
+                  </div>
 
-        <Card className="p-4">
-          <div className="flex justify-end">
-            <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
-              {mut.isPending ? "Salvando..." : "Salvar instituição"}
-            </Button>
-          </div>
-        </Card>
-        </>}
+                  <div className="space-y-2">
+                    <Label htmlFor="brand_subtitle">Subtítulo (opcional)</Label>
+                    <Input
+                      id="brand_subtitle"
+                      value={form.brand_subtitle}
+                      onChange={(e) => setForm({ ...form, brand_subtitle: e.target.value })}
+                      placeholder="Confira os próximos horários da nossa comunidade"
+                      disabled={isLoading}
+                    />
+                  </div>
 
-        {activeSection === "domain" && (
-          <DomainPwaSection
-            account={account}
-            value={domainInput}
-            setValue={setDomainInput}
-            saving={domainMut.isPending}
-            verifying={verifyDomainMut.isPending}
-            onSave={() => domainMut.mutate(domainInput.trim() || null)}
-            onRemove={() => {
-              setDomainInput("");
-              domainMut.mutate(null);
-            }}
-            onVerify={() => verifyDomainMut.mutate()}
-            managedForm={managedDomainForm}
-            setManagedForm={setManagedDomainForm}
-            savingManaged={managedDomainMut.isPending}
-            removingManaged={cancelManagedDomainMut.isPending}
-            onSaveManaged={() => managedDomainMut.mutate()}
-            onRemoveManaged={() => cancelManagedDomainMut.mutate()}
-            copy={copy}
-          />
-        )}
+                  <div className="space-y-2">
+                    <Label htmlFor="brand_empty_message">
+                      Mensagem quando não houver celebrações
+                    </Label>
+                    <Textarea
+                      id="brand_empty_message"
+                      value={form.brand_empty_message}
+                      onChange={(e) => setForm({ ...form, brand_empty_message: e.target.value })}
+                      rows={3}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </Card>
 
-        {activeSection === "agenda" && <>
+                <Card className="p-6 space-y-4">
+                  <div>
+                    <h2 className="text-base font-semibold">Aparência</h2>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Cor principal usada nos destaques da agenda pública.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-2 rounded-md border p-2">
+                      <input
+                        id="primary_color"
+                        type="color"
+                        value={form.primary_color}
+                        onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
+                        className="h-9 w-12 rounded border cursor-pointer"
+                        disabled={isLoading}
+                      />
+                      <Input
+                        value={form.primary_color}
+                        onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
+                        className="w-28 font-mono text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => setForm({ ...form, primary_color: DEFAULT_COLOR })}
+                      disabled={isLoading || form.primary_color === DEFAULT_COLOR}
+                    >
+                      <RotateCcw className="h-4 w-4 mr-2" />
+                      Restaurar cor padrão
+                    </Button>
+                  </div>
+                </Card>
 
-        <Card className="p-6 space-y-4">
-          <div>
-            <h2 className="text-base font-semibold">Campos do formulário</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Ative ou desative campos do painel de cadastro de eventos.
-            </p>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-start justify-between gap-4 py-2 border-t">
-              <div>
-                <Label htmlFor="show_end_time" className="text-sm">Hora de término</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Exibe um campo de hora de término no cadastro.
-                </p>
-              </div>
-              <Switch
-                id="show_end_time"
-                checked={form.show_end_time}
-                onCheckedChange={(v) => setForm({ ...form, show_end_time: v })}
-              />
-            </div>
-            <div className="flex items-start justify-between gap-4 py-2 border-t">
-              <div>
-                <Label htmlFor="show_live_fields" className="text-sm">Transmissão ao vivo</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Exibe os campos de live e link de transmissão em cada evento.
-                </p>
-              </div>
-              <Switch
-                id="show_live_fields"
-                checked={form.show_live_fields}
-                onCheckedChange={(v) => setForm({ ...form, show_live_fields: v })}
-              />
-            </div>
-            <div className="flex items-start justify-between gap-4 py-2 border-t">
-              <div>
-                <Label htmlFor="force_show_type" className="text-sm">Mostrar tipo em todos os eventos</Label>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Exibe o badge do tipo (ex: "Missa") em todos os eventos da agenda pública, mesmo nos que não marcaram "Mostrar tipo" individualmente.
-                </p>
-              </div>
-              <Switch
-                id="force_show_type"
-                checked={form.force_show_type}
-                onCheckedChange={(v) => setForm({ ...form, force_show_type: v })}
-              />
-            </div>
-          </div>
-        </Card>
+                <Card className="p-6">
+                  <div className="flex justify-end">
+                    <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
+                      {mut.isPending ? "Salvando..." : "Salvar agenda pública"}
+                    </Button>
+                  </div>
+                </Card>
+              </>
+            )}
 
-        <Card className="p-6 space-y-5">
-          <div>
-            <h2 className="text-base font-semibold">Textos da agenda no site</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Defina os títulos exibidos na agenda pública. O nome da igreja é
-              editado no card <strong>Identidade da igreja</strong> acima.
-            </p>
-          </div>
+            {activeSection === "donations" && (
+              <>
+                <MercadoPagoSection />
+              </>
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="brand_today_title">Título na agenda somente de hoje</Label>
-            <Input
-              id="brand_today_title"
-              value={form.brand_today_title}
-              onChange={(e) => setForm({ ...form, brand_today_title: e.target.value })}
-              placeholder="Celebrações de hoje"
-              disabled={isLoading}
-            />
-          </div>
+            {activeSection === "member-card" && (
+              <>
+                <MemberCardSettingsCard form={form} setForm={setForm} />
 
-          <div className="space-y-2">
-            <Label htmlFor="brand_subtitle">Subtítulo (opcional)</Label>
-            <Input
-              id="brand_subtitle"
-              value={form.brand_subtitle}
-              onChange={(e) => setForm({ ...form, brand_subtitle: e.target.value })}
-              placeholder="Confira os próximos horários da nossa comunidade"
-              disabled={isLoading}
-            />
-          </div>
+                <Card className="p-6">
+                  <div className="flex justify-end">
+                    <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
+                      {mut.isPending ? "Salvando..." : "Salvar carteirinha"}
+                    </Button>
+                  </div>
+                </Card>
+              </>
+            )}
 
-          <div className="space-y-2">
-            <Label htmlFor="brand_empty_message">Mensagem quando não houver celebrações</Label>
-            <Textarea
-              id="brand_empty_message"
-              value={form.brand_empty_message}
-              onChange={(e) => setForm({ ...form, brand_empty_message: e.target.value })}
-              rows={3}
-              disabled={isLoading}
-            />
-          </div>
-        </Card>
-
-        <Card className="p-6 space-y-4">
-          <div>
-            <h2 className="text-base font-semibold">Aparência</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Cor principal usada nos destaques da agenda pública.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-md border p-2">
-              <input
-                id="primary_color"
-                type="color"
-                value={form.primary_color}
-                onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                className="h-9 w-12 rounded border cursor-pointer"
-                disabled={isLoading}
-              />
-              <Input
-                value={form.primary_color}
-                onChange={(e) => setForm({ ...form, primary_color: e.target.value })}
-                className="w-28 font-mono text-sm"
-                disabled={isLoading}
-              />
-            </div>
-            <Button
-              variant="outline"
-              type="button"
-              onClick={() => setForm({ ...form, primary_color: DEFAULT_COLOR })}
-              disabled={isLoading || form.primary_color === DEFAULT_COLOR}
-            >
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Restaurar cor padrão
-            </Button>
-          </div>
-        </Card>
-
-        <Card className="p-6">
-          <div className="flex justify-end">
-            <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
-              {mut.isPending ? "Salvando..." : "Salvar agenda pública"}
-            </Button>
-          </div>
-        </Card>
-        </>}
-
-        {activeSection === "donations" && <>
-        <MercadoPagoSection />
-        </>}
-
-        {activeSection === "member-card" && <>
-        <MemberCardSettingsCard form={form} setForm={setForm} />
-
-        <Card className="p-6">
-          <div className="flex justify-end">
-            <Button onClick={() => mut.mutate()} disabled={mut.isPending || isLoading}>
-              {mut.isPending ? "Salvando..." : "Salvar carteirinha"}
-            </Button>
-          </div>
-        </Card>
-        </>}
-
-        {activeSection === "preview" && <>
-        <Card className="p-6">
-          <h2 className="text-base font-semibold">Prévia do site</h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Renderização exata da agenda pública. O que você vê aqui é o que será exibido
-            no shortcode, iframe ou link compartilhado.
-          </p>
-          <div className="mt-4">
-            <PublicAgendaView
-              account={{
-                brand_title: form.brand_title || "Agenda de Celebrações",
-                brand_subtitle: form.brand_subtitle,
-                brand_empty_message:
-                  form.brand_empty_message || "Nenhuma celebração programada.",
-                brand_today_title: form.brand_today_title,
-                primary_color: form.primary_color,
-                force_show_type: form.force_show_type,
-              }}
-              events={(previewEvents ?? []).map((e) => ({
-                id: e.id,
-                event_date: e.event_date,
-                start_time: e.start_time,
-                end_time: e.end_time,
-                location_name: e.location_name,
-                type_name: e.type_name,
-                type_id: e.type_id,
-                description: e.description,
-                show_type: e.show_type,
-                is_live: e.is_live,
-                live_url: e.live_url,
-              }))}
-              types={previewTypes.map((t) => ({
-                id: t.id,
-                name: t.name,
-                color: t.color ?? "#467da5",
-                icon: t.icon ?? "",
-              }))}
-              view="full"
-            />
-          </div>
-        </Card>
-        </>}
+            {activeSection === "preview" && (
+              <>
+                <Card className="p-6">
+                  <h2 className="text-base font-semibold">Prévia do site</h2>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Renderização exata da agenda pública. O que você vê aqui é o que será exibido no
+                    shortcode, iframe ou link compartilhado.
+                  </p>
+                  <div className="mt-4">
+                    <PublicAgendaView
+                      account={{
+                        brand_title: form.brand_title || "Agenda de Celebrações",
+                        brand_subtitle: form.brand_subtitle,
+                        brand_empty_message:
+                          form.brand_empty_message || "Nenhuma celebração programada.",
+                        brand_today_title: form.brand_today_title,
+                        primary_color: form.primary_color,
+                        force_show_type: form.force_show_type,
+                      }}
+                      events={(previewEvents ?? []).map((e) => ({
+                        id: e.id,
+                        event_date: e.event_date,
+                        start_time: e.start_time,
+                        end_time: e.end_time,
+                        location_name: e.location_name,
+                        type_name: e.type_name,
+                        type_id: e.type_id,
+                        description: e.description,
+                        show_type: e.show_type,
+                        is_live: e.is_live,
+                        live_url: e.live_url,
+                      }))}
+                      types={previewTypes.map((t) => ({
+                        id: t.id,
+                        name: t.name,
+                        color: t.color ?? "#467da5",
+                        icon: t.icon ?? "",
+                      }))}
+                      view="full"
+                    />
+                  </div>
+                </Card>
+              </>
+            )}
           </section>
         </div>
       </div>
@@ -779,7 +866,7 @@ function DomainPwaSection({
   onRemoveManaged,
   copy,
 }: {
-  account: any;
+  account: AccountSettingsData | null | undefined;
   value: string;
   setValue: (value: string) => void;
   saving: boolean;
@@ -822,18 +909,36 @@ function DomainPwaSection({
       : "";
   const statusCopy: Record<string, { label: string; className: string }> = {
     not_configured: { label: "Não configurado", className: "bg-muted text-muted-foreground" },
-    pending: { label: "Aguardando DNS", className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" },
+    pending: {
+      label: "Aguardando DNS",
+      className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+    },
     failed: { label: "Não verificado", className: "bg-destructive/10 text-destructive" },
-    verified: { label: "Verificado", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    verified: {
+      label: "Verificado",
+      className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+    },
   };
   const statusInfo = statusCopy[status] ?? statusCopy.not_configured;
   const managedStatus = account?.managed_domain_status ?? "not_requested";
   const managedStatusCopy: Record<string, { label: string; className: string }> = {
     not_requested: { label: "Não solicitado", className: "bg-muted text-muted-foreground" },
-    requested: { label: "Pedido recebido", className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" },
-    in_progress: { label: "Em andamento", className: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300" },
-    registered: { label: "Registrado", className: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300" },
-    configured: { label: "Configurado", className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    requested: {
+      label: "Pedido recebido",
+      className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+    },
+    in_progress: {
+      label: "Em andamento",
+      className: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
+    },
+    registered: {
+      label: "Registrado",
+      className: "bg-cyan-100 text-cyan-800 dark:bg-cyan-950/40 dark:text-cyan-300",
+    },
+    configured: {
+      label: "Configurado",
+      className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+    },
     blocked: { label: "Pendente", className: "bg-destructive/10 text-destructive" },
   };
   const managedInfo = managedStatusCopy[managedStatus] ?? managedStatusCopy.not_requested;
@@ -847,17 +952,21 @@ function DomainPwaSection({
           <div>
             <h2 className="text-base font-semibold">Domínio próprio</h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Configure um domínio da instituição e valide a posse via DNS antes de ativar o roteamento.
+              Configure um domínio da instituição e valide a posse via DNS antes de ativar o
+              roteamento.
             </p>
           </div>
-          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", statusInfo.className)}>
+          <span
+            className={cn("rounded-full px-2.5 py-1 text-xs font-medium", statusInfo.className)}
+          >
             {statusInfo.label}
           </span>
         </div>
 
         {!isPremium && (
           <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
-            Domínio próprio é um recurso do plano Premium ativo. O manifesto PWA por tenant continua funcionando nos links da suaigreja.top.
+            Domínio próprio é um recurso do plano Premium ativo. O manifesto PWA por tenant continua
+            funcionando nos links da suaigreja.top.
           </div>
         )}
 
@@ -872,12 +981,21 @@ function DomainPwaSection({
               disabled={!isPremium || saving}
               className="font-mono"
             />
-            <Button type="button" onClick={onSave} disabled={!isPremium || saving || value.trim() === configuredDomain}>
+            <Button
+              type="button"
+              onClick={onSave}
+              disabled={!isPremium || saving || value.trim() === configuredDomain}
+            >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Salvar domínio
             </Button>
             {configuredDomain && (
-              <Button type="button" variant="outline" onClick={onRemove} disabled={!isPremium || saving}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onRemove}
+                disabled={!isPremium || saving}
+              >
                 Remover
               </Button>
             )}
@@ -896,7 +1014,12 @@ function DomainPwaSection({
                   Adicione estes registros no provedor do domínio e clique em verificar.
                 </p>
               </div>
-              <Button type="button" variant="secondary" onClick={onVerify} disabled={!isPremium || verifying}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onVerify}
+                disabled={!isPremium || verifying}
+              >
                 {verifying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Verificar DNS
               </Button>
@@ -904,21 +1027,38 @@ function DomainPwaSection({
 
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-md border bg-background p-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">TXT</p>
-                <p className="mt-1 text-sm">Nome: <code>@</code></p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  TXT
+                </p>
+                <p className="mt-1 text-sm">
+                  Nome: <code>@</code>
+                </p>
                 <div className="mt-1 flex items-center gap-2">
-                  <code className="min-w-0 flex-1 break-all rounded bg-muted px-2 py-1 text-xs">{token}</code>
+                  <code className="min-w-0 flex-1 break-all rounded bg-muted px-2 py-1 text-xs">
+                    {token}
+                  </code>
                   <Button type="button" variant="ghost" size="icon" onClick={() => copy(token)}>
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
               <div className="rounded-md border bg-background p-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">CNAME/ALIAS</p>
-                <p className="mt-1 text-sm">Nome: <code>@</code> ou <code>www</code></p>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  CNAME/ALIAS
+                </p>
+                <p className="mt-1 text-sm">
+                  Nome: <code>@</code> ou <code>www</code>
+                </p>
                 <div className="mt-1 flex items-center gap-2">
-                  <code className="min-w-0 flex-1 break-all rounded bg-muted px-2 py-1 text-xs">suaigreja.top</code>
-                  <Button type="button" variant="ghost" size="icon" onClick={() => copy("suaigreja.top")}>
+                  <code className="min-w-0 flex-1 break-all rounded bg-muted px-2 py-1 text-xs">
+                    suaigreja.top
+                  </code>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => copy("suaigreja.top")}
+                  >
                     <Copy className="h-4 w-4" />
                   </Button>
                 </div>
@@ -930,7 +1070,8 @@ function DomainPwaSection({
             )}
             {account?.custom_domain_last_checked_at && (
               <p className="mt-2 text-xs text-muted-foreground">
-                Última verificação: {new Date(account.custom_domain_last_checked_at).toLocaleString("pt-BR")}
+                Última verificação:{" "}
+                {new Date(account.custom_domain_last_checked_at).toLocaleString("pt-BR")}
               </p>
             )}
           </div>
@@ -946,14 +1087,17 @@ function DomainPwaSection({
               A equipe usa estas informações para registro, cobrança e configuração.
             </p>
           </div>
-          <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", managedInfo.className)}>
+          <span
+            className={cn("rounded-full px-2.5 py-1 text-xs font-medium", managedInfo.className)}
+          >
             {managedInfo.label}
           </span>
         </div>
 
         <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-          Esta etapa ainda é assistida: o sistema coleta os dados e acompanha o status. A automação completa
-          com registrador/Registro.br fica para a próxima fase, depois da decisão comercial e operacional.
+          Esta etapa ainda é assistida: o sistema coleta os dados e acompanha o status. A automação
+          completa com registrador/Registro.br fica para a próxima fase, depois da decisão comercial
+          e operacional.
         </div>
 
         <div className="grid gap-3 md:grid-cols-2">
@@ -962,7 +1106,9 @@ function DomainPwaSection({
             <Input
               id="managed_domain"
               value={managedForm.domain}
-              onChange={(e) => setManagedField("domain", e.target.value.toLowerCase().replace(/^https?:\/\//, ""))}
+              onChange={(e) =>
+                setManagedField("domain", e.target.value.toLowerCase().replace(/^https?:\/\//, ""))
+              }
               placeholder="minhaigreja.org.br"
               disabled={!isPremium || savingManaged}
               className="font-mono"
@@ -1034,7 +1180,12 @@ function DomainPwaSection({
 
         <div className="flex flex-wrap justify-end gap-2">
           {managedStatus !== "not_requested" && (
-            <Button type="button" variant="outline" onClick={onRemoveManaged} disabled={!isPremium || removingManaged}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onRemoveManaged}
+              disabled={!isPremium || removingManaged}
+            >
               {removingManaged ? "Removendo..." : "Remover pedido"}
             </Button>
           )}
@@ -1046,7 +1197,8 @@ function DomainPwaSection({
 
         {account?.managed_domain_requested_at && (
           <p className="text-xs text-muted-foreground">
-            Pedido registrado em {new Date(account.managed_domain_requested_at).toLocaleString("pt-BR")}.
+            Pedido registrado em{" "}
+            {new Date(account.managed_domain_requested_at).toLocaleString("pt-BR")}.
           </p>
         )}
       </Card>
@@ -1060,13 +1212,20 @@ function DomainPwaSection({
         </div>
         <div className="grid gap-3 md:grid-cols-2">
           <div className="rounded-md border p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Nome do app</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Nome do app
+            </p>
             <p className="mt-1 text-sm font-medium">{account?.brand_title ?? "Sua Igreja"}</p>
           </div>
           <div className="rounded-md border p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Cor do tema</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Cor do tema
+            </p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="h-5 w-5 rounded border" style={{ background: account?.primary_color ?? DEFAULT_COLOR }} />
+              <span
+                className="h-5 w-5 rounded border"
+                style={{ background: account?.primary_color ?? DEFAULT_COLOR }}
+              />
               <code className="text-xs">{account?.primary_color ?? DEFAULT_COLOR}</code>
             </div>
           </div>
@@ -1094,17 +1253,12 @@ function ChurchIdentityCard({
   uploadAsset,
   saveSettings,
 }: {
-  form: {
-    brand_title: string;
-    brand_logo_url: string;
-    brand_logo_height_px: number;
-    brand_footer_logo_url: string;
-  } & Record<string, any>;
-  setForm: (updater: any) => void;
+  form: SettingsForm;
+  setForm: SetSettingsForm;
   isLoading: boolean;
   uploading: boolean;
   setUploading: (b: boolean) => void;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: RefObject<HTMLInputElement | null>;
   uploadAsset: (input: {
     data: {
       folder: "church-logo";
@@ -1113,12 +1267,16 @@ function ChurchIdentityCard({
       base64: string;
     };
   }) => Promise<{ url: string }>;
-  saveSettings: (nextForm: any) => Promise<any>;
+  saveSettings: (nextForm: SettingsForm) => Promise<unknown>;
 }) {
   const footerInputRef = useRef<HTMLInputElement | null>(null);
   const [footerUploading, setFooterUploading] = useState(false);
 
-  async function uploadLogoFile(file: File, field: "brand_logo_url" | "brand_footer_logo_url", setBusy: (b: boolean) => void) {
+  async function uploadLogoFile(
+    file: File,
+    field: "brand_logo_url" | "brand_footer_logo_url",
+    setBusy: (b: boolean) => void,
+  ) {
     if (!/\.(png|jpg|jpeg|webp|gif|ico)$/i.test(file.name)) {
       toast.error("Formato: PNG, JPG, WEBP, GIF ou ICO");
       return;
@@ -1164,9 +1322,12 @@ function ChurchIdentityCard({
     });
   }
 
-  const [removingBg, setRemovingBg] = useState<null | "brand_logo_url" | "brand_footer_logo_url">(null);
+  const [removingBg, setRemovingBg] = useState<null | "brand_logo_url" | "brand_footer_logo_url">(
+    null,
+  );
   async function handleRemoveBackground(field: "brand_logo_url" | "brand_footer_logo_url") {
-    const primaryUrl = field === "brand_footer_logo_url" ? form.brand_footer_logo_url : form.brand_logo_url;
+    const primaryUrl =
+      field === "brand_footer_logo_url" ? form.brand_footer_logo_url : form.brand_logo_url;
     const fallbackUrl = field === "brand_footer_logo_url" ? form.brand_logo_url : null;
     const url = isValidImageUrl(primaryUrl) ? primaryUrl : fallbackUrl;
     if (!url) {
@@ -1190,9 +1351,7 @@ function ChurchIdentityCard({
       const inputBlob = await res.blob();
       const removedBlob = await removeBackground(inputBlob, { output: { format: "image/png" } });
       const finalBlob =
-        field === "brand_footer_logo_url"
-          ? await makeWhiteLogo(removedBlob)
-          : removedBlob;
+        field === "brand_footer_logo_url" ? await makeWhiteLogo(removedBlob) : removedBlob;
       const file = new File([finalBlob], `${field}-${Date.now()}.png`, { type: "image/png" });
       const base64 = await fileToBase64(file);
       const uploaded = await uploadAsset({
@@ -1290,8 +1449,8 @@ function ChurchIdentityCard({
       <div>
         <h2 className="text-base font-semibold">Identidade da igreja</h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Nome e logo usados em toda a página pública da igreja (topo, rodapé,
-          link compartilhado e agenda).
+          Nome e logo usados em toda a página pública da igreja (topo, rodapé, link compartilhado e
+          agenda).
         </p>
       </div>
 
@@ -1306,8 +1465,8 @@ function ChurchIdentityCard({
           maxLength={120}
         />
         <p className="text-xs text-muted-foreground">
-          Aparece no topo da página, no rodapé e como título da agenda quando
-          não houver logo enviado.
+          Aparece no topo da página, no rodapé e como título da agenda quando não houver logo
+          enviado.
         </p>
       </div>
 
@@ -1315,10 +1474,9 @@ function ChurchIdentityCard({
         <div>
           <Label>Logo do topo do site</Label>
           <p className="text-xs text-muted-foreground mt-1">
-            Recomendado: <strong>400×120&nbsp;px</strong> (proporção
-            horizontal). Formatos: <strong>PNG transparente</strong>, JPG ou
-            WEBP. Tamanho máx.: 3&nbsp;MB. Quando enviado, substitui o nome no
-            topo do site.
+            Recomendado: <strong>400×120&nbsp;px</strong> (proporção horizontal). Formatos:{" "}
+            <strong>PNG transparente</strong>, JPG ou WEBP. Tamanho máx.: 3&nbsp;MB. Quando enviado,
+            substitui o nome no topo do site.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -1403,8 +1561,7 @@ function ChurchIdentityCard({
             />
           </div>
           <p className="text-xs text-muted-foreground sm:pt-7">
-            Entre 16 e 64&nbsp;px. Mantém a proporção e evita logos gigantes no
-            topo do site.
+            Entre 16 e 64&nbsp;px. Mantém a proporção e evita logos gigantes no topo do site.
           </p>
         </div>
       </div>
@@ -1413,9 +1570,9 @@ function ChurchIdentityCard({
         <div>
           <Label>Logo do rodapé (opcional)</Label>
           <p className="text-xs text-muted-foreground mt-1">
-            Use uma versão diferente da logo no rodapé (que tem fundo escuro).
-            Se não enviar, usamos a logo do topo. Ideal: <strong>PNG com fundo transparente</strong>{" "}
-            e a arte em tons claros.
+            Use uma versão diferente da logo no rodapé (que tem fundo escuro). Se não enviar, usamos
+            a logo do topo. Ideal: <strong>PNG com fundo transparente</strong> e a arte em tons
+            claros.
           </p>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
@@ -1527,9 +1684,9 @@ function MercadoPagoSection() {
       <div>
         <h2 className="text-base font-semibold">Mercado Pago (doações)</h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Conecte sua própria conta do Mercado Pago para que as doações dos fiéis caiam direto na conta da
-          sua igreja, com confirmação automática de pagamento. Sem conectar, as doações continuam usando o
-          Pix simples (copia e cola), sem rastreio de pagamento.
+          Conecte sua própria conta do Mercado Pago para que as doações dos fiéis caiam direto na
+          conta da sua igreja, com confirmação automática de pagamento. Sem conectar, as doações
+          continuam usando o Pix simples (copia e cola), sem rastreio de pagamento.
         </p>
       </div>
 
@@ -1539,7 +1696,12 @@ function MercadoPagoSection() {
             <Check className="h-4 w-4 text-green-600" />
             Conectado
           </div>
-          <Button variant="outline" size="sm" onClick={() => removeMut.mutate()} disabled={removeMut.isPending}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => removeMut.mutate()}
+            disabled={removeMut.isPending}
+          >
             {removeMut.isPending ? "Desconectando…" : "Desconectar"}
           </Button>
         </div>
@@ -1556,10 +1718,17 @@ function MercadoPagoSection() {
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Public Key (opcional)</Label>
-            <Input value={publicKey} onChange={(e) => setPublicKey(e.target.value)} placeholder="APP_USR-..." />
+            <Input
+              value={publicKey}
+              onChange={(e) => setPublicKey(e.target.value)}
+              placeholder="APP_USR-..."
+            />
           </div>
           <div className="sm:col-span-2 flex justify-end">
-            <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending || accessToken.trim().length < 10}>
+            <Button
+              onClick={() => saveMut.mutate()}
+              disabled={saveMut.isPending || accessToken.trim().length < 10}
+            >
               {saveMut.isPending ? "Conectando…" : "Conectar Mercado Pago"}
             </Button>
           </div>
@@ -1573,8 +1742,8 @@ function MemberCardSettingsCard({
   form,
   setForm,
 }: {
-  form: any;
-  setForm: (updater: any) => void;
+  form: SettingsForm;
+  setForm: SetSettingsForm;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -1598,7 +1767,7 @@ function MemberCardSettingsCard({
         .upload(path, file, { upsert: false, contentType: file.type });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, card_logo_url: pub.publicUrl }));
+      setForm((f) => ({ ...f, card_logo_url: pub.publicUrl }));
       toast.success("Logo enviada. Não esqueça de salvar.");
     } catch (e) {
       toast.error((e as Error).message);
@@ -1624,7 +1793,7 @@ function MemberCardSettingsCard({
         .upload(path, file, { upsert: false, contentType: "image/png" });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
-      setForm((f: any) => ({ ...f, card_logo_url: pub.publicUrl }));
+      setForm((f) => ({ ...f, card_logo_url: pub.publicUrl }));
       toast.success("Fundo removido! Não esqueça de salvar.", { id: tId });
     } catch (e) {
       toast.error("Falha ao remover fundo: " + (e as Error).message, { id: tId });
@@ -1650,10 +1819,10 @@ function MemberCardSettingsCard({
       <div>
         <h2 className="text-base font-semibold">Carteirinha de membro</h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Modelo padrão do sistema. Os dados (foto, nome, CPF, datas, QR) são
-          puxados automaticamente do cadastro do membro. Você personaliza
-          apenas a <strong>logo</strong>, as <strong>cores</strong> e o
-          <strong> texto legal do rodapé</strong>. A cor principal vem do bloco
+          Modelo padrão do sistema. Os dados (foto, nome, CPF, datas, QR) são puxados
+          automaticamente do cadastro do membro. Você personaliza apenas a <strong>logo</strong>, as{" "}
+          <strong>cores</strong> e o<strong> texto legal do rodapé</strong>. A cor principal vem do
+          bloco
           <em> Aparência</em> acima.
         </p>
       </div>
@@ -1663,8 +1832,8 @@ function MemberCardSettingsCard({
           <div className="space-y-2">
             <Label>Logo da carteirinha</Label>
             <p className="text-xs text-muted-foreground">
-              Recomendado: <strong>400×400&nbsp;px</strong>, PNG com fundo
-              transparente. Tamanho máx.: 3&nbsp;MB.
+              Recomendado: <strong>400×400&nbsp;px</strong>, PNG com fundo transparente. Tamanho
+              máx.: 3&nbsp;MB.
             </p>
             <div className="flex flex-wrap gap-2 items-center">
               <Input
@@ -1684,21 +1853,38 @@ function MemberCardSettingsCard({
                   e.target.value = "";
                 }}
               />
-              <Button type="button" variant="outline" onClick={() => inputRef.current?.click()} disabled={uploading}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => inputRef.current?.click()}
+                disabled={uploading}
+              >
                 {uploading ? "Enviando…" : "Enviar arquivo"}
               </Button>
               {form.card_logo_url && (
-                <Button type="button" variant="ghost" onClick={() => setForm({ ...form, card_logo_url: "" })}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setForm({ ...form, card_logo_url: "" })}
+                >
                   Remover
                 </Button>
               )}
             </div>
             {form.card_logo_url && (
               <div className="flex flex-wrap items-center gap-2 pt-1">
-                <Button type="button" variant="secondary" size="sm" onClick={removeBg} disabled={removingBg || uploading}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={removeBg}
+                  disabled={removingBg || uploading}
+                >
                   {removingBg ? "Processando…" : "✨ Remover fundo (IA)"}
                 </Button>
-                <span className="text-xs text-muted-foreground">Gratuito — processa no seu navegador.</span>
+                <span className="text-xs text-muted-foreground">
+                  Gratuito — processa no seu navegador.
+                </span>
               </div>
             )}
           </div>
@@ -1711,7 +1897,9 @@ function MemberCardSettingsCard({
                 min={24}
                 max={160}
                 value={form.card_logo_height_px}
-                onChange={(e) => setForm({ ...form, card_logo_height_px: Number(e.target.value) || 72 })}
+                onChange={(e) =>
+                  setForm({ ...form, card_logo_height_px: Number(e.target.value) || 72 })
+                }
               />
             </div>
             <p className="text-xs text-muted-foreground sm:pt-7">
@@ -1752,17 +1940,25 @@ function MemberCardSettingsCard({
             <div className="space-y-2">
               <Label>Tamanho do título "CARTEIRA DE MEMBRO" (px)</Label>
               <Input
-                type="number" min={18} max={60}
+                type="number"
+                min={18}
+                max={60}
                 value={form.card_title_size_px}
-                onChange={(e) => setForm({ ...form, card_title_size_px: Number(e.target.value) || 36 })}
+                onChange={(e) =>
+                  setForm({ ...form, card_title_size_px: Number(e.target.value) || 36 })
+                }
               />
             </div>
             <div className="space-y-2">
               <Label>Tamanho do texto legal (px)</Label>
               <Input
-                type="number" min={8} max={20}
+                type="number"
+                min={8}
+                max={20}
                 value={form.card_footer_size_px}
-                onChange={(e) => setForm({ ...form, card_footer_size_px: Number(e.target.value) || 12 })}
+                onChange={(e) =>
+                  setForm({ ...form, card_footer_size_px: Number(e.target.value) || 12 })
+                }
               />
             </div>
           </div>
@@ -1771,17 +1967,25 @@ function MemberCardSettingsCard({
             <div className="space-y-2">
               <Label>Tamanho do texto do membro (px)</Label>
               <Input
-                type="number" min={10} max={28}
+                type="number"
+                min={10}
+                max={28}
                 value={form.card_field_size_px}
-                onChange={(e) => setForm({ ...form, card_field_size_px: Number(e.target.value) || 15 })}
+                onChange={(e) =>
+                  setForm({ ...form, card_field_size_px: Number(e.target.value) || 15 })
+                }
               />
             </div>
             <div className="space-y-2">
               <Label>Tamanho dos rótulos (NOME, CPF...) (px)</Label>
               <Input
-                type="number" min={9} max={20}
+                type="number"
+                min={9}
+                max={20}
                 value={form.card_label_size_px}
-                onChange={(e) => setForm({ ...form, card_label_size_px: Number(e.target.value) || 13 })}
+                onChange={(e) =>
+                  setForm({ ...form, card_label_size_px: Number(e.target.value) || 13 })
+                }
               />
             </div>
           </div>
@@ -1808,8 +2012,8 @@ function MemberCardSettingsCard({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            A prévia usa um membro fictício. Cada carteirinha real é gerada na
-            página <code>/c/&lt;id-do-membro&gt;</code> com os dados reais.
+            A prévia usa um membro fictício. Cada carteirinha real é gerada na página{" "}
+            <code>/c/&lt;id-do-membro&gt;</code> com os dados reais.
           </p>
         </div>
       </div>

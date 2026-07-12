@@ -5,8 +5,26 @@ import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+type SupabaseAdminClient = typeof supabaseAdmin;
+
+type MemberDocumentWrite = {
+  template_id: string | null;
+  member_id: string | null;
+  title: string;
+  body: string;
+  issued_at: string;
+  certificate_number?: string;
+  account_id?: string;
+};
+
+type MemberDocumentPublic = {
+  members?: {
+    full_name?: string | null;
+  } | null;
+};
+
 async function assertMemberBelongsToAccount(
-  supabase: any,
+  supabase: SupabaseAdminClient,
   accountId: string,
   memberId?: string | null,
 ) {
@@ -22,7 +40,7 @@ async function assertMemberBelongsToAccount(
 }
 
 async function assertTemplateAllowed(
-  supabase: any,
+  supabase: SupabaseAdminClient,
   accountId: string,
   templateId?: string | null,
 ) {
@@ -81,7 +99,11 @@ const issueSchema = z.object({
 
 // Numeracao sequencial por conta e ano, ex.: "0007/2026". Conta quantos
 // certificados ja foram emitidos pela conta no mesmo ano do issued_at.
-async function nextCertificateNumber(supabase: any, accountId: string, issuedAt: string): Promise<string> {
+async function nextCertificateNumber(
+  supabase: SupabaseAdminClient,
+  accountId: string,
+  issuedAt: string,
+): Promise<string> {
   const year = new Date(`${issuedAt}T00:00:00`).getFullYear();
   const { count, error } = await supabase
     .from("member_documents")
@@ -96,7 +118,7 @@ async function nextCertificateNumber(supabase: any, accountId: string, issuedAt:
 
 export const upsertMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => issueSchema.parse(i))
+  .validator((i) => issueSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requireModuleAccess(context, "/documentos");
     await requirePermission(context, "documents", data.id ? "edit" : "create");
@@ -104,7 +126,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
     await assertMemberBelongsToAccount(supabase, accountId, data.member_id);
     await assertTemplateAllowed(supabase, accountId, data.template_id);
     const issuedAt = data.issued_at || new Date().toISOString().slice(0, 10);
-    const payload: Record<string, unknown> = {
+    const payload: MemberDocumentWrite = {
       template_id: data.template_id || null,
       member_id: data.member_id || null,
       title: data.title.trim(),
@@ -126,7 +148,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
       }
       const { data: updated, error } = await supabase
         .from("member_documents")
-        .update(payload as any)
+        .update(payload)
         .eq("id", data.id)
         .eq("account_id", accountId)
         .select("id")
@@ -140,7 +162,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabase
       .from("member_documents")
-      .insert({ ...payload, account_id: accountId } as any)
+      .insert({ ...payload, account_id: accountId })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -149,7 +171,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
 
 export const deleteMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requireModuleAccess(context, "/documentos");
     await requirePermission(context, "documents", "delete");
@@ -170,7 +192,7 @@ export const deleteMemberDocument = createServerFn({ method: "POST" })
 // necessarios para confirmar autenticidade, nunca o corpo do documento
 // (pode conter informacao pastoral sensivel).
 export const getPublicCertificate = createServerFn({ method: "GET" })
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
     const { data: doc, error } = await supabaseAdmin
       .from("member_documents")
@@ -190,7 +212,7 @@ export const getPublicCertificate = createServerFn({ method: "GET" })
       title: doc.title,
       certificateNumber: doc.certificate_number,
       issuedAt: doc.issued_at,
-      memberName: (doc as any).members?.full_name ?? null,
+      memberName: (doc as MemberDocumentPublic).members?.full_name ?? null,
       church: account ?? null,
     };
   });

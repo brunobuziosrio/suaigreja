@@ -36,7 +36,10 @@ async function generateDonationPixViaMercadoPago(opts: {
       transaction_amount: Math.round(opts.amountCents) / 100,
       description: opts.description,
       payment_method_id: "pix",
-      payer: { email: opts.donorEmail || "doador@email.com", first_name: opts.donorName || "Doador" },
+      payer: {
+        email: opts.donorEmail || "doador@email.com",
+        first_name: opts.donorName || "Doador",
+      },
       notification_url: notificationUrl,
       external_reference: `${opts.accountId}:${opts.campaignId}:${Date.now()}`,
     }),
@@ -44,7 +47,10 @@ async function generateDonationPixViaMercadoPago(opts: {
 
   const raw = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error((raw as { message?: string } | null)?.message ?? "Não foi possível gerar o Pix no Mercado Pago.");
+    throw new Error(
+      (raw as { message?: string } | null)?.message ??
+        "Não foi possível gerar o Pix no Mercado Pago.",
+    );
   }
 
   const txData = (raw as Record<string, unknown>)?.point_of_interaction as
@@ -82,7 +88,9 @@ async function generateDonationPixViaMercadoPago(opts: {
 }
 
 const slugValidator = (input: { slug: string }) => {
-  const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
+  const slug = String(input?.slug || "")
+    .toLowerCase()
+    .slice(0, 64);
   if (!/^[a-z0-9_-]+$/.test(slug)) throw new Error("invalid slug");
   return { slug };
 };
@@ -90,13 +98,17 @@ const slugValidator = (input: { slug: string }) => {
 async function resolveAccountBySlug(slug: string) {
   let { data } = await supabaseAdmin
     .from("accounts")
-    .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled")
+    .select(
+      "id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled",
+    )
     .eq("custom_slug", slug)
     .maybeSingle();
   if (!data) {
     const fb = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled")
+      .select(
+        "id, site_id, custom_slug, brand_title, primary_color, hub_enabled, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, hub_bio, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, live_url, pix_key, cta_label, cta_enabled",
+      )
       .eq("site_id", slug)
       .maybeSingle();
     data = fb.data;
@@ -107,13 +119,15 @@ async function resolveAccountBySlug(slug: string) {
 // ============== PUBLIC ==============
 
 export const getPublicDonations = createServerFn({ method: "GET" })
-  .inputValidator(slugValidator)
+  .validator(slugValidator)
   .handler(async ({ data }) => {
     const account = await resolveAccountBySlug(data.slug);
     if (!account || !account.hub_enabled) return null;
     const { data: campaigns } = await supabaseAdmin
       .from("donation_campaigns")
-      .select("id, title, description, image_url, suggested_amounts_cents, goal_cents, featured, sort_order")
+      .select(
+        "id, title, description, image_url, suggested_amounts_cents, goal_cents, featured, sort_order",
+      )
       .eq("account_id", account.id)
       .eq("active", true)
       .order("featured", { ascending: false })
@@ -123,8 +137,10 @@ export const getPublicDonations = createServerFn({ method: "GET" })
   });
 
 export const getPublicDonationCampaign = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string; id: string }) => {
-    const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
+  .validator((input: { slug: string; id: string }) => {
+    const slug = String(input?.slug || "")
+      .toLowerCase()
+      .slice(0, 64);
     const id = String(input?.id || "");
     if (!/^[a-z0-9_-]+$/.test(slug)) throw new Error("invalid slug");
     if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("invalid id");
@@ -154,7 +170,7 @@ const PixGenInput = z.object({
 });
 
 export const generateDonationPix = createServerFn({ method: "POST" })
-  .inputValidator((input) => PixGenInput.parse(input))
+  .validator((input) => PixGenInput.parse(input))
   .handler(async ({ data }) => {
     const slug = data.slug.toLowerCase();
     const account = await resolveAccountBySlug(slug);
@@ -200,11 +216,13 @@ export const generateDonationPix = createServerFn({ method: "POST" })
   });
 
 export const getPublicDonationReceipt = createServerFn({ method: "GET" })
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data }) => {
     const { data: donation } = await supabaseAdmin
       .from("donations")
-      .select("id, account_id, campaign_id, donor_name, amount_cents, status, paid_at, mercadopago_payment_id, created_at")
+      .select(
+        "id, account_id, campaign_id, donor_name, amount_cents, status, paid_at, mercadopago_payment_id, created_at",
+      )
       .eq("id", data.id)
       .eq("status", "paid")
       .maybeSingle();
@@ -217,7 +235,11 @@ export const getPublicDonationReceipt = createServerFn({ method: "GET" })
       .maybeSingle();
 
     const { data: campaign } = donation.campaign_id
-      ? await supabaseAdmin.from("donation_campaigns").select("title").eq("id", donation.campaign_id).maybeSingle()
+      ? await supabaseAdmin
+          .from("donation_campaigns")
+          .select("title")
+          .eq("id", donation.campaign_id)
+          .maybeSingle()
       : { data: null };
 
     return { donation, church: account, campaignTitle: campaign?.title ?? null };
@@ -260,7 +282,7 @@ const CampaignInput = z.object({
 
 export const upsertDonationCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => CampaignInput.parse(input))
+  .validator((input) => CampaignInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
@@ -275,7 +297,7 @@ export const upsertDonationCampaign = createServerFn({ method: "POST" })
 
 export const deleteDonationCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     await requirePermission(context, "campaigns", "delete");
@@ -306,7 +328,10 @@ export const getDonationCampaignStats = createServerFn({ method: "GET" })
     const raisedByCampaign = new Map<string, number>();
     for (const d of donations ?? []) {
       if (!d.campaign_id) continue;
-      raisedByCampaign.set(d.campaign_id, (raisedByCampaign.get(d.campaign_id) ?? 0) + d.amount_cents);
+      raisedByCampaign.set(
+        d.campaign_id,
+        (raisedByCampaign.get(d.campaign_id) ?? 0) + d.amount_cents,
+      );
     }
 
     return (campaigns ?? []).map((c) => ({
@@ -319,7 +344,9 @@ export const getDonationCampaignStats = createServerFn({ method: "GET" })
 
 export const listDonationsByCampaign = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { campaignId: string }) => z.object({ campaignId: z.string().uuid() }).parse(input))
+  .validator((input: { campaignId: string }) =>
+    z.object({ campaignId: z.string().uuid() }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
@@ -338,7 +365,9 @@ export const listDonationsByCampaign = createServerFn({ method: "GET" })
 
 export const getDonationsMonthlyReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { year: number }) => z.object({ year: z.number().int().min(2020).max(2100) }).parse(input))
+  .validator((input: { year: number }) =>
+    z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "campaigns", "view");

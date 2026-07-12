@@ -22,7 +22,7 @@ export const listCheckinSessions = createServerFn({ method: "GET" })
 
 export const listCheckinEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { session_id: string }) => z.object({ session_id: z.string().uuid() }).parse(i))
+  .validator((i: { session_id: string }) => z.object({ session_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "checkin", "view");
@@ -48,30 +48,42 @@ const upsertSchema = z.object({
 
 export const upsertCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "checkin", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
     if (data.id) {
-      const { error } = await supabase.from("checkin_sessions").update(payload).eq("id", data.id).eq("account_id", accountId);
+      const { error } = await supabase
+        .from("checkin_sessions")
+        .update(payload)
+        .eq("id", data.id)
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
-    const { data: row, error } = await supabase.from("checkin_sessions").insert(payload).select("id").single();
+    const { data: row, error } = await supabase
+      .from("checkin_sessions")
+      .insert(payload)
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return { id: row.id };
   });
 
 export const deleteCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "checkin", "delete");
     const { supabase } = context;
-    const { error } = await supabase.from("checkin_sessions").delete().eq("id", data.id).eq("account_id", accountId);
+    const { error } = await supabase
+      .from("checkin_sessions")
+      .delete()
+      .eq("id", data.id)
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -85,16 +97,16 @@ const publicSchema = z.object({
 });
 
 export const publicCheckin = createServerFn({ method: "POST" })
-  .inputValidator((i) => publicSchema.parse(i))
+  .validator((i) => publicSchema.parse(i))
   .handler(async ({ data }) => {
     const { data: session, error: sErr } = await supabaseAdmin
       .from("checkin_sessions")
       .select("id, account_id, active, title")
       .eq("id", data.session_id)
       .maybeSingle();
-    
+
     if (sErr || !session || !session.active) throw new Error("Sessão não encontrada ou encerrada");
-    
+
     // Register the check-in entry
     const { error: insertErr } = await supabaseAdmin.from("checkin_entries").insert({
       account_id: session.account_id,
@@ -103,7 +115,7 @@ export const publicCheckin = createServerFn({ method: "POST" })
       visitor_name: data.visitor_name || null,
       visitor_phone: data.visitor_phone || null,
     });
-    
+
     if (insertErr) throw new Error(insertErr.message);
 
     // If it's a visitor, also ensure they are in the visitors table
@@ -126,12 +138,12 @@ export const publicCheckin = createServerFn({ method: "POST" })
         });
       }
     }
-    
+
     return { ok: true };
   });
 
 export const getPublicCheckinSession = createServerFn({ method: "GET" })
-  .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
     const { data: session } = await supabaseAdmin
       .from("checkin_sessions")

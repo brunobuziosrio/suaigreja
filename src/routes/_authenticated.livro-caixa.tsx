@@ -11,6 +11,7 @@ import {
   ENTRY_CATEGORIES,
   type FinancialEntryRow,
 } from "@/lib/financial-entries.functions";
+import { listCongregations } from "@/lib/congregations.functions";
 import { buildCsv } from "@/lib/csv";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,9 +25,10 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   BookOpen, Plus, Trash2, Loader2, TrendingUp, TrendingDown, Scale,
-  FileSpreadsheet, Download, Upload, CheckCircle2,
+  FileSpreadsheet, Download, Upload, CheckCircle2, FileDown, Printer,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -42,6 +44,7 @@ type Form = {
   amount: string;
   entry_date: string;
   contributor_name: string;
+  congregation_id: string;
   payment_method: string;
   notes: string;
 };
@@ -50,7 +53,7 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 const empty: Form = {
   entry_type: "income", category: "", description: "", amount: "",
-  entry_date: today(), contributor_name: "", payment_method: "", notes: "",
+  entry_date: today(), contributor_name: "", congregation_id: "", payment_method: "", notes: "",
 };
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -61,12 +64,12 @@ function fmt(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
-const CSV_TEMPLATE_HEADERS = ["tipo", "categoria", "descricao", "valor", "data", "contribuinte", "forma_pagamento", "observacoes"];
-const CSV_TEMPLATE_SAMPLE_ROW = ["entrada", "Dízimo", "Dízimo mensal", "150.00", "2026-07-01", "João da Silva", "pix", ""];
+const CSV_TEMPLATE_HEADERS = ["tipo", "categoria", "descricao", "valor", "data", "contribuinte", "unidade", "forma_pagamento", "observacoes"];
+const CSV_TEMPLATE_SAMPLE_ROW = ["entrada", "Dízimo", "Dízimo mensal", "150.00", "2026-07-01", "João da Silva", "Sede", "pix", ""];
 
 function downloadTemplate() {
   const csv = buildCsv(CSV_TEMPLATE_HEADERS, [CSV_TEMPLATE_SAMPLE_ROW]);
-  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -75,14 +78,138 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+function downloadFilteredEntries(entries: FinancialEntryRow[]) {
+  const headers = [
+    "data",
+    "tipo",
+    "categoria",
+    "unidade",
+    "descricao",
+    "contribuinte",
+    "forma_pagamento",
+    "valor",
+    "observacoes",
+  ];
+  const rows = entries.map((entry) => [
+    entry.entry_date,
+    entry.entry_type === "income" ? "entrada" : "saída",
+    entry.category,
+    entry.congregations?.name ?? "",
+    entry.description ?? "",
+    entry.contributor_name ?? "",
+    entry.payment_method ?? "",
+    (entry.amount_cents / 100).toFixed(2),
+    entry.notes ?? "",
+  ]);
+  const csv = buildCsv(headers, rows);
+  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `livro-caixa-filtrado-${today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadReportCsv(filename: string, headers: string[], rows: Array<Array<string | number>>) {
+  const csv = buildCsv(headers, rows);
+  const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${filename}-${today()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+type ManagementReport = {
+  categories: Array<{ category: string; income: number; expense: number; balance: number }>;
+  months: Array<{ month: string; income: number; expense: number; balance: number }>;
+  units: Array<{ unit: string; income: number; expense: number; balance: number }>;
+  expenseRatio: number;
+};
+
+function printFinancialReport(
+  totals: { income: number; expense: number; balance: number },
+  report: ManagementReport,
+  filters: { search: string; type: string; category: string; unit: string; dateFrom: string; dateTo: string },
+) {
+  const w = window.open("", "_blank", "width=980,height=720");
+  if (!w) return;
+  const rows = (items: Array<{ label: string; income: number; expense: number; balance: number }>) => items.map((row) => `
+    <tr>
+      <td>${escapeHtml(row.label)}</td>
+      <td>${fmt(row.income)}</td>
+      <td>${fmt(row.expense)}</td>
+      <td class="${row.balance >= 0 ? "pos" : "neg"}">${fmt(row.balance)}</td>
+    </tr>
+  `).join("");
+  const filterLines = [
+    filters.search ? `Busca: ${filters.search}` : "",
+    filters.type !== "todos" ? `Tipo: ${filters.type === "income" ? "Entradas" : "Saídas"}` : "",
+    filters.category !== "todas" ? `Categoria: ${filters.category}` : "",
+    filters.unit !== "todas" ? `Unidade: ${filters.unit === "sem-unidade" ? "Sem unidade" : filters.unit}` : "",
+    filters.dateFrom ? `De: ${new Date(`${filters.dateFrom}T00:00:00`).toLocaleDateString("pt-BR")}` : "",
+    filters.dateTo ? `Até: ${new Date(`${filters.dateTo}T00:00:00`).toLocaleDateString("pt-BR")}` : "",
+  ].filter(Boolean).join(" · ") || "Sem filtros aplicados";
+
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8" />
+    <title>Relatório financeiro</title>
+    <style>
+      body{font-family:Arial,sans-serif;color:#111827;margin:32px}
+      header{border-bottom:1px solid #d1d5db;margin-bottom:24px;padding-bottom:16px}
+      h1{font-size:24px;margin:0 0 6px} h2{font-size:16px;margin:26px 0 10px}
+      .muted{color:#6b7280;font-size:12px}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:18px 0}
+      .card{border:1px solid #d1d5db;border-radius:8px;padding:14px}.label{font-size:11px;color:#6b7280;text-transform:uppercase}.value{font-size:18px;font-weight:700;margin-top:4px}
+      table{width:100%;border-collapse:collapse;margin-bottom:12px}th,td{border-bottom:1px solid #e5e7eb;padding:8px;text-align:right;font-size:12px}th:first-child,td:first-child{text-align:left}
+      .pos{color:#047857}.neg{color:#dc2626}@media print{body{margin:18mm}.no-print{display:none}}
+    </style></head><body>
+    <header>
+      <h1>Relatório financeiro - Livro Caixa</h1>
+      <div class="muted">Gerado em ${new Date().toLocaleString("pt-BR")} · ${escapeHtml(filterLines)}</div>
+    </header>
+    <div class="cards">
+      <div class="card"><div class="label">Entradas</div><div class="value pos">${fmt(totals.income)}</div></div>
+      <div class="card"><div class="label">Saídas</div><div class="value neg">${fmt(totals.expense)}</div></div>
+      <div class="card"><div class="label">Saldo</div><div class="value ${totals.balance >= 0 ? "pos" : "neg"}">${fmt(totals.balance)}</div></div>
+    </div>
+    <h2>DRE simplificada</h2>
+    <table><tbody>
+      <tr><td>Receita bruta</td><td class="pos">${fmt(totals.income)}</td></tr>
+      <tr><td>Despesas operacionais</td><td class="neg">-${fmt(totals.expense)}</td></tr>
+      <tr><td>Resultado líquido</td><td class="${totals.balance >= 0 ? "pos" : "neg"}">${fmt(totals.balance)}</td></tr>
+      <tr><td>Despesas sobre entradas</td><td>${report.expenseRatio}%</td></tr>
+    </tbody></table>
+    <h2>Balancete por categoria</h2>
+    <table><thead><tr><th>Categoria</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead><tbody>${rows(report.categories.map((r) => ({ label: r.category, ...r })))}</tbody></table>
+    <h2>Resumo mensal</h2>
+    <table><thead><tr><th>Mês</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead><tbody>${rows(report.months.map((r) => ({ label: r.month, ...r })))}</tbody></table>
+    <h2>Resultado por unidade</h2>
+    <table><thead><tr><th>Unidade</th><th>Entradas</th><th>Saídas</th><th>Saldo</th></tr></thead><tbody>${rows(report.units.map((r) => ({ label: r.unit, ...r })))}</tbody></table>
+    <script>window.print()</script>
+    </body></html>`);
+  w.document.close();
+}
+
 function FinancialEntriesPage() {
   const qc = useQueryClient();
   const fetchList = useServerFn(listFinancialEntries);
   const save = useServerFn(upsertFinancialEntry);
   const remove = useServerFn(deleteFinancialEntry);
   const runImport = useServerFn(importFinancialEntriesCsv);
+  const fetchCongregations = useServerFn(listCongregations);
 
   const { data: entries = [], isLoading } = useQuery({ queryKey: ["financial-entries"], queryFn: () => fetchList() });
+  const { data: congregations = [] } = useQuery({ queryKey: ["congregations"], queryFn: () => fetchCongregations() });
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(empty);
@@ -92,6 +219,7 @@ function FinancialEntriesPage() {
 
   const [typeFilter, setTypeFilter] = useState<"todos" | "income" | "expense">("todos");
   const [categoryFilter, setCategoryFilter] = useState("todas");
+  const [congregationFilter, setCongregationFilter] = useState("todas");
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -108,6 +236,7 @@ function FinancialEntriesPage() {
         amount_cents: Math.round(Number(form.amount.replace(",", ".")) * 100),
         entry_date: form.entry_date,
         contributor_name: form.contributor_name.trim() || null,
+        congregation_id: form.congregation_id || null,
         payment_method: (form.payment_method || null) as any,
         notes: form.notes.trim() || null,
       },
@@ -147,15 +276,16 @@ function FinancialEntriesPage() {
     return entries.filter((e) => {
       if (typeFilter !== "todos" && e.entry_type !== typeFilter) return false;
       if (categoryFilter !== "todas" && e.category !== categoryFilter) return false;
+      if (congregationFilter !== "todas" && (e.congregation_id || "sem-unidade") !== congregationFilter) return false;
       if (dateFrom && e.entry_date < dateFrom) return false;
       if (dateTo && e.entry_date > dateTo) return false;
       if (q) {
-        const haystack = [e.category, e.description, e.contributor_name, e.notes].filter(Boolean).join(" ").toLowerCase();
+        const haystack = [e.category, e.description, e.contributor_name, e.congregations?.name, e.notes].filter(Boolean).join(" ").toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
     });
-  }, [entries, typeFilter, categoryFilter, search, dateFrom, dateTo]);
+  }, [entries, typeFilter, categoryFilter, congregationFilter, search, dateFrom, dateTo]);
 
   const totals = useMemo(() => {
     const income = filtered.filter((e) => e.entry_type === "income").reduce((acc, e) => acc + e.amount_cents, 0);
@@ -163,11 +293,89 @@ function FinancialEntriesPage() {
     return { income, expense, balance: income - expense };
   }, [filtered]);
 
+  const managementReport = useMemo(() => {
+    const byCategory = new Map<string, { category: string; income: number; expense: number; balance: number }>();
+    const byMonth = new Map<string, { month: string; income: number; expense: number; balance: number }>();
+    const byUnit = new Map<string, { unit: string; income: number; expense: number; balance: number }>();
+
+    for (const entry of filtered) {
+      const category = byCategory.get(entry.category) ?? { category: entry.category, income: 0, expense: 0, balance: 0 };
+      const monthKey = entry.entry_date.slice(0, 7);
+      const month = byMonth.get(monthKey) ?? { month: monthKey, income: 0, expense: 0, balance: 0 };
+      const unitName = entry.congregations?.name ?? "Sem unidade";
+      const unit = byUnit.get(unitName) ?? { unit: unitName, income: 0, expense: 0, balance: 0 };
+
+      if (entry.entry_type === "income") {
+        category.income += entry.amount_cents;
+        month.income += entry.amount_cents;
+        unit.income += entry.amount_cents;
+      } else {
+        category.expense += entry.amount_cents;
+        month.expense += entry.amount_cents;
+        unit.expense += entry.amount_cents;
+      }
+
+      category.balance = category.income - category.expense;
+      month.balance = month.income - month.expense;
+      unit.balance = unit.income - unit.expense;
+      byCategory.set(entry.category, category);
+      byMonth.set(monthKey, month);
+      byUnit.set(unitName, unit);
+    }
+
+    return {
+      categories: Array.from(byCategory.values())
+        .sort((a, b) => (b.income + b.expense) - (a.income + a.expense)),
+      months: Array.from(byMonth.values()).sort((a, b) => b.month.localeCompare(a.month)),
+      units: Array.from(byUnit.values()).sort((a, b) => (b.income + b.expense) - (a.income + a.expense)),
+      expenseRatio: totals.income > 0 ? Math.round((totals.expense / totals.income) * 100) : 0,
+    };
+  }, [filtered, totals.income, totals.expense]);
+
+  const exportDre = () => downloadReportCsv("dre-simplificada", ["linha", "valor"], [
+    ["Receita bruta", (totals.income / 100).toFixed(2)],
+    ["Despesas operacionais", (totals.expense / 100).toFixed(2)],
+    ["Resultado liquido", (totals.balance / 100).toFixed(2)],
+    ["Despesas sobre entradas (%)", managementReport.expenseRatio],
+  ]);
+
+  const exportCategories = () => downloadReportCsv("balancete-por-categoria", ["categoria", "entradas", "saidas", "saldo"], managementReport.categories.map((row) => [
+    row.category,
+    (row.income / 100).toFixed(2),
+    (row.expense / 100).toFixed(2),
+    (row.balance / 100).toFixed(2),
+  ]));
+
+  const exportMonths = () => downloadReportCsv("resumo-mensal", ["mes", "entradas", "saidas", "saldo"], managementReport.months.map((row) => [
+    row.month,
+    (row.income / 100).toFixed(2),
+    (row.expense / 100).toFixed(2),
+    (row.balance / 100).toFixed(2),
+  ]));
+
+  const exportUnits = () => downloadReportCsv("resultado-por-unidade", ["unidade", "entradas", "saidas", "saldo"], managementReport.units.map((row) => [
+    row.unit,
+    (row.income / 100).toFixed(2),
+    (row.expense / 100).toFixed(2),
+    (row.balance / 100).toFixed(2),
+  ]));
+
+  const printReport = () => printFinancialReport(totals, managementReport, {
+    search,
+    type: typeFilter,
+    category: categoryFilter,
+    unit: congregationFilter === "todas" || congregationFilter === "sem-unidade"
+      ? congregationFilter
+      : congregations.find((c) => c.id === congregationFilter)?.name ?? congregationFilter,
+    dateFrom,
+    dateTo,
+  });
+
   const openEdit = (e: FinancialEntryRow) => {
     setForm({
       id: e.id, entry_type: e.entry_type, category: e.category, description: e.description ?? "",
       amount: String(e.amount_cents / 100), entry_date: e.entry_date, contributor_name: e.contributor_name ?? "",
-      payment_method: e.payment_method ?? "", notes: e.notes ?? "",
+      payment_method: e.payment_method ?? "", congregation_id: e.congregation_id ?? "", notes: e.notes ?? "",
     });
     setOpen(true);
   };
@@ -185,6 +393,10 @@ function FinancialEntriesPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => downloadFilteredEntries(filtered)}>
+              <FileDown className="h-4 w-4 mr-2" />
+              Exportar CSV
+            </Button>
             <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) setImportResult(null); }}>
               <DialogTrigger asChild>
                 <Button variant="outline"><FileSpreadsheet className="h-4 w-4 mr-2" />Importar CSV</Button>
@@ -287,6 +499,16 @@ function FinancialEntriesPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
+                    <Label>Unidade / congregação</Label>
+                    <Select value={form.congregation_id || "_"} onValueChange={(v) => setForm({ ...form, congregation_id: v === "_" ? "" : v })}>
+                      <SelectTrigger><SelectValue placeholder="Sem unidade" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_">Sem unidade</SelectItem>
+                        {congregations.filter((c) => c.active).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label>Observações</Label>
                     <Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
                   </div>
@@ -338,7 +560,7 @@ function FinancialEntriesPage() {
 
         {/* Filtros */}
         <Card className="p-4 mb-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <Input placeholder="Buscar categoria, descrição, contribuinte…" value={search} onChange={(e) => setSearch(e.target.value)} className="lg:col-span-2" />
             <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -355,6 +577,14 @@ function FinancialEntriesPage() {
                 {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Select value={congregationFilter} onValueChange={setCongregationFilter}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas unidades</SelectItem>
+                <SelectItem value="sem-unidade">Sem unidade</SelectItem>
+                {congregations.filter((c) => c.active).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <div className="flex gap-2">
               <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} title="De" />
               <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} title="Até" />
@@ -362,14 +592,156 @@ function FinancialEntriesPage() {
           </div>
         </Card>
 
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
+        <Tabs defaultValue="lancamentos" className="w-full">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <TabsList className="h-auto flex-wrap">
+              <TabsTrigger value="lancamentos">Lançamentos ({filtered.length})</TabsTrigger>
+              <TabsTrigger value="relatorios">Relatórios</TabsTrigger>
+            </TabsList>
+            <Button variant="outline" size="sm" onClick={printReport}>
+              <Printer className="h-3.5 w-3.5 mr-1.5" />Imprimir relatório
+            </Button>
+          </div>
+
+          <TabsContent value="relatorios" className="mt-0">
+            <div className="grid gap-4 mb-4 xl:grid-cols-[1.05fr_.95fr]">
+              <Card className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">DRE simplificada</p>
+                    <h2 className="mt-1 text-lg font-semibold">Resultado do período filtrado</h2>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={exportDre}>
+                    <FileDown className="h-3.5 w-3.5 mr-1.5" />CSV
+                  </Button>
+                </div>
+                <div className="mt-5 space-y-3 text-sm">
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span>Receita bruta</span>
+                    <span className="font-medium text-emerald-600">{fmt(totals.income)}</span>
+                  </div>
+                  <div className="flex items-center justify-between border-b pb-2">
+                    <span>Despesas operacionais</span>
+                    <span className="font-medium text-red-600">-{fmt(totals.expense)}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="font-medium">Resultado líquido</span>
+                    <span className={`text-lg font-semibold ${totals.balance >= 0 ? "text-emerald-600" : "text-red-600"}`}>{fmt(totals.balance)}</span>
+                  </div>
+                  <div className="rounded-lg bg-muted p-3 text-xs text-muted-foreground">
+                    As despesas representam {managementReport.expenseRatio}% das entradas neste recorte.
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">Balancete</p>
+                    <h2 className="mt-1 text-lg font-semibold">Categorias principais</h2>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={exportCategories} disabled={managementReport.categories.length === 0}>
+                    <FileDown className="h-3.5 w-3.5 mr-1.5" />CSV
+                  </Button>
+                </div>
+                <div className="mt-4 space-y-2">
+                  {managementReport.categories.length === 0 ? (
+                    <p className="py-8 text-center text-sm text-muted-foreground">Sem dados para o recorte atual.</p>
+                  ) : managementReport.categories.slice(0, 8).map((row) => (
+                    <div key={row.category} className="grid grid-cols-[1fr_auto] gap-3 rounded-lg border p-3 text-sm">
+                      <span className="min-w-0 truncate font-medium">{row.category}</span>
+                      <span className={row.balance >= 0 ? "text-emerald-600" : "text-red-600"}>{fmt(row.balance)}</span>
+                      <span className="text-xs text-muted-foreground">Entradas {fmt(row.income)}</span>
+                      <span className="text-xs text-muted-foreground">Saídas {fmt(row.expense)}</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
+
+            {managementReport.months.length > 0 && (
+              <Card className="mb-4 overflow-hidden">
+                <div className="flex items-start justify-between gap-3 border-b p-4">
+                  <div>
+                    <h2 className="font-semibold">Resumo mensal</h2>
+                    <p className="text-sm text-muted-foreground">Últimos meses presentes no recorte filtrado.</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={exportMonths}>
+                    <FileDown className="h-3.5 w-3.5 mr-1.5" />CSV
+                  </Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Mês</TableHead>
+                        <TableHead className="text-right">Entradas</TableHead>
+                        <TableHead className="text-right">Saídas</TableHead>
+                        <TableHead className="text-right">Saldo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {managementReport.months.slice(0, 6).map((row) => (
+                        <TableRow key={row.month}>
+                          <TableCell>{new Date(`${row.month}-01T00:00:00`).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{fmt(row.income)}</TableCell>
+                          <TableCell className="text-right text-red-600">{fmt(row.expense)}</TableCell>
+                          <TableCell className={`text-right font-medium ${row.balance >= 0 ? "text-emerald-600" : "text-red-600"}`}>{fmt(row.balance)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            )}
+
+            {managementReport.units.length > 0 && (
+              <Card className="mb-4 overflow-hidden">
+                <div className="flex items-start justify-between gap-3 border-b p-4">
+                  <div>
+                    <h2 className="font-semibold">Resultado por unidade</h2>
+                    <p className="text-sm text-muted-foreground">Entradas, saídas e saldo separados por congregação.</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={exportUnits}>
+                    <FileDown className="h-3.5 w-3.5 mr-1.5" />CSV
+                  </Button>
+                </div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Unidade</TableHead>
+                        <TableHead className="text-right">Entradas</TableHead>
+                        <TableHead className="text-right">Saídas</TableHead>
+                        <TableHead className="text-right">Saldo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {managementReport.units.map((row) => (
+                        <TableRow key={row.unit}>
+                          <TableCell>{row.unit}</TableCell>
+                          <TableCell className="text-right text-emerald-600">{fmt(row.income)}</TableCell>
+                          <TableCell className="text-right text-red-600">{fmt(row.expense)}</TableCell>
+                          <TableCell className={`text-right font-medium ${row.balance >= 0 ? "text-emerald-600" : "text-red-600"}`}>{fmt(row.balance)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="lancamentos" className="mt-0">
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Data</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Categoria</TableHead>
+                  <TableHead>Unidade</TableHead>
                   <TableHead>Descrição</TableHead>
                   <TableHead>Contribuinte</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
@@ -378,10 +750,10 @@ function FinancialEntriesPage() {
               </TableHeader>
               <TableBody>
                 {isLoading && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Carregando…</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Carregando…</TableCell></TableRow>
                 )}
                 {!isLoading && filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">Nenhum lançamento encontrado.</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-8">Nenhum lançamento encontrado.</TableCell></TableRow>
                 )}
                 {filtered.map((e) => (
                   <TableRow key={e.id}>
@@ -392,6 +764,7 @@ function FinancialEntriesPage() {
                       </span>
                     </TableCell>
                     <TableCell className="text-sm">{e.category}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{e.congregations?.name || "—"}</TableCell>
                     <TableCell className="text-sm text-muted-foreground max-w-[240px] truncate">{e.description || "—"}</TableCell>
                     <TableCell className="text-sm">{e.contributor_name || "—"}</TableCell>
                     <TableCell className={`text-right font-medium ${e.entry_type === "income" ? "text-emerald-600" : "text-red-600"}`}>
@@ -408,9 +781,11 @@ function FinancialEntriesPage() {
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
-          </div>
-        </Card>
+                </Table>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppShell>
   );

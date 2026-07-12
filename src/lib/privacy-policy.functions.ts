@@ -46,7 +46,7 @@ const upsertSchema = z.object({
 
 export const createPrivacyPolicyVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     const { supabase } = context;
@@ -72,7 +72,7 @@ export const createPrivacyPolicyVersion = createServerFn({ method: "POST" })
 
 export const setCurrentPrivacyPolicyVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     const { supabase } = context;
@@ -92,7 +92,7 @@ export const setCurrentPrivacyPolicyVersion = createServerFn({ method: "POST" })
 
 export const deletePrivacyPolicyVersion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     const { supabase } = context;
@@ -110,15 +110,21 @@ export const deletePrivacyPolicyVersion = createServerFn({ method: "POST" })
 async function resolveAccountId(siteId: string): Promise<string | null> {
   const lookup = siteId.toLowerCase();
   const { data: a1 } = await supabaseAdmin
-    .from("accounts").select("id").eq("custom_slug", lookup).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("custom_slug", lookup)
+    .maybeSingle();
   if (a1) return a1.id;
   const { data: a2 } = await supabaseAdmin
-    .from("accounts").select("id").eq("site_id", siteId).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("site_id", siteId)
+    .maybeSingle();
   return a2?.id ?? null;
 }
 
 export const getPublicPrivacyPolicy = createServerFn({ method: "GET" })
-  .inputValidator((i: { siteId: string }) => {
+  .validator((i: { siteId: string }) => {
     const siteId = String(i?.siteId || "").slice(0, 64);
     if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error("invalid site");
     return { siteId };
@@ -137,6 +143,6 @@ export const getPublicPrivacyPolicy = createServerFn({ method: "GET" })
     ]);
     return {
       churchName: account?.brand_title ?? "Igreja",
-      policy: (policy as any) ?? null,
+      policy: policy ?? null,
     };
   });

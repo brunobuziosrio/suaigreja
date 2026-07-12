@@ -30,35 +30,47 @@ const upsertSchema = z.object({
 
 export const upsertDevotional = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
     if (data.id) {
-      const { error } = await supabase.from("devotionals").update(payload).eq("id", data.id).eq("account_id", accountId);
+      const { error } = await supabase
+        .from("devotionals")
+        .update(payload)
+        .eq("id", data.id)
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
-    const { data: row, error } = await supabase.from("devotionals").insert(payload).select("id").single();
+    const { data: row, error } = await supabase
+      .from("devotionals")
+      .insert(payload)
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return { id: row.id };
   });
 
 export const deleteDevotional = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
-    const { error } = await supabase.from("devotionals").delete().eq("id", data.id).eq("account_id", accountId);
+    const { error } = await supabase
+      .from("devotionals")
+      .delete()
+      .eq("id", data.id)
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 // Public: today's devotional for a given account
 export const getTodayDevotional = createServerFn({ method: "GET" })
-  .inputValidator((i: { account_id: string }) => z.object({ account_id: z.string().uuid() }).parse(i))
+  .validator((i: { account_id: string }) => z.object({ account_id: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
     const today = new Date().toISOString().slice(0, 10);
     const { data: row } = await supabaseAdmin

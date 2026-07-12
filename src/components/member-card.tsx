@@ -48,7 +48,11 @@ function fmtCpf(cpf?: string | null) {
  * canto sup. direito), sem invadir a área de campos. Logo e título ficam
  * alinhados à esquerda no topo, FORA das curvas.
  */
-export function MemberCard({ member, church, qrValue }: {
+export function MemberCard({
+  member,
+  church,
+  qrValue,
+}: {
   member: MemberCardData;
   church: ChurchCardData;
   qrValue?: string;
@@ -60,14 +64,16 @@ export function MemberCard({ member, church, qrValue }: {
   const footerSize = Math.max(8, Math.min(20, church.card_footer_size_px || 12));
   const fieldSize = Math.max(10, Math.min(28, church.card_field_size_px || 15));
   const labelSize = Math.max(9, Math.min(20, church.card_label_size_px || 13));
-  const footer = church.card_footer_text ||
+  const footer =
+    church.card_footer_text ||
     "É assegurada nos termos da lei, a prestação de assistência religiosa nas entidades civis e militares de internação coletiva Art 5º, VII, Constituição Federal.";
 
   const [qrUrl, setQrUrl] = useState<string>("");
   useEffect(() => {
     const v = qrValue ?? (typeof window !== "undefined" ? window.location.href : member.id);
     QRCode.toDataURL(v, { width: 320, margin: 0, color: { dark: primary, light: "#ffffff" } })
-      .then(setQrUrl).catch(() => {});
+      .then(setQrUrl)
+      .catch(() => {});
   }, [qrValue, member.id, primary]);
 
   // Logo + título: à esquerda, mas com folga abaixo da curva colorida do
@@ -77,17 +83,52 @@ export function MemberCard({ member, church, qrValue }: {
   const logoX = LOGO_AREA.x;
   const logoY = LOGO_AREA.y + (LOGO_AREA.h - logoH) / 2;
 
-  const Field = ({ x, y, w, label, value }:
-    { x: number; y: number; w: number; label: string; value?: string | null }) => (
+  const Field = ({
+    x,
+    y,
+    w,
+    label,
+    value,
+  }: {
+    x: number;
+    y: number;
+    w: number;
+    label: string;
+    value?: string | null;
+  }) => (
     <g>
-      <text x={x + 4} y={y} fill={primary}
-        fontFamily="Inter, system-ui, sans-serif" fontWeight="800"
-        fontSize={labelSize} letterSpacing="0.5">{label}:</text>
-      <rect x={x} y={y + 8} width={w} height={56} rx={28} ry={28}
-        fill="#ffffff" stroke={primary} strokeWidth="2.5" />
-      <text x={x + 20} y={y + 44} fill="#2a2a2a"
-        fontFamily="Inter, system-ui, sans-serif" fontWeight="600"
-        fontSize={fieldSize}>{value || ""}</text>
+      <text
+        x={x + 4}
+        y={y}
+        fill={primary}
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="800"
+        fontSize={labelSize}
+        letterSpacing="0.5"
+      >
+        {label}:
+      </text>
+      <rect
+        x={x}
+        y={y + 8}
+        width={w}
+        height={56}
+        rx={28}
+        ry={28}
+        fill="#ffffff"
+        stroke={primary}
+        strokeWidth="2.5"
+      />
+      <text
+        x={x + 20}
+        y={y + 44}
+        fill="#2a2a2a"
+        fontFamily="Inter, system-ui, sans-serif"
+        fontWeight="600"
+        fontSize={fieldSize}
+      >
+        {value || ""}
+      </text>
     </g>
   );
 
@@ -97,8 +138,11 @@ export function MemberCard({ member, church, qrValue }: {
         className="relative w-full overflow-hidden rounded-2xl shadow-2xl bg-white print:shadow-none print:border print:rounded-lg"
         style={{ aspectRatio: "1000 / 700" }}
       >
-        <svg viewBox="0 0 1000 700" xmlns="http://www.w3.org/2000/svg"
-             className="absolute inset-0 h-full w-full">
+        <svg
+          viewBox="0 0 1000 700"
+          xmlns="http://www.w3.org/2000/svg"
+          className="absolute inset-0 h-full w-full"
+        >
           <rect x="0" y="0" width="1000" height="700" fill="#ffffff" />
 
           {/* === ARTE: somente nas bordas, não invade área de campos === */}
@@ -113,25 +157,38 @@ export function MemberCard({ member, church, qrValue }: {
 
           {/* === LOGO + TÍTULO (alinhados à esquerda, FORA das curvas) === */}
           {church.card_logo_url ? (
-            <image href={church.card_logo_url}
-              x={logoX} y={logoY} height={logoH} width={logoW}
-              preserveAspectRatio="xMinYMid meet" />
-          ) : (
-            church.brand_title ? (
-              <text x={LOGO_AREA.x} y={LOGO_AREA.y + LOGO_AREA.h / 2 + 8}
-                fill={primary}
-                fontFamily="Inter, system-ui, sans-serif" fontWeight="900"
-                fontSize="24" letterSpacing="1">
-                {church.brand_title.toUpperCase()}
-              </text>
-            ) : null
-          )}
+            <image
+              href={church.card_logo_url}
+              x={logoX}
+              y={logoY}
+              height={logoH}
+              width={logoW}
+              preserveAspectRatio="xMinYMid meet"
+            />
+          ) : church.brand_title ? (
+            <text
+              x={LOGO_AREA.x}
+              y={LOGO_AREA.y + LOGO_AREA.h / 2 + 8}
+              fill={primary}
+              fontFamily="Inter, system-ui, sans-serif"
+              fontWeight="900"
+              fontSize="24"
+              letterSpacing="1"
+            >
+              {church.brand_title.toUpperCase()}
+            </text>
+          ) : null}
 
           {/* Título — abaixo da logo, alinhado à esquerda */}
-          <text x={LOGO_AREA.x} y={LOGO_AREA.y + LOGO_AREA.h + 38}
+          <text
+            x={LOGO_AREA.x}
+            y={LOGO_AREA.y + LOGO_AREA.h + 38}
             fill={primary}
-            fontFamily="Inter, system-ui, sans-serif" fontWeight="900"
-            fontSize={titleSize} letterSpacing="0.5">
+            fontFamily="Inter, system-ui, sans-serif"
+            fontWeight="900"
+            fontSize={titleSize}
+            letterSpacing="0.5"
+          >
             CARTEIRA DE MEMBRO
           </text>
 
@@ -140,12 +197,26 @@ export function MemberCard({ member, church, qrValue }: {
           <Field x={45} y={350} w={225} label="CPF" value={fmtCpf(member.cpf)} />
           <Field x={283} y={350} w={225} label="DATA NASC." value={fmtDate(member.birth_date)} />
           <Field x={521} y={350} w={224} label="CADASTRO" value={fmtDate(member.member_since)} />
-          <Field x={45} y={455} w={700} label="IGREJA / CONGREGAÇÃO"
-            value={member.congregation || church.brand_title || ""} />
+          <Field
+            x={45}
+            y={455}
+            w={700}
+            label="IGREJA / CONGREGAÇÃO"
+            value={member.congregation || church.brand_title || ""}
+          />
 
           {/* === FOTO (canto superior direito) === */}
-          <rect x={765} y={30} width={200} height={235} rx={16} ry={16}
-            fill="#ffffff" stroke={primary} strokeWidth="3" />
+          <rect
+            x={765}
+            y={30}
+            width={200}
+            height={235}
+            rx={16}
+            ry={16}
+            fill="#ffffff"
+            stroke={primary}
+            strokeWidth="3"
+          />
           {member.photo_url ? (
             <>
               <defs>
@@ -153,31 +224,52 @@ export function MemberCard({ member, church, qrValue }: {
                   <rect x={765} y={30} width={200} height={235} rx={16} ry={16} />
                 </clipPath>
               </defs>
-              <image href={member.photo_url} x={765} y={30}
-                width={200} height={235}
+              <image
+                href={member.photo_url}
+                x={765}
+                y={30}
+                width={200}
+                height={235}
                 preserveAspectRatio="xMidYMid slice"
-                clipPath="url(#photoClip)" />
+                clipPath="url(#photoClip)"
+              />
             </>
           ) : (
             <g>
               <circle cx={865} cy={125} r={38} fill="#d4d4d4" />
-              <path d="M795,245 C805,200 865,188 865,188 C865,188 925,200 935,245 L935,260 L795,260 Z"
-                fill="#d4d4d4" />
+              <path
+                d="M795,245 C805,200 865,188 865,188 C865,188 925,200 935,245 L935,260 L795,260 Z"
+                fill="#d4d4d4"
+              />
             </g>
           )}
 
           {/* === QR === */}
-          <rect x={765} y={285} width={200} height={210} rx={14} ry={14}
-            fill="#ffffff" stroke={primary} strokeWidth="3" />
+          <rect
+            x={765}
+            y={285}
+            width={200}
+            height={210}
+            rx={14}
+            ry={14}
+            fill="#ffffff"
+            stroke={primary}
+            strokeWidth="3"
+          />
           {qrUrl ? (
-            <image href={qrUrl} x={780} y={305} width={170} height={170}
-              preserveAspectRatio="xMidYMid meet" />
+            <image
+              href={qrUrl}
+              x={780}
+              y={305}
+              width={170}
+              height={170}
+              preserveAspectRatio="xMidYMid meet"
+            />
           ) : null}
 
           {/* === RODAPÉ — texto legal centralizado em toda a carteirinha === */}
           <foreignObject x={40} y={560} width={920} height={120}>
             <div
-              {...({ xmlns: "http://www.w3.org/1999/xhtml" } as any)}
               style={{
                 fontFamily: "Inter, system-ui, sans-serif",
                 fontStyle: "italic",
@@ -185,8 +277,11 @@ export function MemberCard({ member, church, qrValue }: {
                 lineHeight: 1.35,
                 color: "#444",
                 textAlign: "center",
-                width: "100%", height: "100%",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 padding: "0 8px",
               }}
             >

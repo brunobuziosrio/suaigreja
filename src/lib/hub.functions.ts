@@ -14,18 +14,102 @@ import { resolveAccountContext } from "@/lib/account-context.server";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 const RESERVED = new Set([
-  "a","admin","api","app","assets","auth","agenda","billing","dashboard",
-  "embed","help","login","logout","marketplace","onboarding","public","root",
-  "settings","signin","signup","static","support","types","locations","www",
-  "e","o","v","h","n","oracoes","eventos","visitantes","hub","noticias",
+  "a",
+  "admin",
+  "api",
+  "app",
+  "assets",
+  "auth",
+  "agenda",
+  "billing",
+  "dashboard",
+  "embed",
+  "help",
+  "login",
+  "logout",
+  "marketplace",
+  "onboarding",
+  "public",
+  "root",
+  "settings",
+  "signin",
+  "signup",
+  "static",
+  "support",
+  "types",
+  "locations",
+  "www",
+  "e",
+  "o",
+  "v",
+  "h",
+  "n",
+  "oracoes",
+  "eventos",
+  "visitantes",
+  "hub",
+  "noticias",
 ]);
 
+const SlugInput = z.object({
+  slug: z
+    .string()
+    .transform((slug) => slug.toLowerCase().slice(0, 64))
+    .refine((slug) => /^[a-z0-9_-]+$/.test(slug), "invalid slug"),
+});
+
+const SiteIdInput = z.object({
+  siteId: z
+    .string()
+    .transform((siteId) => siteId.slice(0, 64))
+    .refine((siteId) => /^[a-zA-Z0-9_-]+$/.test(siteId), "invalid site_id"),
+});
+
+const PublicNewsPostInput = SlugInput.extend({
+  postId: z.string().regex(/^[0-9a-f-]{36}$/i, "invalid post id"),
+});
+
+type AgendaItem = {
+  id: string;
+  event_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  location_name: string | null;
+  type_name: string | null;
+  type_id: string | null;
+  description: string | null;
+  show_type: boolean | null;
+  is_live: boolean | null;
+  live_url: string | null;
+};
+
+type EventPageAgendaRow = {
+  id: string;
+  slug?: string | null;
+  title: string | null;
+  event_date: string;
+  start_time: string | null;
+  location_name: string | null;
+};
+
+type LocationRow = {
+  address: string | null;
+};
+
+type HubMediaSettings = {
+  media_youtube_url: string | null;
+  media_audio_url: string | null;
+  media_show_youtube: boolean | null;
+  media_show_audio: boolean | null;
+};
+
+function compareAgendaItems(a: AgendaItem, b: AgendaItem) {
+  if (a.event_date !== b.event_date) return a.event_date < b.event_date ? -1 : 1;
+  return (a.start_time || "").localeCompare(b.start_time || "");
+}
+
 export const getPublicHub = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string }) => {
-    const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
-    if (!/^[a-z0-9_-]+$/.test(slug)) throw new Error("invalid slug");
-    return { slug };
-  })
+  .validator((input) => SlugInput.parse(input))
   .handler(async ({ data }) => {
     if (RESERVED.has(data.slug)) return null;
 
@@ -58,8 +142,8 @@ export const getPublicHub = createServerFn({ method: "GET" })
     if (!account || !account.hub_enabled) return null;
 
     // Next agenda items (today + 14 days)
-    let agenda: any[] = [];
-    let agendaTypes: any[] = [];
+    let agenda: AgendaItem[] = [];
+    let agendaTypes = [];
     if (account.hub_show_agenda) {
       const today = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
@@ -69,7 +153,9 @@ export const getPublicHub = createServerFn({ method: "GET" })
       const to = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
       const { data: ev } = await supabaseAdmin
         .from("events")
-        .select("id, event_date, start_time, end_time, location_name, type_name, type_id, description, show_type, is_live, live_url")
+        .select(
+          "id, event_date, start_time, end_time, location_name, type_name, type_id, description, show_type, is_live, live_url",
+        )
         .eq("account_id", account.id)
         .gte("event_date", from)
         .lte("event_date", to)
@@ -81,7 +167,9 @@ export const getPublicHub = createServerFn({ method: "GET" })
       const [{ data: streamRows }, { data: overrideRows }] = await Promise.all([
         supabaseAdmin
           .from("live_streams")
-          .select("id, title, recurrence, weekday, event_date, start_time, duration_minutes, minutes_before, default_live_url, active, sort_order")
+          .select(
+            "id, title, recurrence, weekday, event_date, start_time, duration_minutes, minutes_before, default_live_url, active, sort_order",
+          )
           .eq("account_id", account.id)
           .eq("active", true),
         supabaseAdmin
@@ -91,16 +179,17 @@ export const getPublicHub = createServerFn({ method: "GET" })
           .gte("event_date", from)
           .lte("event_date", to),
       ]);
-      const liveOcc: any[] = [];
+      const liveOcc: AgendaItem[] = [];
       const startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
       const totalDays = 30;
       for (const s of (streamRows ?? []) as LiveStreamRow[]) {
         const push = (dateStr: string) => {
-          const ov = (overrideRows ?? []).find(
-            (o: any) => o.live_stream_id === s.id && o.event_date === dateStr,
+          const ov = ((overrideRows ?? []) as LiveOverrideRow[]).find(
+            (o) => o.live_stream_id === s.id && o.event_date === dateStr,
           );
           if (ov?.cancelled) return;
-          const url = (ov?.live_url && ov.live_url.length > 0 ? ov.live_url : s.default_live_url) ?? null;
+          const url =
+            (ov?.live_url && ov.live_url.length > 0 ? ov.live_url : s.default_live_url) ?? null;
           liveOcc.push({
             id: `live:${s.id}:${dateStr}`,
             event_date: dateStr,
@@ -119,17 +208,18 @@ export const getPublicHub = createServerFn({ method: "GET" })
           if (s.event_date && s.event_date >= from && s.event_date <= to) push(s.event_date);
         } else if (s.weekday !== null && s.weekday !== undefined) {
           for (let i = 0; i <= totalDays; i++) {
-            const d = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate() + i);
+            const d = new Date(
+              startDate.getFullYear(),
+              startDate.getMonth(),
+              startDate.getDate() + i,
+            );
             if (d.getDay() === s.weekday) {
               push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`);
             }
           }
         }
       }
-      agenda = [...(ev ?? []), ...liveOcc].sort((a: any, b: any) => {
-        if (a.event_date !== b.event_date) return a.event_date < b.event_date ? -1 : 1;
-        return (a.start_time || "").localeCompare(b.start_time || "");
-      });
+      agenda = [...((ev ?? []) as AgendaItem[]), ...liveOcc].sort(compareAgendaItems);
       const { data: tps } = await supabaseAdmin
         .from("celebration_types")
         .select("id, name, color, icon")
@@ -137,12 +227,14 @@ export const getPublicHub = createServerFn({ method: "GET" })
       agendaTypes = tps ?? [];
     }
 
-    let events: any[] = [];
+    let events: EventPageAgendaRow[] = [];
     if (account.hub_show_events) {
       const today = new Date().toISOString().slice(0, 10);
       const { data: ep } = await supabaseAdmin
         .from("event_pages")
-        .select("id, slug, title, description, event_date, start_time, location_name, cover_image_url, price_cents")
+        .select(
+          "id, slug, title, description, event_date, start_time, location_name, cover_image_url, price_cents",
+        )
         .eq("account_id", account.id)
         .eq("active", true)
         .gte("event_date", today)
@@ -169,23 +261,22 @@ export const getPublicHub = createServerFn({ method: "GET" })
         .gte("event_date", from)
         .lte("event_date", to)
         .order("event_date", { ascending: true });
-      const epOcc = (epAll ?? []).map((e: any) => ({
-        id: `evp:${e.id}`,
-        event_date: e.event_date,
-        start_time: e.start_time || "00:00",
-        end_time: null,
-        location_name: e.title,
-        type_name: "Evento",
-        type_id: null,
-        description: e.location_name || null,
-        show_type: true,
-        is_live: false,
-        live_url: null,
-      }));
-      agenda = [...agenda, ...epOcc].sort((a: any, b: any) => {
-        if (a.event_date !== b.event_date) return a.event_date < b.event_date ? -1 : 1;
-        return (a.start_time || "").localeCompare(b.start_time || "");
-      });
+      const epOcc = ((epAll ?? []) as EventPageAgendaRow[]).map(
+        (e): AgendaItem => ({
+          id: `evp:${e.id}`,
+          event_date: e.event_date,
+          start_time: e.start_time || "00:00",
+          end_time: null,
+          location_name: e.title,
+          type_name: "Evento",
+          type_id: null,
+          description: e.location_name || null,
+          show_type: true,
+          is_live: false,
+          live_url: null,
+        }),
+      );
+      agenda = [...agenda, ...epOcc].sort(compareAgendaItems);
     }
 
     const { data: newsData } = await supabaseAdmin
@@ -208,8 +299,8 @@ export const getPublicHub = createServerFn({ method: "GET" })
       .eq("active", true)
       .order("is_main", { ascending: false })
       .order("sort_order", { ascending: true });
-    const locations = (locsData ?? []).filter((l: any) => l.address);
-    // Backwards-compat: keep "location" as first one for any legacy consumer
+    const locations = ((locsData ?? []) as LocationRow[]).filter((l) => l.address);
+    // Backwards-compat: keep "location" as first one for legacy consumers.
     const location = locations[0] ?? null;
 
     // Recent approved prayer intentions (anonymized)
@@ -239,7 +330,7 @@ export const getPublicHub = createServerFn({ method: "GET" })
       .limit(4);
     const donations = donationsData ?? [];
 
-    // Today's published devotional (if any)
+    // Today's published devotional, when available.
     const todayStr = new Date().toISOString().slice(0, 10);
     const { data: devRow } = await supabaseAdmin
       .from("devotionals")
@@ -278,14 +369,13 @@ export const getPublicHub = createServerFn({ method: "GET" })
       }));
 
     // Media (YouTube + audio embed) — feeds external sources; cached server-side.
-    const showYoutube = (account as any).media_show_youtube !== false;
-    const showAudio = (account as any).media_show_audio !== false;
+    const mediaSettings = account as typeof account & HubMediaSettings;
+    const showYoutube = mediaSettings.media_show_youtube !== false;
+    const showAudio = mediaSettings.media_show_audio !== false;
     const youtubeVideos = showYoutube
-      ? await fetchYoutubeVideos((account as any).media_youtube_url, 5)
+      ? await fetchYoutubeVideos(mediaSettings.media_youtube_url, 5)
       : [];
-    const audioEmbed = showAudio
-      ? buildAudioEmbed((account as any).media_audio_url)
-      : null;
+    const audioEmbed = showAudio ? buildAudioEmbed(mediaSettings.media_audio_url) : null;
 
     return {
       account,
@@ -354,7 +444,7 @@ const HubSettingsInput = z.object({
 
 export const updateHubSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => HubSettingsInput.parse(input))
+  .validator((input) => HubSettingsInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -391,7 +481,7 @@ const NewsInput = z.object({
 
 export const upsertNews = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => NewsInput.parse(input))
+  .validator((input) => NewsInput.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -405,7 +495,7 @@ export const upsertNews = createServerFn({ method: "POST" })
 
 export const deleteNews = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { error } = await supabase.from("news_posts").delete().eq("id", data.id);
@@ -428,20 +518,28 @@ const ALLOWED_IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "ico"]);
 const UploadInput = z.object({
   folder: z.enum(["hub-cover", "gallery", "slide", "news", "product-images"]),
   filename: z.string().min(1).max(120),
-  contentType: z.string().min(1).max(100).refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
-    message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
-  }),
+  contentType: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
+      message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
+    }),
   // base64-encoded file bytes (no data: prefix), max ~8MB encoded
   base64: z.string().min(1).max(12_000_000),
 });
 
 export const uploadHubAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => UploadInput.parse(input))
+  .validator((input) => UploadInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+    let ext =
+      (data.filename.split(".").pop() || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${accountId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
@@ -453,9 +551,13 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
     const contentType = data.contentType.toLowerCase();
     const bucket = data.folder === "product-images" ? "product-images" : "event-covers";
 
-    const { error } = await supabaseAdmin.storage
-      .from(bucket)
-      .upload(path, bytes, { contentType: (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") ? "image/png" : contentType, upsert: false });
+    const { error } = await supabaseAdmin.storage.from(bucket).upload(path, bytes, {
+      contentType:
+        contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon"
+          ? "image/png"
+          : contentType,
+      upsert: false,
+    });
     if (error) throw new Error(error.message);
     const { data: pub } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
     return { url: pub.publicUrl };
@@ -465,19 +567,27 @@ export const uploadHubAsset = createServerFn({ method: "POST" })
 // Avoids sending megabytes of base64 through the server-fn JSON envelope.
 const SignInput = z.object({
   folder: z.enum(["hub-cover", "gallery", "slide", "news"]),
-  filename: z.string().min(1).max(120).refine((name) => {
-    const ext = name.split(".").pop()?.toLowerCase() || "";
-    return ALLOWED_IMAGE_EXT.has(ext);
-  }, "Extensão de imagem não permitida."),
+  filename: z
+    .string()
+    .min(1)
+    .max(120)
+    .refine((name) => {
+      const ext = name.split(".").pop()?.toLowerCase() || "";
+      return ALLOWED_IMAGE_EXT.has(ext);
+    }, "Extensão de imagem não permitida."),
 });
 
 export const createHubUploadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => SignInput.parse(input))
+  .validator((input) => SignInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+    let ext =
+      (data.filename.split(".").pop() || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${accountId}/${data.folder}-${Date.now()}-${rand}.${ext}`;
@@ -495,11 +605,7 @@ const CHROME_COLS =
   "id, site_id, custom_slug, brand_title, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, hub_bio, primary_color, hub_show_agenda, hub_show_prayer, hub_show_visitor, hub_show_events, social_instagram, social_youtube, social_facebook, social_website, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, live_url, pix_key, cta_label, cta_enabled";
 
 export const getHubChrome = createServerFn({ method: "GET" })
-  .inputValidator((input: { siteId: string }) => {
-    const siteId = String(input?.siteId || "").slice(0, 64);
-    if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error("invalid site_id");
-    return { siteId };
-  })
+  .validator((input) => SiteIdInput.parse(input))
   .handler(async ({ data }) => {
     const lookup = data.siteId.toLowerCase();
     let { data: acc } = await supabaseAdmin
@@ -521,21 +627,21 @@ export const getHubChrome = createServerFn({ method: "GET" })
 // ===================== PUBLIC NEWS (full listing) =====================
 
 export const getPublicNews = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string }) => {
-    const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
-    if (!/^[a-z0-9_-]+$/.test(slug)) throw new Error("invalid slug");
-    return { slug };
-  })
+  .validator((input) => SlugInput.parse(input))
   .handler(async ({ data }) => {
     let { data: account } = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
+      .select(
+        "id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled",
+      )
       .eq("custom_slug", data.slug)
       .maybeSingle();
     if (!account) {
       const fb = await supabaseAdmin
         .from("accounts")
-        .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
+        .select(
+          "id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled",
+        )
         .eq("site_id", data.slug)
         .maybeSingle();
       account = fb.data;
@@ -562,23 +668,21 @@ export const getPublicNews = createServerFn({ method: "GET" })
   });
 
 export const getPublicNewsPost = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string; postId: string }) => {
-    const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
-    const postId = String(input?.postId || "");
-    if (!/^[a-z0-9_-]+$/.test(slug)) throw new Error("invalid slug");
-    if (!/^[0-9a-f-]{36}$/i.test(postId)) throw new Error("invalid post id");
-    return { slug, postId };
-  })
+  .validator((input) => PublicNewsPostInput.parse(input))
   .handler(async ({ data }) => {
     let { data: account } = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
+      .select(
+        "id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled",
+      )
       .eq("custom_slug", data.slug)
       .maybeSingle();
     if (!account) {
       const fb = await supabaseAdmin
         .from("accounts")
-        .select("id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled")
+        .select(
+          "id, site_id, custom_slug, brand_title, primary_color, brand_footer_logo_url, hub_enabled",
+        )
         .eq("site_id", data.slug)
         .maybeSingle();
       account = fb.data;

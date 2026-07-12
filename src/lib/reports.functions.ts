@@ -9,6 +9,27 @@ const monthSchema = z.object({
   month: z.number().int().min(1).max(12),
 });
 
+type EbdMemberRow = { id: string; full_name: string };
+type EbdClassRow = { id: string; name: string };
+type CheckinSessionRow = { id: string; title: string; session_date: string; start_time: string };
+type CheckinEntryRow = {
+  session_id: string;
+  member_id: string | null;
+  visitor_name: string | null;
+  checked_in_at: string;
+};
+type SmallGroupRow = {
+  id: string;
+  name: string;
+  leader_name: string | null;
+  leader_phone: string | null;
+  neighborhood: string | null;
+  weekday: number | null;
+  start_time: string;
+  capacity: number | null;
+  active: boolean;
+};
+
 function monthBounds(year: number, month: number) {
   const pad = (n: number) => String(n).padStart(2, "0");
   const from = `${year}-${pad(month)}-01`;
@@ -20,7 +41,7 @@ function monthBounds(year: number, month: number) {
 // ============= EBD MONTHLY ATTENDANCE =============
 export const getEbdMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => monthSchema.parse(i))
+  .validator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "reports", "view");
@@ -43,47 +64,59 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
     if (rowsError) throw new Error(rowsError.message);
     if (classesError) throw new Error(classesError.message);
     if (membersError) throw new Error(membersError.message);
-    const memberMap = new Map((members ?? []).map((m: any) => [m.id, m.full_name]));
-    const classMap = new Map((classes ?? []).map((c: any) => [c.id, c.name]));
-    const byClass = new Map<string, { present: number; total: number; dates: Set<string>; members: Map<string, { present: number; total: number; name: string }> }>();
+    const memberMap = new Map((members ?? []).map((m: EbdMemberRow) => [m.id, m.full_name]));
+    const classMap = new Map((classes ?? []).map((c: EbdClassRow) => [c.id, c.name]));
+    const byClass = new Map<
+      string,
+      {
+        present: number;
+        total: number;
+        dates: Set<string>;
+        members: Map<string, { present: number; total: number; name: string }>;
+      }
+    >();
     for (const r of rows ?? []) {
       const key = r.class_id as string;
-      if (!byClass.has(key)) byClass.set(key, { present: 0, total: 0, dates: new Set(), members: new Map() });
+      if (!byClass.has(key))
+        byClass.set(key, { present: 0, total: 0, dates: new Set(), members: new Map() });
       const c = byClass.get(key)!;
       c.total++;
       if (r.present) c.present++;
       c.dates.add(r.attendance_date as string);
       const mid = r.member_id as string;
-      if (!c.members.has(mid)) c.members.set(mid, { present: 0, total: 0, name: memberMap.get(mid) ?? "—" });
+      if (!c.members.has(mid))
+        c.members.set(mid, { present: 0, total: 0, name: memberMap.get(mid) ?? "—" });
       const m = c.members.get(mid)!;
       m.total++;
       if (r.present) m.present++;
     }
     return {
-      classes: Array.from(byClass.entries()).map(([id, c]) => ({
-        class_id: id,
-        class_name: classMap.get(id) ?? "Turma",
-        meetings: c.dates.size,
-        present: c.present,
-        total: c.total,
-        rate: c.total ? Math.round((c.present / c.total) * 100) : 0,
-        members: Array.from(c.members.entries())
-          .map(([mid, m]) => ({
-            member_id: mid,
-            name: m.name,
-            present: m.present,
-            total: m.total,
-            rate: m.total ? Math.round((m.present / m.total) * 100) : 0,
-          }))
-          .sort((a, b) => b.rate - a.rate),
-      })).sort((a, b) => a.class_name.localeCompare(b.class_name)),
+      classes: Array.from(byClass.entries())
+        .map(([id, c]) => ({
+          class_id: id,
+          class_name: classMap.get(id) ?? "Turma",
+          meetings: c.dates.size,
+          present: c.present,
+          total: c.total,
+          rate: c.total ? Math.round((c.present / c.total) * 100) : 0,
+          members: Array.from(c.members.entries())
+            .map(([mid, m]) => ({
+              member_id: mid,
+              name: m.name,
+              present: m.present,
+              total: m.total,
+              rate: m.total ? Math.round((m.present / m.total) * 100) : 0,
+            }))
+            .sort((a, b) => b.rate - a.rate),
+        }))
+        .sort((a, b) => a.class_name.localeCompare(b.class_name)),
     };
   });
 
 // ============= SERVICE CHECK-IN MONTHLY =============
 export const getCheckinMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => monthSchema.parse(i))
+  .validator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "reports", "view");
@@ -97,8 +130,8 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
       .lte("session_date", to)
       .order("session_date", { ascending: true });
     if (sessionsError) throw new Error(sessionsError.message);
-    const sessionIds = (sessions ?? []).map((s: any) => s.id);
-    let entries: any[] = [];
+    const sessionIds = (sessions ?? []).map((s: CheckinSessionRow) => s.id);
+    let entries: CheckinEntryRow[] = [];
     if (sessionIds.length) {
       const { data: e, error: entriesError } = await supabase
         .from("checkin_entries")
@@ -118,7 +151,7 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
       else c.visitors++;
     }
     return {
-      sessions: (sessions ?? []).map((s: any) => ({
+      sessions: (sessions ?? []).map((s: CheckinSessionRow) => ({
         ...s,
         ...(counts.get(s.id) ?? { total: 0, members: 0, visitors: 0 }),
       })),
@@ -138,19 +171,19 @@ export const getSmallGroupsReport = createServerFn({ method: "GET" })
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
-    const [
-      { data: groups, error: groupsError },
-      { data: memberships, error: membershipsError },
-    ] = await Promise.all([
-      supabase
-        .from("small_groups")
-        .select("id, name, leader_name, leader_phone, neighborhood, weekday, start_time, capacity, active")
-        .eq("account_id", accountId),
-      supabase
-        .from("small_group_members")
-        .select("group_id, member_id, role")
-        .eq("account_id", accountId),
-    ]);
+    const [{ data: groups, error: groupsError }, { data: memberships, error: membershipsError }] =
+      await Promise.all([
+        supabase
+          .from("small_groups")
+          .select(
+            "id, name, leader_name, leader_phone, neighborhood, weekday, start_time, capacity, active",
+          )
+          .eq("account_id", accountId),
+        supabase
+          .from("small_group_members")
+          .select("group_id, member_id, role")
+          .eq("account_id", accountId),
+      ]);
     if (groupsError) throw new Error(groupsError.message);
     if (membershipsError) throw new Error(membershipsError.message);
     const countByGroup = new Map<string, number>();
@@ -159,7 +192,7 @@ export const getSmallGroupsReport = createServerFn({ method: "GET" })
       countByGroup.set(k, (countByGroup.get(k) ?? 0) + 1);
     }
     const ranked = (groups ?? [])
-      .map((g: any) => {
+      .map((g: SmallGroupRow) => {
         const members = countByGroup.get(g.id) ?? 0;
         const occupancy = g.capacity ? Math.round((members / g.capacity) * 100) : null;
         return { ...g, members, occupancy };

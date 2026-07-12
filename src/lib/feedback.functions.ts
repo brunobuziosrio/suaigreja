@@ -35,7 +35,7 @@ const updateSchema = z.object({
 
 export const createSystemUpdate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => updateSchema.parse(input))
+  .validator((input) => updateSchema.parse(input))
   .handler(async ({ data, context }) => {
     if (!(await isAdmin(context.userId))) throw new Error("Acesso negado");
     const { error } = await supabaseAdmin.from("system_updates").insert({
@@ -50,7 +50,7 @@ export const createSystemUpdate = createServerFn({ method: "POST" })
 
 export const deleteSystemUpdate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     if (!(await isAdmin(context.userId))) throw new Error("Acesso negado");
     const { error } = await supabaseAdmin.from("system_updates").delete().eq("id", data.id);
@@ -67,7 +67,7 @@ const suggestionSchema = z.object({
 
 export const createSuggestion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => suggestionSchema.parse(input))
+  .validator((input) => suggestionSchema.parse(input))
   .handler(async ({ data, context }) => {
     // try to attach account_id if exists
     const { data: acc } = await supabaseAdmin
@@ -109,15 +109,22 @@ export const listAllSuggestions = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     // attach emails + account name
-    const userIds = Array.from(new Set((data ?? []).map((r) => r.user_id).filter(Boolean))) as string[];
+    const userIds = Array.from(
+      new Set((data ?? []).map((r) => r.user_id).filter(Boolean)),
+    ) as string[];
     const emailMap = new Map<string, string>();
     if (userIds.length) {
-      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const { data: usersData } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
       for (const u of usersData?.users ?? []) {
         if (u.email) emailMap.set(u.id, u.email);
       }
     }
-    const accIds = Array.from(new Set((data ?? []).map((r) => r.account_id).filter(Boolean))) as string[];
+    const accIds = Array.from(
+      new Set((data ?? []).map((r) => r.account_id).filter(Boolean)),
+    ) as string[];
     const accMap = new Map<string, string>();
     if (accIds.length) {
       const { data: accs } = await supabaseAdmin
@@ -128,14 +135,14 @@ export const listAllSuggestions = createServerFn({ method: "GET" })
     }
     return (data ?? []).map((r) => ({
       ...r,
-      email: r.user_id ? emailMap.get(r.user_id) ?? null : null,
-      account_name: r.account_id ? accMap.get(r.account_id) ?? null : null,
+      email: r.user_id ? (emailMap.get(r.user_id) ?? null) : null,
+      account_name: r.account_id ? (accMap.get(r.account_id) ?? null) : null,
     }));
   });
 
 export const deleteSuggestion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     if (!(await isAdmin(context.userId))) throw new Error("Acesso negado");
     const { error } = await supabaseAdmin.from("feature_suggestions").delete().eq("id", data.id);

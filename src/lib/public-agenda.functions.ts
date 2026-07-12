@@ -70,7 +70,7 @@ function expandLiveStreams(
 }
 
 export const getPublicAgenda = createServerFn({ method: "GET" })
-  .inputValidator((input: { siteId: string }) => {
+  .validator((input: { siteId: string }) => {
     const siteId = String(input?.siteId || "").slice(0, 64);
     if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error("invalid site_id");
     return { siteId };
@@ -80,13 +80,17 @@ export const getPublicAgenda = createServerFn({ method: "GET" })
     // Resolve by custom_slug first (case-insensitive), then fall back to site_id.
     let { data: account } = await supabaseAdmin
       .from("accounts")
-      .select("id, site_id, brand_title, brand_subtitle, brand_empty_message, brand_today_title, primary_color, force_show_type")
+      .select(
+        "id, site_id, brand_title, brand_subtitle, brand_empty_message, brand_today_title, primary_color, force_show_type",
+      )
       .eq("custom_slug", lookup)
       .maybeSingle();
     if (!account) {
       const fallback = await supabaseAdmin
         .from("accounts")
-        .select("id, site_id, brand_title, brand_subtitle, brand_empty_message, brand_today_title, primary_color, force_show_type")
+        .select(
+          "id, site_id, brand_title, brand_subtitle, brand_empty_message, brand_today_title, primary_color, force_show_type",
+        )
         .eq("site_id", data.siteId)
         .maybeSingle();
       account = fallback.data;
@@ -102,7 +106,9 @@ export const getPublicAgenda = createServerFn({ method: "GET" })
 
     const { data: events } = await supabaseAdmin
       .from("events")
-      .select("id, event_date, start_time, end_time, location_name, type_name, type_id, description, show_type, is_live, live_url")
+      .select(
+        "id, event_date, start_time, end_time, location_name, type_name, type_id, description, show_type, is_live, live_url",
+      )
       .eq("account_id", account.id)
       .gte("event_date", from)
       .lte("event_date", to)
@@ -117,7 +123,9 @@ export const getPublicAgenda = createServerFn({ method: "GET" })
     const [{ data: streams }, { data: overrides }] = await Promise.all([
       supabaseAdmin
         .from("live_streams")
-        .select("id, title, recurrence, weekday, event_date, start_time, duration_minutes, minutes_before, default_live_url, active, sort_order")
+        .select(
+          "id, title, recurrence, weekday, event_date, start_time, duration_minutes, minutes_before, default_live_url, active, sort_order",
+        )
         .eq("account_id", account.id),
       supabaseAdmin
         .from("live_stream_overrides")
@@ -141,19 +149,27 @@ export const getPublicAgenda = createServerFn({ method: "GET" })
       .eq("active", true)
       .gte("event_date", from)
       .lte("event_date", to);
-    const epOccurrences = (epRows ?? []).map((e: any) => ({
-      id: `evp:${e.id}`,
-      event_date: e.event_date,
-      start_time: e.start_time || "00:00",
-      end_time: null,
-      location_name: e.title,
-      type_name: "Evento",
-      type_id: null,
-      description: e.location_name || null,
-      show_type: true,
-      is_live: false,
-      live_url: null,
-    }));
+    const epOccurrences = (epRows ?? []).map(
+      (e: {
+        id: string;
+        title: string;
+        event_date: string;
+        start_time: string | null;
+        location_name: string | null;
+      }) => ({
+        id: `evp:${e.id}`,
+        event_date: e.event_date,
+        start_time: e.start_time || "00:00",
+        end_time: null,
+        location_name: e.title,
+        type_name: "Evento",
+        type_id: null,
+        description: e.location_name || null,
+        show_type: true,
+        is_live: false,
+        live_url: null,
+      }),
+    );
 
     const merged = [...(events ?? []), ...liveOccurrences, ...epOccurrences].sort((a, b) => {
       if (a.event_date !== b.event_date) return a.event_date < b.event_date ? -1 : 1;

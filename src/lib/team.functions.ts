@@ -60,7 +60,10 @@ export const getTeamAndPermissions = createServerFn({ method: "GET" })
     );
 
     const overrides: Record<string, RolePermissions> = {};
-    for (const row of (permsRes.data ?? []) as Array<{ role: string; permissions: RolePermissions }>) {
+    for (const row of (permsRes.data ?? []) as Array<{
+      role: string;
+      permissions: RolePermissions;
+    }>) {
       overrides[row.role] = row.permissions ?? {};
     }
 
@@ -79,7 +82,7 @@ export const getTeamAndPermissions = createServerFn({ method: "GET" })
         return {
           id: m.id,
           userId: m.user_id,
-          email: m.user_id ? info?.email ?? null : m.invited_email,
+          email: m.user_id ? (info?.email ?? null) : m.invited_email,
           role: m.role,
           status: displayStatus,
           createdAt: m.created_at,
@@ -100,7 +103,7 @@ const inviteSchema = z.object({
 // acontece no signup (gatilho handle_new_user), que reconhece o convite pendente.
 export const inviteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => inviteSchema.parse(i))
+  .validator((i) => inviteSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId, role: myRole } = await resolveAccountContext(context.userId);
     if (myRole !== "owner") throw new Error("Apenas o proprietario pode convidar usuarios.");
@@ -126,15 +129,13 @@ export const inviteMember = createServerFn({ method: "POST" })
         .update({ role: data.role, updated_at: new Date().toISOString() } as never)
         .eq("id", (existing as { id: string }).id);
     } else {
-      const { error: insErr } = await supabaseAdmin
-        .from("account_members" as never)
-        .insert({
-          account_id: accountId,
-          invited_email: email,
-          role: data.role,
-          status: "invited",
-          invited_by: context.userId,
-        } as never);
+      const { error: insErr } = await supabaseAdmin.from("account_members" as never).insert({
+        account_id: accountId,
+        invited_email: email,
+        role: data.role,
+        status: "invited",
+        invited_by: context.userId,
+      } as never);
       if (insErr) throw new Error(insErr.message);
     }
 
@@ -147,9 +148,10 @@ export const inviteMember = createServerFn({ method: "POST" })
     });
 
     if (linkErr) {
-      const code = (linkErr as any).code ?? "";
+      const code = "code" in linkErr ? String(linkErr.code ?? "") : "";
       const msg = (linkErr.message ?? "").toLowerCase();
-      const alreadyExists = code === "email_exists" || msg.includes("already") || msg.includes("registered");
+      const alreadyExists =
+        code === "email_exists" || msg.includes("already") || msg.includes("registered");
       if (alreadyExists) {
         // Usuario ja existe na plataforma: vincula direto (acessa com a propria senha).
         const { data: list } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
@@ -157,7 +159,11 @@ export const inviteMember = createServerFn({ method: "POST" })
         if (user) {
           await supabaseAdmin
             .from("account_members" as never)
-            .update({ user_id: user.id, status: "active", updated_at: new Date().toISOString() } as never)
+            .update({
+              user_id: user.id,
+              status: "active",
+              updated_at: new Date().toISOString(),
+            } as never)
             .eq("account_id", accountId)
             .eq("invited_email", email)
             .is("user_id", null);
@@ -167,7 +173,7 @@ export const inviteMember = createServerFn({ method: "POST" })
       throw new Error(linkErr.message);
     }
 
-    const inviteLink = ((linkData as any)?.properties?.action_link ?? null) as string | null;
+    const inviteLink = linkData.properties?.action_link ?? null;
     return { ok: true, linked: false, inviteLink };
   });
 
@@ -175,7 +181,7 @@ export const inviteMember = createServerFn({ method: "POST" })
 // o link ou quer reenviar). Usa 'recovery' pois o usuario ja foi criado no convite.
 export const generateInviteLink = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => memberIdSchema.parse(i))
+  .validator((i) => memberIdSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId, role: myRole } = await resolveAccountContext(context.userId);
     if (myRole !== "owner") throw new Error("Apenas o proprietario pode gerar links de acesso.");
@@ -203,7 +209,7 @@ export const generateInviteLink = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    const inviteLink = ((linkData as any)?.properties?.action_link ?? null) as string | null;
+    const inviteLink = linkData.properties?.action_link ?? null;
     return { ok: true, inviteLink, email };
   });
 
@@ -211,7 +217,7 @@ const memberIdSchema = z.object({ memberId: z.string().uuid() });
 
 export const updateMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => memberIdSchema.extend({ role: z.string().min(1).max(60) }).parse(i))
+  .validator((i) => memberIdSchema.extend({ role: z.string().min(1).max(60) }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId, role: myRole } = await resolveAccountContext(context.userId);
     if (myRole !== "owner") throw new Error("Apenas o proprietario pode alterar cargos.");
@@ -227,7 +233,8 @@ export const updateMemberRole = createServerFn({ method: "POST" })
       .eq("account_id", accountId)
       .maybeSingle();
     if (!row) throw new Error("Membro nao encontrado.");
-    if ((row as { role: string }).role === "owner") throw new Error("O proprietario nao pode ter o cargo alterado.");
+    if ((row as { role: string }).role === "owner")
+      throw new Error("O proprietario nao pode ter o cargo alterado.");
 
     const { error } = await supabaseAdmin
       .from("account_members" as never)
@@ -240,7 +247,7 @@ export const updateMemberRole = createServerFn({ method: "POST" })
 
 export const removeMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => memberIdSchema.parse(i))
+  .validator((i) => memberIdSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId, role: myRole } = await resolveAccountContext(context.userId);
     if (myRole !== "owner") throw new Error("Apenas o proprietario pode remover usuarios.");
@@ -252,7 +259,8 @@ export const removeMember = createServerFn({ method: "POST" })
       .eq("account_id", accountId)
       .maybeSingle();
     if (!row) throw new Error("Membro nao encontrado.");
-    if ((row as { role: string }).role === "owner") throw new Error("O proprietario nao pode ser removido.");
+    if ((row as { role: string }).role === "owner")
+      throw new Error("O proprietario nao pode ser removido.");
 
     const { error } = await supabaseAdmin
       .from("account_members" as never)
@@ -270,7 +278,7 @@ const updateSchema = z.object({
 
 export const updateRolePermissions = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => updateSchema.parse(i))
+  .validator((i) => updateSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId, role: myRole } = await resolveAccountContext(context.userId);
     if (myRole !== "owner") {
@@ -279,16 +287,20 @@ export const updateRolePermissions = createServerFn({ method: "POST" })
 
     const def = getRoleDefinition(data.role);
     if (!def) throw new Error("Cargo desconhecido.");
-    if (def.fullAccess) throw new Error("O cargo de proprietario tem acesso total e nao e editavel.");
+    if (def.fullAccess)
+      throw new Error("O cargo de proprietario tem acesso total e nao e editavel.");
 
     const permissions = sanitizePermissions(data.permissions);
 
-    const { error } = await supabaseAdmin
-      .from("account_role_permissions" as never)
-      .upsert(
-        { account_id: accountId, role: data.role, permissions, updated_at: new Date().toISOString() } as never,
-        { onConflict: "account_id,role" },
-      );
+    const { error } = await supabaseAdmin.from("account_role_permissions" as never).upsert(
+      {
+        account_id: accountId,
+        role: data.role,
+        permissions,
+        updated_at: new Date().toISOString(),
+      } as never,
+      { onConflict: "account_id,role" },
+    );
     if (error) throw new Error(error.message);
 
     return { ok: true };

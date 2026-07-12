@@ -72,7 +72,7 @@ export const listEventPages = createServerFn({ method: "GET" })
 
 export const saveEventPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => EventPageInput.parse(input))
+  .validator((input) => EventPageInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "events", data.id ? "edit" : "create");
@@ -141,7 +141,7 @@ export const saveEventPage = createServerFn({ method: "POST" })
 
 export const deleteEventPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "events", "delete");
@@ -157,14 +157,16 @@ export const deleteEventPage = createServerFn({ method: "POST" })
 
 export const listEventRegistrations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ eventPageId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ eventPageId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data: regs, error } = await supabase
       .from("event_registrations")
-      .select("id, name, email, phone, amount_cents, status, paid_at, notes, created_at, transaction_id")
+      .select(
+        "id, name, email, phone, amount_cents, status, paid_at, notes, created_at, transaction_id",
+      )
       .eq("event_page_id", data.eventPageId)
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
@@ -174,7 +176,7 @@ export const listEventRegistrations = createServerFn({ method: "GET" })
 
 export const getRegistrationPayment = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ registrationId: z.string().uuid() }).parse(input))
+  .validator((input) => z.object({ registrationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "events", "view");
@@ -186,7 +188,8 @@ export const getRegistrationPayment = createServerFn({ method: "GET" })
       .eq("account_id", accountId)
       .maybeSingle();
     if (!reg) throw new Error("Inscrição não encontrada.");
-    if (!reg.transaction_id) return { copyPaste: null, qrCodeImage: null, payUrl: null, status: reg.status };
+    if (!reg.transaction_id)
+      return { copyPaste: null, qrCodeImage: null, payUrl: null, status: reg.status };
     const { data: tx } = await supabase
       .from("payment_transactions")
       .select("copy_paste, qr_code, pay_url, status")
@@ -203,15 +206,19 @@ export const getRegistrationPayment = createServerFn({ method: "GET" })
 // ---------- PUBLIC (no auth) ----------
 
 export const getPublicEventPage = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string }) => {
-    const slug = String(input?.slug || "").slice(0, 80).toLowerCase();
+  .validator((input: { slug: string }) => {
+    const slug = String(input?.slug || "")
+      .slice(0, 80)
+      .toLowerCase();
     if (!/^[a-z0-9-]+$/.test(slug)) throw new Error("invalid slug");
     return { slug };
   })
   .handler(async ({ data }) => {
     const { data: page } = await supabaseAdmin
       .from("event_pages")
-      .select("id, account_id, slug, title, description, cover_image_url, event_date, start_time, end_time, location_name, location_address, price_cents, max_attendees, allow_free, active, primary_color, whatsapp_contact")
+      .select(
+        "id, account_id, slug, title, description, cover_image_url, event_date, start_time, end_time, location_name, location_address, price_cents, max_attendees, allow_free, active, primary_color, whatsapp_contact",
+      )
       .eq("slug", data.slug)
       .maybeSingle();
     if (!page || !page.active) return null;
@@ -239,8 +246,10 @@ export const getPublicEventPage = createServerFn({ method: "GET" })
   });
 
 export const listPublicEventsBySite = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string }) => {
-    const slug = String(input?.slug || "").slice(0, 120).toLowerCase();
+  .validator((input: { slug: string }) => {
+    const slug = String(input?.slug || "")
+      .slice(0, 120)
+      .toLowerCase();
     if (!/^[a-z0-9-]+$/.test(slug)) throw new Error("invalid slug");
     return { slug };
   })
@@ -254,7 +263,9 @@ export const listPublicEventsBySite = createServerFn({ method: "GET" })
     const today = new Date().toISOString().slice(0, 10);
     const { data: events } = await supabaseAdmin
       .from("event_pages")
-      .select("id, slug, title, description, event_date, start_time, location_name, cover_image_url, price_cents")
+      .select(
+        "id, slug, title, description, event_date, start_time, location_name, cover_image_url, price_cents",
+      )
       .eq("account_id", account.id)
       .eq("active", true)
       .gte("event_date", today)
@@ -272,7 +283,7 @@ const RegisterInput = z.object({
 });
 
 export const registerForEvent = createServerFn({ method: "POST" })
-  .inputValidator((input) => RegisterInput.parse(input))
+  .validator((input) => RegisterInput.parse(input))
   .handler(async ({ data }) => {
     const slug = data.slug.toLowerCase();
     if (!/^[a-z0-9-]+$/.test(slug)) throw new Error("Slug inválido.");
@@ -376,9 +387,12 @@ export const registerForEvent = createServerFn({ method: "POST" })
 
     const raw = await response.json().catch(() => null);
     if (!response.ok) {
-      throw new Error((raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.");
+      throw new Error(
+        (raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.",
+      );
     }
-    const payment = (raw as { data?: Record<string, unknown> } & Record<string, unknown>).data ?? raw;
+    const payment =
+      (raw as { data?: Record<string, unknown> } & Record<string, unknown>).data ?? raw;
     const pay = payment as Record<string, unknown>;
     const pix = (pay.pix && typeof pay.pix === "object" ? pay.pix : {}) as Record<string, unknown>;
     const copyPaste =
@@ -386,7 +400,9 @@ export const registerForEvent = createServerFn({ method: "POST" })
       (typeof pay.qrCode === "string" && pay.qrCode) ||
       (typeof pay.copyPaste === "string" && pay.copyPaste) ||
       null;
-    const qrCodeImage = copyPaste ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 }) : null;
+    const qrCodeImage = copyPaste
+      ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 })
+      : null;
 
     const { data: tx } = await supabaseAdmin
       .from("payment_transactions")
@@ -406,7 +422,10 @@ export const registerForEvent = createServerFn({ method: "POST" })
       .single();
 
     if (tx?.id) {
-      await supabaseAdmin.from("event_registrations").update({ transaction_id: tx.id }).eq("id", reg.id);
+      await supabaseAdmin
+        .from("event_registrations")
+        .update({ transaction_id: tx.id })
+        .eq("id", reg.id);
     }
 
     return {

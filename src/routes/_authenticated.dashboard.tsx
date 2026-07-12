@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import {
   CalendarDays,
   CalendarClock,
+  Landmark,
   MapPin,
   ListChecks,
   Users,
@@ -21,6 +22,8 @@ import {
   UserCheck,
   TrendingDown,
   UserX,
+  ArrowDownRight,
+  ArrowUpRight,
 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -32,6 +35,7 @@ import { listTypes } from "@/lib/types.functions";
 import { listEvents } from "@/lib/events.functions";
 import { listMembers } from "@/lib/members.functions";
 import { listMyDonationCampaigns } from "@/lib/donations.functions";
+import { listFinancialEntries, type FinancialEntryRow } from "@/lib/financial-entries.functions";
 import { listSystemUpdates, createSuggestion } from "@/lib/feedback.functions";
 import { listUpcomingUnconfirmedShifts } from "@/lib/volunteer-shifts.functions";
 import { listCampaigns } from "@/lib/campaigns.functions";
@@ -64,14 +68,21 @@ function DashboardPage() {
   const canUseEbd = !!account && canAccessPath(planTier, "/ebd");
   const canUseShifts = !!account && canAccessPath(planTier, "/escalas");
   const canUseContribCampaigns = !!account && canAccessPath(planTier, "/campanhas");
-  const { data: locations = [] } = useQuery({ queryKey: ["locations"], queryFn: () => fetchLocations() });
+  const canUseFinances = !!account && canAccessPath(planTier, "/livro-caixa");
+  const { data: locations = [] } = useQuery({
+    queryKey: ["locations"],
+    queryFn: () => fetchLocations(),
+  });
   const { data: types = [] } = useQuery({ queryKey: ["types"], queryFn: () => fetchTypes() });
   const { data: members = [] } = useQuery({
     queryKey: ["members"],
     queryFn: () => fetchMembers(),
     enabled: canUseMembers,
   });
-  const { data: campaigns = [] } = useQuery({ queryKey: ["my-donations"], queryFn: () => fetchCampaigns() });
+  const { data: campaigns = [] } = useQuery({
+    queryKey: ["my-donations"],
+    queryFn: () => fetchCampaigns(),
+  });
   const { data: unconfirmedShifts = [] } = useQuery({
     queryKey: ["unconfirmed-shifts"],
     queryFn: () => fetchUnconfirmedShifts(),
@@ -103,14 +114,25 @@ function DashboardPage() {
   const terms = getReligionTerms(account?.religion_profile);
 
   const fetchUpdates = useServerFn(listSystemUpdates);
-  const { data: updates = [] } = useQuery({ queryKey: ["system-updates"], queryFn: () => fetchUpdates() });
+  const { data: updates = [] } = useQuery({
+    queryKey: ["system-updates"],
+    queryFn: () => fetchUpdates(),
+  });
+  const fetchFinancialEntries = useServerFn(listFinancialEntries);
+  const { data: financialEntries = [] } = useQuery({
+    queryKey: ["financial-entries"],
+    queryFn: () => fetchFinancialEntries(),
+    enabled: canUseFinances,
+  });
 
   const currentMonth = new Date().getMonth() + 1;
   const birthdays = (members as any[]).filter((m) => {
     if (!m.birth_date) return false;
     return new Date(m.birth_date + "T00:00:00").getMonth() + 1 === currentMonth;
   });
-  const activeMembers = canUseMembers ? (members as any[]).filter((m) => m.status === "ativo").length : "Pro";
+  const activeMembers = canUseMembers
+    ? (members as any[]).filter((m) => m.status === "ativo").length
+    : "Pro";
   const activeCampaigns = (campaigns as any[]).filter((c) => c.active).length;
 
   const todayKey = useMemo(() => {
@@ -284,10 +306,43 @@ function DashboardPage() {
         search: { tab: "doacoes" },
       },
     ],
-    [activeCampaigns, canUseMembers, events, locations.length, members, terms.institution, terms.person, types.length],
+    [
+      activeCampaigns,
+      canUseMembers,
+      events,
+      locations.length,
+      members,
+      terms.institution,
+      terms.person,
+      types.length,
+    ],
   );
   const completedSetupTasks = setupTasks.filter((task) => task.done).length;
   const setupProgress = Math.round((completedSetupTasks / setupTasks.length) * 100);
+  const financialSnapshot = useMemo(() => {
+    if (!canUseFinances) return null;
+    const now = new Date();
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const monthEntries = (financialEntries as FinancialEntryRow[]).filter((entry) =>
+      entry.entry_date?.startsWith(monthKey),
+    );
+    const income = monthEntries
+      .filter((entry) => entry.entry_type === "income")
+      .reduce((sum, entry) => sum + entry.amount_cents, 0);
+    const expense = monthEntries
+      .filter((entry) => entry.entry_type === "expense")
+      .reduce((sum, entry) => sum + entry.amount_cents, 0);
+    const balance = income - expense;
+    const expenseRatio = income > 0 ? Math.round((expense / income) * 100) : null;
+    const categoryTotals = new Map<string, number>();
+    for (const entry of monthEntries) {
+      if (entry.entry_type !== "expense") continue;
+      const key = entry.category?.trim() || "Outro";
+      categoryTotals.set(key, (categoryTotals.get(key) ?? 0) + entry.amount_cents);
+    }
+    const topExpenseCategory = [...categoryTotals.entries()].sort((a, b) => b[1] - a[1])[0] ?? null;
+    return { monthEntries, income, expense, balance, expenseRatio, topExpenseCategory };
+  }, [canUseFinances, financialEntries]);
 
   const trialDays = account?.trial_ends_at
     ? Math.max(
@@ -328,7 +383,9 @@ function DashboardPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium leading-5">{alert.title}</p>
-                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{alert.description}</p>
+                      <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                        {alert.description}
+                      </p>
                     </div>
                     <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                   </div>
@@ -346,7 +403,8 @@ function DashboardPage() {
                 <h2 className="font-semibold">Configure sua {terms.institution}</h2>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {setupProgress}% concluido - {setupTasks.length - completedSetupTasks} passo(s) restante(s)
+                {setupProgress}% concluido - {setupTasks.length - completedSetupTasks} passo(s)
+                restante(s)
               </p>
             </div>
             <div className="min-w-32 rounded-md bg-primary/10 px-3 py-2 text-right">
@@ -355,7 +413,10 @@ function DashboardPage() {
             </div>
           </div>
           <div className="h-2 bg-muted">
-            <div className="h-full bg-primary transition-all" style={{ width: `${setupProgress}%` }} />
+            <div
+              className="h-full bg-primary transition-all"
+              style={{ width: `${setupProgress}%` }}
+            />
           </div>
           <div className="grid gap-2 p-5 pt-4 md:grid-cols-2">
             {setupTasks.map((task) => (
@@ -368,7 +429,9 @@ function DashboardPage() {
                   )}
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium leading-5">{task.label}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">{task.description}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                      {task.description}
+                    </p>
                   </div>
                   <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                 </div>
@@ -377,45 +440,123 @@ function DashboardPage() {
           </div>
         </Card>
 
+        <Card className="mb-6 p-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div className="flex items-center gap-2">
+              <Landmark className="h-5 w-5 text-primary" />
+              <div>
+                <h2 className="font-semibold">Resumo financeiro do mês</h2>
+                <p className="text-xs text-muted-foreground">
+                  Leitura rápida para acompanhar entradas, saídas e saldo sem abrir relatórios
+                  completos.
+                </p>
+              </div>
+            </div>
+            <Link to="/livro-caixa" className="text-xs font-medium text-primary hover:underline">
+              Abrir Livro Caixa
+            </Link>
+          </div>
+
+          {financialSnapshot ? (
+            <div className="mt-4 grid gap-3 lg:grid-cols-4">
+              <div className="rounded-md border bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">Entradas</p>
+                  <ArrowUpRight className="h-4 w-4 text-emerald-600" />
+                </div>
+                <p className="mt-2 text-xl font-semibold">
+                  {formatCurrency(financialSnapshot.income)}
+                </p>
+              </div>
+              <div className="rounded-md border bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-medium text-muted-foreground">Saídas</p>
+                  <ArrowDownRight className="h-4 w-4 text-rose-600" />
+                </div>
+                <p className="mt-2 text-xl font-semibold">
+                  {formatCurrency(financialSnapshot.expense)}
+                </p>
+              </div>
+              <div className="rounded-md border bg-muted/30 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Saldo do mês</p>
+                <p
+                  className={`mt-2 text-xl font-semibold ${
+                    financialSnapshot.balance >= 0 ? "text-emerald-700" : "text-rose-600"
+                  }`}
+                >
+                  {formatCurrency(financialSnapshot.balance)}
+                </p>
+              </div>
+              <div className="rounded-md border bg-muted/30 p-3">
+                <p className="text-xs font-medium text-muted-foreground">Lançamentos</p>
+                <p className="mt-2 text-xl font-semibold">
+                  {financialSnapshot.monthEntries.length}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {financialSnapshot.expenseRatio !== null
+                    ? `Despesas consomem ${financialSnapshot.expenseRatio}% das entradas`
+                    : "Sem entradas suficientes para calcular o ritmo das despesas"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-md bg-muted/40 p-4 text-sm text-muted-foreground">
+              O resumo financeiro aparece para quem tem acesso ao Livro Caixa premium.
+            </div>
+          )}
+
+          {financialSnapshot && financialSnapshot.topExpenseCategory && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <span className="rounded-full bg-muted px-2 py-1">
+                Maior despesa: {financialSnapshot.topExpenseCategory[0]}{" "}
+                {formatCurrency(financialSnapshot.topExpenseCategory[1])}
+              </span>
+              <span className="rounded-full bg-muted px-2 py-1">
+                {financialSnapshot.monthEntries.length} lançamento(s) no recorte atual
+              </span>
+            </div>
+          )}
+        </Card>
+
         <div className="grid md:grid-cols-3 gap-4">
           <Link to="/locations">
-          <Card className="p-5 hover:border-primary transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10 text-primary">
-                <MapPin className="h-5 w-5" />
+            <Card className="p-5 hover:border-primary transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Locais</p>
+                  <p className="text-2xl font-semibold">{locations.length}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Locais</p>
-                <p className="text-2xl font-semibold">{locations.length}</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
           </Link>
           <Link to="/types">
-          <Card className="p-5 hover:border-primary transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10 text-primary">
-                <ListChecks className="h-5 w-5" />
+            <Card className="p-5 hover:border-primary transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
+                  <ListChecks className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tipos</p>
+                  <p className="text-2xl font-semibold">{types.length}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Tipos</p>
-                <p className="text-2xl font-semibold">{types.length}</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
           </Link>
           <Link to="/agenda">
-          <Card className="p-5 hover:border-primary transition-colors">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-md bg-primary/10 text-primary">
-                <CalendarDays className="h-5 w-5" />
+            <Card className="p-5 hover:border-primary transition-colors">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
+                  <CalendarDays className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Eventos no mes</p>
+                  <p className="text-2xl font-semibold">{events.length}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Eventos no mes</p>
-                <p className="text-2xl font-semibold">{events.length}</p>
-              </div>
-            </div>
-          </Card>
+            </Card>
           </Link>
         </div>
 
@@ -423,9 +564,11 @@ function DashboardPage() {
           <Link to={canUseMembers ? "/membros" : "/billing"}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-primary/10 text-primary"><Users className="h-5 w-5" /></div>
+                <div className="p-2 rounded-md bg-primary/10 text-primary">
+                  <Users className="h-5 w-5" />
+                </div>
                 <div>
-                <p className="text-sm text-muted-foreground">{terms.people} ativos</p>
+                  <p className="text-sm text-muted-foreground">{terms.people} ativos</p>
                   <p className="text-2xl font-semibold">{activeMembers}</p>
                 </div>
               </div>
@@ -434,7 +577,9 @@ function DashboardPage() {
           <Link to={canUseMembers ? "/membros" : "/billing"}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-pink-500/10 text-pink-600"><Cake className="h-5 w-5" /></div>
+                <div className="p-2 rounded-md bg-pink-500/10 text-pink-600">
+                  <Cake className="h-5 w-5" />
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Aniversariantes do mês</p>
                   <p className="text-2xl font-semibold">{birthdays.length}</p>
@@ -445,7 +590,9 @@ function DashboardPage() {
           <Link to={canUseEbd ? "/ebd" : "/billing"}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-emerald-500/10 text-emerald-700"><GraduationCap className="h-5 w-5" /></div>
+                <div className="p-2 rounded-md bg-emerald-500/10 text-emerald-700">
+                  <GraduationCap className="h-5 w-5" />
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Escola Bíblica</p>
                   <p className="text-2xl font-semibold">{canUseEbd ? "Frequência" : "Premium"}</p>
@@ -456,7 +603,9 @@ function DashboardPage() {
           <Link to="/hub" search={{ tab: "doacoes" } as any}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-md bg-amber-500/10 text-amber-700"><HandCoins className="h-5 w-5" /></div>
+                <div className="p-2 rounded-md bg-amber-500/10 text-amber-700">
+                  <HandCoins className="h-5 w-5" />
+                </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Campanhas Pix ativas</p>
                   <p className="text-2xl font-semibold">{activeCampaigns}</p>
@@ -478,9 +627,16 @@ function DashboardPage() {
                 .map((m: any) => {
                   const d = new Date(m.birth_date + "T00:00:00");
                   return (
-                    <div key={m.id} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/40">
+                    <div
+                      key={m.id}
+                      className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/40"
+                    >
                       {m.photo_url ? (
-                        <img src={m.photo_url} alt="" className="h-9 w-9 rounded-full object-cover" />
+                        <img
+                          src={m.photo_url}
+                          alt=""
+                          className="h-9 w-9 rounded-full object-cover"
+                        />
                       ) : (
                         <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center text-xs font-medium">
                           {m.full_name[0]}
@@ -522,10 +678,7 @@ function DashboardPage() {
               <p className="text-sm text-muted-foreground">
                 Nenhum evento agendado para os proximos dias deste mes.
               </p>
-              <Link
-                to="/agenda"
-                className="text-xs font-medium text-primary hover:underline"
-              >
+              <Link to="/agenda" className="text-xs font-medium text-primary hover:underline">
                 Publicar um evento
               </Link>
             </div>
@@ -538,7 +691,9 @@ function DashboardPage() {
                       {new Date(`${e.event_date}T00:00:00`).getDate()}
                     </span>
                     <span className="text-[10px] uppercase leading-none mt-0.5">
-                      {new Date(`${e.event_date}T00:00:00`).toLocaleDateString("pt-BR", { month: "short" })}
+                      {new Date(`${e.event_date}T00:00:00`).toLocaleDateString("pt-BR", {
+                        month: "short",
+                      })}
                     </span>
                   </div>
                   <div className="min-w-0 flex-1">
@@ -591,9 +746,15 @@ function SystemUpdatesCard({ updates }: { updates: any[] }) {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground whitespace-pre-line mt-0.5">{u.content}</p>
+              <p className="text-xs text-muted-foreground whitespace-pre-line mt-0.5">
+                {u.content}
+              </p>
               <p className="text-[10px] text-muted-foreground mt-1">
-                {new Date(u.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                {new Date(u.created_at).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
               </p>
             </li>
           ))}
@@ -612,7 +773,8 @@ function SuggestionCard() {
     mutationFn: () => send({ data: { title: title.trim(), message: message.trim() } }),
     onSuccess: () => {
       toast.success("Sugestão enviada. Obrigado!");
-      setTitle(""); setMessage("");
+      setTitle("");
+      setMessage("");
       qc.invalidateQueries({ queryKey: ["my-suggestions"] });
     },
     onError: (e: any) => toast.error(e?.message || "Não foi possível enviar."),
@@ -625,7 +787,8 @@ function SuggestionCard() {
         <h2 className="font-semibold">Sugerir uma melhoria</h2>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        Sua ideia ajuda a guiar nossos próximos lançamentos. Conta o que faria seu dia a dia mais fácil.
+        Sua ideia ajuda a guiar nossos próximos lançamentos. Conta o que faria seu dia a dia mais
+        fácil.
       </p>
       <div className="space-y-2">
         <Input
@@ -680,4 +843,12 @@ function formatEventDate(dateStr?: string | null, startTime?: string | null): st
   const d = new Date(`${dateStr}T00:00:00`);
   const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   return startTime ? `${label}, ${startTime}` : label;
+}
+
+function formatCurrency(valueCents: number): string {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+    maximumFractionDigits: 2,
+  }).format(valueCents / 100);
 }

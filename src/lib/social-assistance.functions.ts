@@ -63,7 +63,7 @@ const familySchema = z.object({
 
 export const upsertSocialFamily = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => familySchema.parse(i))
+  .validator((i) => familySchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -91,12 +91,14 @@ export const upsertSocialFamily = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: (row as any)!.id };
+    return { id: (row as { id: string }).id };
   });
 
 export const setSocialFamilyStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), status: z.enum(["active", "inactive"]) }).parse(i))
+  .validator((i) =>
+    z.object({ id: z.string().uuid(), status: z.enum(["active", "inactive"]) }).parse(i),
+  )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -111,7 +113,7 @@ export const setSocialFamilyStatus = createServerFn({ method: "POST" })
 
 export const deleteSocialFamily = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -126,7 +128,7 @@ export const deleteSocialFamily = createServerFn({ method: "POST" })
 
 export const listSocialDeliveries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ family_id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ family_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -166,7 +168,7 @@ const deliverySchema = z.object({
 
 export const addSocialDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => deliverySchema.parse(i))
+  .validator((i) => deliverySchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -193,7 +195,7 @@ export const addSocialDelivery = createServerFn({ method: "POST" })
 
 export const deleteSocialDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;

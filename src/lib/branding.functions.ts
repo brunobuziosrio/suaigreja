@@ -25,7 +25,7 @@ const brandingSchema = z.object({
 
 export const adminUpdateBranding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => brandingSchema.parse(i))
+  .validator((i) => brandingSchema.parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin

@@ -14,9 +14,32 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
 
+type ConsentRecord = {
+  consent_type: string;
+  accepted: boolean;
+};
+
+type MemberAnonymizationPayload = {
+  full_name: string;
+  email: null;
+  phone: null;
+  cpf: null;
+  address_street: null;
+  address_number: null;
+  address_city: null;
+  address_state: null;
+  neighborhood: null;
+  birth_date: null;
+  gender: null;
+  marital_status: null;
+  notes: string;
+  photo_url: null;
+  whatsapp_consent: false;
+};
+
 export const recordDataConsent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         consent_type: z.enum([
@@ -30,7 +53,7 @@ export const recordDataConsent = createServerFn({ method: "POST" })
         ip_address: z.string().optional().nullable(),
         user_agent: z.string().optional().nullable(),
       })
-      .parse(i)
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -65,7 +88,7 @@ export const getConsentStatus = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
 
     const latest = new Map<string, boolean>();
-    (data ?? []).forEach((r: any) => {
+    ((data as ConsentRecord[] | null) ?? []).forEach((r) => {
       if (!latest.has(r.consent_type)) {
         latest.set(r.consent_type, r.accepted);
       }
@@ -87,24 +110,25 @@ export const exportMyAccountData = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { accountId, role } = await resolveAccountContext(userId);
 
-    const [{ data: membership }, { data: consents }, { data: deletionRequests }] = await Promise.all([
-      supabase
-        .from("account_members" as never)
-        .select("role, status, created_at")
-        .eq("account_id", accountId)
-        .eq("user_id", userId)
-        .maybeSingle(),
-      supabase
-        .from("lgpd_consent_records")
-        .select("consent_type, accepted, recorded_at")
-        .eq("user_id", userId)
-        .order("recorded_at", { ascending: false }),
-      supabase
-        .from("lgpd_deletion_requests" as never)
-        .select("status, reason, requested_at, processed_at")
-        .eq("user_id", userId)
-        .order("requested_at", { ascending: false }),
-    ]);
+    const [{ data: membership }, { data: consents }, { data: deletionRequests }] =
+      await Promise.all([
+        supabase
+          .from("account_members" as never)
+          .select("role, status, created_at")
+          .eq("account_id", accountId)
+          .eq("user_id", userId)
+          .maybeSingle(),
+        supabase
+          .from("lgpd_consent_records")
+          .select("consent_type, accepted, recorded_at")
+          .eq("user_id", userId)
+          .order("recorded_at", { ascending: false }),
+        supabase
+          .from("lgpd_deletion_requests" as never)
+          .select("status, reason, requested_at, processed_at")
+          .eq("user_id", userId)
+          .order("requested_at", { ascending: false }),
+      ]);
 
     return {
       exportedAt: new Date().toISOString(),
@@ -118,13 +142,13 @@ export const exportMyAccountData = createServerFn({ method: "GET" })
 
 export const requestDataDeletion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         reason: z.string().max(500).optional().nullable(),
         confirm_deletion: z.boolean(),
       })
-      .parse(i)
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -145,12 +169,15 @@ export const requestDataDeletion = createServerFn({ method: "POST" })
     });
     if (error) throw new Error(error.message);
 
-    return { ok: true, message: "Solicitação de exclusão registrada. Será processada em até 30 dias." };
+    return {
+      ok: true,
+      message: "Solicitação de exclusão registrada. Será processada em até 30 dias.",
+    };
   });
 
 export const logDataAccess = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         action: z.enum(["read", "create", "update", "delete", "export"]),
@@ -158,7 +185,7 @@ export const logDataAccess = createServerFn({ method: "POST" })
         resource_id: z.string().uuid(),
         description: z.string().max(500).optional().nullable(),
       })
-      .parse(i)
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
@@ -180,12 +207,12 @@ export const logDataAccess = createServerFn({ method: "POST" })
 
 export const getAuditLog = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         days: z.number().int().min(1).max(90).default(30),
       })
-      .parse(i)
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -206,13 +233,13 @@ export const getAuditLog = createServerFn({ method: "GET" })
 
 export const anonymizeData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         member_id: z.string().uuid(),
         confirm: z.boolean(),
       })
-      .parse(i)
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -238,7 +265,7 @@ export const anonymizeData = createServerFn({ method: "POST" })
         notes: "Dados anonimizados por solicitação LGPD",
         photo_url: null,
         whatsapp_consent: false,
-      } as any)
+      } satisfies MemberAnonymizationPayload)
       .eq("id", data.member_id)
       .eq("account_id", accountId);
     if (error) throw new Error(error.message);

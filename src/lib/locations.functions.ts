@@ -40,10 +40,30 @@ const upsertSchema = z.object({
   postal_code: z.string().max(20).optional().nullable(),
   country: z.string().max(80).optional().nullable(),
 });
-
+type LocationPayload = {
+  name: string;
+  address: string | null;
+  active: boolean;
+  is_main: boolean;
+  phone: string | null;
+  whatsapp: string | null;
+  office_hours: string | null;
+  transport_info: string | null;
+  maps_url: string | null;
+  waze_url: string | null;
+  uber_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  place_id: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
+};
 export const upsertLocation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -65,21 +85,23 @@ export const upsertLocation = createServerFn({ method: "POST" })
       postal_code: data.postal_code ?? null,
       country: data.country ?? null,
     };
+    const payload: LocationPayload = {
+      name: data.name,
+      address: data.address ?? null,
+      active: data.active ?? true,
+      ...extra,
+    };
     if (data.id) {
       const { error } = await supabase
         .from("locations")
-        .update({ name: data.name, address: data.address ?? null, active: data.active ?? true, ...extra } as any)
+        .update(payload as never)
         .eq("id", data.id)
         .eq("account_id", accountId);
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabase.from("locations").insert({
-        account_id: accountId,
-        name: data.name,
-        address: data.address ?? null,
-        active: data.active ?? true,
-        ...extra,
-      } as any);
+      const { error } = await supabase
+        .from("locations")
+        .insert({ ...payload, account_id: accountId } as never);
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -87,7 +109,7 @@ export const upsertLocation = createServerFn({ method: "POST" })
 
 export const deleteLocation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);

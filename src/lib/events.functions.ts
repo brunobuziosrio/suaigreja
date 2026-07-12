@@ -11,7 +11,7 @@ const listSchema = z.object({
 
 export const listEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => listSchema.parse(i))
+  .validator((i) => listSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -32,7 +32,11 @@ const upsertSchema = z.object({
   id: z.string().uuid().optional(),
   event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   start_time: z.string().regex(/^\d{2}:\d{2}$/),
-  end_time: z.string().regex(/^\d{2}:\d{2}$/).optional().nullable(),
+  end_time: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/)
+    .optional()
+    .nullable(),
   location_id: z.string().uuid(),
   type_id: z.string().uuid(),
   description: z.string().max(500).optional().nullable(),
@@ -43,7 +47,7 @@ const upsertSchema = z.object({
 
 export const upsertEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -51,8 +55,18 @@ export const upsertEvent = createServerFn({ method: "POST" })
 
     // Resolve location and type names (denormalize for public embed)
     const [{ data: loc, error: locErr }, { data: typ, error: typErr }] = await Promise.all([
-      supabase.from("locations").select("name").eq("id", data.location_id).eq("account_id", accountId).maybeSingle(),
-      supabase.from("celebration_types").select("name").eq("id", data.type_id).eq("account_id", accountId).maybeSingle(),
+      supabase
+        .from("locations")
+        .select("name")
+        .eq("id", data.location_id)
+        .eq("account_id", accountId)
+        .maybeSingle(),
+      supabase
+        .from("celebration_types")
+        .select("name")
+        .eq("id", data.type_id)
+        .eq("account_id", accountId)
+        .maybeSingle(),
     ]);
     if (locErr) throw new Error(locErr.message);
     if (typErr) throw new Error(typErr.message);
@@ -90,7 +104,7 @@ export const upsertEvent = createServerFn({ method: "POST" })
 
 export const deleteEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);

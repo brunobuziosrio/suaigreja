@@ -37,11 +37,13 @@ export const listDecisions = createServerFn({ method: "GET" })
 
 export const updateDecisionStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      id: z.string().uuid(),
-      status: z.enum(["pending", "contacted", "done"]),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["pending", "contacted", "done"]),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
@@ -57,7 +59,7 @@ export const updateDecisionStatus = createServerFn({ method: "POST" })
 
 export const updateDecisionNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), note: z.string().max(1000) }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid(), note: z.string().max(1000) }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -72,7 +74,7 @@ export const updateDecisionNote = createServerFn({ method: "POST" })
 
 export const deleteDecision = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -104,15 +106,21 @@ export type DecisionRow = {
 async function resolveAccountId(siteId: string): Promise<string | null> {
   const lookup = siteId.toLowerCase();
   const { data: a1 } = await supabaseAdmin
-    .from("accounts").select("id").eq("custom_slug", lookup).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("custom_slug", lookup)
+    .maybeSingle();
   if (a1) return a1.id;
   const { data: a2 } = await supabaseAdmin
-    .from("accounts").select("id").eq("site_id", siteId).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("site_id", siteId)
+    .maybeSingle();
   return a2?.id ?? null;
 }
 
 export const getPublicDecisionForm = createServerFn({ method: "GET" })
-  .inputValidator((i: { siteId: string }) => {
+  .validator((i: { siteId: string }) => {
     const siteId = String(i?.siteId || "").slice(0, 64);
     if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error("invalid site");
     return { siteId };
@@ -138,7 +146,7 @@ const SubmitInput = z.object({
 });
 
 export const submitDecision = createServerFn({ method: "POST" })
-  .inputValidator((i) => SubmitInput.parse(i))
+  .validator((i) => SubmitInput.parse(i))
   .handler(async ({ data }) => {
     const accountId = await resolveAccountId(data.siteId);
     if (!accountId) throw new Error("Comunidade não encontrada.");

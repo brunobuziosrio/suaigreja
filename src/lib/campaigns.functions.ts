@@ -50,14 +50,25 @@ const upsertSchema = z.object({
   sort_order: z.number().int().optional().default(0),
 });
 
+type CampaignPayload = {
+  name: string;
+  description: string | null;
+  goal_amount_cents: number;
+  start_date?: string;
+  end_date: string | null;
+  is_active: boolean;
+  pix_key: string | null;
+  sort_order: number;
+};
+
 export const upsertCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "campaigns", data.id ? "edit" : "create");
     const { supabase: client } = context;
-    const payload = {
+    const payload: CampaignPayload = {
       name: data.name.trim(),
       description: data.description?.trim() || null,
       goal_amount_cents: data.goal_amount_cents,
@@ -73,7 +84,7 @@ export const upsertCampaign = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await client
         .from("campaigns")
-        .update(payload as any)
+        .update(payload as never)
         .eq("id", data.id)
         .eq("account_id", accountId);
       if (error) throw new Error(error.message);
@@ -81,7 +92,7 @@ export const upsertCampaign = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await client
       .from("campaigns")
-      .insert({ ...payload, account_id: accountId } as any)
+      .insert({ ...payload, account_id: accountId } as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -90,7 +101,7 @@ export const upsertCampaign = createServerFn({ method: "POST" })
 
 export const deleteCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "campaigns", "delete");
@@ -106,7 +117,7 @@ export const deleteCampaign = createServerFn({ method: "POST" })
 
 export const getCampaignStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ campaignId: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ campaignId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "campaigns", "view");

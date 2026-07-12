@@ -4,6 +4,33 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { z } from "zod";
 
+type WhatsappSettingsRow = {
+  account_id: string;
+  enabled: boolean;
+  credits_balance: number;
+};
+
+type WhatsappProviderRow = {
+  account_id: string;
+  provider: string;
+  active: boolean;
+  sender_phone: string | null;
+  phone_number_id: string | null;
+  instance_id: string | null;
+  api_base_url: string | null;
+  last_error: string | null;
+  last_checked_at: string | null;
+};
+
+type WhatsappMessageStatusRow = {
+  account_id: string;
+  status: string;
+};
+
+type AdminAccountRow = {
+  id: string;
+};
+
 async function assertAdmin(userId: string) {
   const { data, error } = await supabaseAdmin
     .from("user_roles")
@@ -54,9 +81,7 @@ export const listAllAccounts = createServerFn({ method: "GET" })
     }
 
     // conta eventos por conta
-    const { data: counts } = await supabaseAdmin
-      .from("events")
-      .select("account_id");
+    const { data: counts } = await supabaseAdmin.from("events").select("account_id");
     const eventCount = new Map<string, number>();
     for (const row of counts ?? []) {
       eventCount.set(row.account_id, (eventCount.get(row.account_id) ?? 0) + 1);
@@ -76,7 +101,7 @@ const updateSchema = z.object({
 
 export const updateAccountSubscription = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => updateSchema.parse(input))
+  .validator((input) => updateSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
@@ -94,7 +119,7 @@ const planTierSchema = z.object({
 
 export const adminUpdateAccountPlanTier = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => planTierSchema.parse(input))
+  .validator((input) => planTierSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
@@ -123,7 +148,9 @@ export const listWhatsappAdminOverview = createServerFn({ method: "GET" })
       supabaseAdmin.from("whatsapp_settings").select("account_id, enabled, credits_balance"),
       supabaseAdmin
         .from("whatsapp_provider_connections")
-        .select("account_id, provider, active, sender_phone, phone_number_id, instance_id, api_base_url, last_error, last_checked_at"),
+        .select(
+          "account_id, provider, active, sender_phone, phone_number_id, instance_id, api_base_url, last_error, last_checked_at",
+        ),
       supabaseAdmin.from("whatsapp_messages").select("account_id, status"),
     ]);
 
@@ -132,19 +159,23 @@ export const listWhatsappAdminOverview = createServerFn({ method: "GET" })
     if (providersError) throw new Error(providersError.message);
     if (messagesError) throw new Error(messagesError.message);
 
-    const settingsByAccount = new Map((settings ?? []).map((row: any) => [row.account_id, row]));
-    const providerByAccount = new Map((providers ?? []).map((row: any) => [row.account_id, row]));
+    const settingsByAccount = new Map(
+      ((settings ?? []) as WhatsappSettingsRow[]).map((row) => [row.account_id, row]),
+    );
+    const providerByAccount = new Map(
+      ((providers ?? []) as WhatsappProviderRow[]).map((row) => [row.account_id, row]),
+    );
     const countsByAccount = new Map<string, Record<string, number>>();
-    for (const row of messages ?? []) {
-      const accountId = (row as any).account_id as string;
-      const status = (row as any).status as string;
+    for (const row of (messages ?? []) as WhatsappMessageStatusRow[]) {
+      const accountId = row.account_id;
+      const status = row.status;
       const counts = countsByAccount.get(accountId) ?? { total: 0 };
       counts.total += 1;
       counts[status] = (counts[status] ?? 0) + 1;
       countsByAccount.set(accountId, counts);
     }
 
-    return (accounts ?? []).map((account: any) => ({
+    return ((accounts ?? []) as AdminAccountRow[]).map((account) => ({
       ...account,
       whatsapp: settingsByAccount.get(account.id) ?? {
         account_id: account.id,
@@ -175,7 +206,7 @@ const whatsappProviderSchema = z.object({
 
 export const adminUpsertWhatsappProviderConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => whatsappProviderSchema.parse(input))
+  .validator((input) => whatsappProviderSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
 
@@ -195,7 +226,8 @@ export const adminUpsertWhatsappProviderConnection = createServerFn({ method: "P
       business_account_id:
         data.provider === "meta_cloud" ? data.business_account_id?.trim() || null : null,
       instance_id: data.provider === "uazapi" ? data.instance_id?.trim() || null : null,
-      api_base_url: data.provider === "uazapi" ? data.api_base_url?.replace(/\/+$/, "") || null : null,
+      api_base_url:
+        data.provider === "uazapi" ? data.api_base_url?.replace(/\/+$/, "") || null : null,
       access_token_secret_name: data.access_token_secret_name.trim(),
       last_error: null,
       last_checked_at: new Date().toISOString(),
@@ -203,7 +235,7 @@ export const adminUpsertWhatsappProviderConnection = createServerFn({ method: "P
 
     const { error } = await supabaseAdmin
       .from("whatsapp_provider_connections")
-      .upsert(payload as any, { onConflict: "account_id" });
+      .upsert(payload as never, { onConflict: "account_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -217,7 +249,7 @@ const whatsappCreditGrantSchema = z.object({
 
 export const adminGrantWhatsappCredits = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => whatsappCreditGrantSchema.parse(input))
+  .validator((input) => whatsappCreditGrantSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { data: result, error } = await supabaseAdmin.rpc("admin_grant_whatsapp_credits", {
@@ -242,7 +274,7 @@ const nameSchema = z.object({
 
 export const adminUpdateAccountName = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => nameSchema.parse(input))
+  .validator((input) => nameSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
@@ -287,7 +319,7 @@ export const listManagedDomainRequests = createServerFn({ method: "GET" })
       }
     }
 
-    return rows.map((account: any) => ({
+    return (rows as AdminAccountRow[]).map((account) => ({
       ...account,
       email: emailMap.get(account.id) ?? null,
     }));
@@ -301,7 +333,7 @@ const managedDomainStatusSchema = z.object({
 
 export const adminUpdateManagedDomainStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => managedDomainStatusSchema.parse(input))
+  .validator((input) => managedDomainStatusSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const update: Record<string, unknown> = {
@@ -313,7 +345,7 @@ export const adminUpdateManagedDomainStatus = createServerFn({ method: "POST" })
     }
     const { error } = await supabaseAdmin
       .from("accounts")
-      .update(update as any)
+      .update(update as never)
       .eq("id", data.account_id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -325,7 +357,7 @@ const generateTestDataSchema = z.object({
 
 export const generateTestData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => generateTestDataSchema.parse(input))
+  .validator((input) => generateTestDataSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
 
@@ -333,8 +365,16 @@ export const generateTestData = createServerFn({ method: "POST" })
 
     // Generate 30 members
     const memberNames = [
-      "Pedro Silva", "Maria Santos", "João Oliveira", "Ana Costa", "Carlos Souza",
-      "Julia Mendes", "Roberto Ferreira", "Fernanda Rocha", "Lucas Martins", "Camila Gomes",
+      "Pedro Silva",
+      "Maria Santos",
+      "João Oliveira",
+      "Ana Costa",
+      "Carlos Souza",
+      "Julia Mendes",
+      "Roberto Ferreira",
+      "Fernanda Rocha",
+      "Lucas Martins",
+      "Camila Gomes",
     ];
     const genders = ["Masculino", "Feminino"];
     const maritalStatuses = ["Solteiro", "Casado", "Divorciado", "Viúvo"];
@@ -349,15 +389,15 @@ export const generateTestData = createServerFn({ method: "POST" })
           account_id: accountId,
           full_name: memberNames[i % 10] + " [Teste] #" + i,
           email: `teste.${i}@seuigreja.test`,
-          phone: `(11) ${String(10000 + (i * 137) % 90000).padStart(5, "0")}-${String(1000 + (i * 73) % 9000).padStart(4, "0")}`,
+          phone: `(11) ${String(10000 + ((i * 137) % 90000)).padStart(5, "0")}-${String(1000 + ((i * 73) % 9000)).padStart(4, "0")}`,
           gender: genders[i % 2],
           marital_status: maritalStatuses[i % 4],
           role: roles[i % 6],
           status: statuses[i % 10 === 0 ? 0 : 1],
-          birth_date: new Date(1980 + (i % 40), (i % 12), 1 + (i % 28)).toISOString().split("T")[0],
+          birth_date: new Date(1980 + (i % 40), i % 12, 1 + (i % 28)).toISOString().split("T")[0],
           member_since: new Date(2023, 0, 1 + (i % 365)).toISOString().split("T")[0],
           address_street: `Rua ${String.fromCharCode(65 + (i % 26))}`,
-          address_number: String(i % 999 + 1),
+          address_number: String((i % 999) + 1),
           address_city: "São Paulo",
           address_state: "SP",
           is_test_data: true,
@@ -369,24 +409,37 @@ export const generateTestData = createServerFn({ method: "POST" })
     }
 
     // Generate 30 events
-    const eventTypes = ["Culto Domingo", "Culto Quarta", "EBD", "Célula", "Transmissão", "Devocional"];
-    const eventLocations = ["Sede Principal", "Filial Centro", "Filial Vila", "Filial Leste", "Online"];
+    const eventTypes = [
+      "Culto Domingo",
+      "Culto Quarta",
+      "EBD",
+      "Célula",
+      "Transmissão",
+      "Devocional",
+    ];
+    const eventLocations = [
+      "Sede Principal",
+      "Filial Centro",
+      "Filial Vila",
+      "Filial Leste",
+      "Online",
+    ];
 
     for (let i = 1; i <= 30; i++) {
       const startHour = [9, 19, 15][i % 3];
-      const { error } = await supabaseAdmin
-        .from("events")
-        .insert({
-          account_id: accountId,
-          type_name: eventTypes[i % 6],
-          location_name: eventLocations[i % 5],
-          event_date: new Date(Date.now() + ((i % 60) * 24 * 60 * 60 * 1000)).toISOString().split("T")[0],
-          start_time: `${String(startHour).padStart(2, "0")}:00:00`,
-          end_time: `${String(startHour + 1).padStart(2, "0")}:30:00`,
-          description: `Evento de teste #${i}`,
-          is_live: i % 7 === 0,
-          is_test_data: true,
-        });
+      const { error } = await supabaseAdmin.from("events").insert({
+        account_id: accountId,
+        type_name: eventTypes[i % 6],
+        location_name: eventLocations[i % 5],
+        event_date: new Date(Date.now() + (i % 60) * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+        start_time: `${String(startHour).padStart(2, "0")}:00:00`,
+        end_time: `${String(startHour + 1).padStart(2, "0")}:30:00`,
+        description: `Evento de teste #${i}`,
+        is_live: i % 7 === 0,
+        is_test_data: true,
+      });
       if (error) console.warn("Erro ao criar evento:", error);
     }
 
@@ -395,18 +448,18 @@ export const generateTestData = createServerFn({ method: "POST" })
     const donationStatuses = ["pending", "paid", "failed"];
 
     for (let i = 1; i <= 30; i++) {
-      const { error } = await supabaseAdmin
-        .from("donations")
-        .insert({
-          account_id: accountId,
-          donor_name: `Doador Teste ${i}`,
-          donor_email: `doador.${i}@test.local`,
-          donor_phone: `(11) 99999-${String(1000 + (i % 9000)).padStart(4, "0")}`,
-          amount_cents: amounts[i % 6] * 100,
-          status: donationStatuses[i % 3],
-          paid_at: [0, 3].includes(i % 5) ? null : new Date(Date.now() - ((i % 30) * 24 * 60 * 60 * 1000)).toISOString(),
-          is_test_data: true,
-        });
+      const { error } = await supabaseAdmin.from("donations").insert({
+        account_id: accountId,
+        donor_name: `Doador Teste ${i}`,
+        donor_email: `doador.${i}@test.local`,
+        donor_phone: `(11) 99999-${String(1000 + (i % 9000)).padStart(4, "0")}`,
+        amount_cents: amounts[i % 6] * 100,
+        status: donationStatuses[i % 3],
+        paid_at: [0, 3].includes(i % 5)
+          ? null
+          : new Date(Date.now() - (i % 30) * 24 * 60 * 60 * 1000).toISOString(),
+        is_test_data: true,
+      });
       if (error) console.warn("Erro ao criar doação:", error);
     }
 
@@ -457,19 +510,17 @@ export const generateTestData = createServerFn({ method: "POST" })
     for (const ebdClass of ebdClasses) {
       for (let dayOffset = 0; dayOffset < 10; dayOffset++) {
         for (let memberIdx = 0; memberIdx < Math.min(10, members.length); memberIdx++) {
-          const attendanceDate = new Date(Date.now() - (dayOffset * 24 * 60 * 60 * 1000))
+          const attendanceDate = new Date(Date.now() - dayOffset * 24 * 60 * 60 * 1000)
             .toISOString()
             .split("T")[0];
-          const { error } = await supabaseAdmin
-            .from("ebd_attendance")
-            .insert({
-              account_id: accountId,
-              class_id: ebdClass.id,
-              member_id: members[memberIdx].id,
-              attendance_date: attendanceDate,
-              present: dayOffset % 3 > 0,
-              is_test_data: true,
-            });
+          const { error } = await supabaseAdmin.from("ebd_attendance").insert({
+            account_id: accountId,
+            class_id: ebdClass.id,
+            member_id: members[memberIdx].id,
+            attendance_date: attendanceDate,
+            present: dayOffset % 3 > 0,
+            is_test_data: true,
+          });
           if (error && !error.message.includes("unique")) {
             console.warn("Erro ao criar frequência:", error);
           }
@@ -494,7 +545,7 @@ const deleteTestDataSchema = z.object({
 
 export const deleteTestData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => deleteTestDataSchema.parse(input))
+  .validator((input) => deleteTestDataSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
 
@@ -510,15 +561,22 @@ export const deleteTestData = createServerFn({ method: "POST" })
       members: 0,
     };
 
-    const tables = ["ebd_attendance", "ebd_enrollments", "ebd_classes", "donations", "events", "members"];
+    const tables = [
+      "ebd_attendance",
+      "ebd_enrollments",
+      "ebd_classes",
+      "donations",
+      "events",
+      "members",
+    ];
 
     for (const table of tables) {
       const { data: deleted } = await supabaseAdmin
-        .from(table as any)
+        .from(table as never)
         .delete()
         .eq("account_id", accountId)
         .eq("is_test_data", true)
-        .select("id" as any);
+        .select("id");
 
       deletions[table as keyof typeof deletions] = Array.isArray(deleted) ? deleted.length : 0;
     }
@@ -535,12 +593,19 @@ export const countTestData = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
 
-    const tables = ["members", "donations", "events", "ebd_classes", "ebd_enrollments", "ebd_attendance"];
+    const tables = [
+      "members",
+      "donations",
+      "events",
+      "ebd_classes",
+      "ebd_enrollments",
+      "ebd_attendance",
+    ];
     const counts: Record<string, number> = {};
 
     for (const table of tables) {
       const { count } = await supabaseAdmin
-        .from(table as any)
+        .from(table as never)
         .select("*", { count: "exact", head: true })
         .eq("account_id", accountId)
         .eq("is_test_data", true);

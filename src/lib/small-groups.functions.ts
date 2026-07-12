@@ -36,30 +36,42 @@ const upsertSchema = z.object({
 
 export const upsertSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "small_groups", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
     if (data.id) {
-      const { error } = await supabase.from("small_groups").update(payload).eq("id", data.id).eq("account_id", accountId);
+      const { error } = await supabase
+        .from("small_groups")
+        .update(payload)
+        .eq("id", data.id)
+        .eq("account_id", accountId);
       if (error) throw new Error(error.message);
       return { id: data.id };
     }
-    const { data: row, error } = await supabase.from("small_groups").insert(payload).select("id").single();
+    const { data: row, error } = await supabase
+      .from("small_groups")
+      .insert(payload)
+      .select("id")
+      .single();
     if (error) throw new Error(error.message);
     return { id: row.id };
   });
 
 export const deleteSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "small_groups", "delete");
     const { supabase } = context;
-    const { error } = await supabase.from("small_groups").delete().eq("id", data.id).eq("account_id", accountId);
+    const { error } = await supabase
+      .from("small_groups")
+      .delete()
+      .eq("id", data.id)
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

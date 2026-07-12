@@ -28,13 +28,7 @@ const REQUEST_TYPES = [
   "outro",
 ] as const;
 
-const STATUSES = [
-  "recebido",
-  "em_andamento",
-  "agendado",
-  "concluido",
-  "cancelado",
-] as const;
+const STATUSES = ["recebido", "em_andamento", "agendado", "concluido", "cancelado"] as const;
 
 const PRIORITIES = ["baixa", "normal", "alta"] as const;
 
@@ -44,7 +38,7 @@ const SELECT_COLUMNS =
 const optionalText = z.string().max(2000).optional().nullable();
 
 async function assertMemberBelongsToAccount(
-  supabase: any,
+  supabase: typeof supabaseAdmin,
   accountId: string,
   memberId?: string | null,
 ) {
@@ -117,9 +111,28 @@ const upsertSchema = z.object({
   internal_notes: optionalText,
 });
 
+const idSchema = z.object({ id: z.string().uuid() });
+const statusSchema = z.object({ id: z.string().uuid(), status: z.enum(STATUSES) });
+const requestIdSchema = z.object({ request_id: z.string().uuid() });
+
+type SecretariaAttachmentPath = {
+  file_path: string;
+};
+
+type PublicSecretariaRequest = {
+  id: string;
+  account_id: string;
+  request_type: (typeof REQUEST_TYPES)[number];
+  requester_name: string;
+  status: (typeof STATUSES)[number];
+  preferred_date: string | null;
+  scheduled_at: string | null;
+  created_at: string;
+};
+
 export const upsertSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", data.id ? "edit" : "create");
@@ -143,7 +156,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
     if (data.id) {
       const { data: updated, error } = await client
         .from("secretaria_requests")
-        .update(payload as any)
+        .update(payload as never)
         .eq("id", data.id)
         .eq("account_id", accountId)
         .select("id")
@@ -154,7 +167,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await client
       .from("secretaria_requests")
-      .insert({ ...payload, account_id: accountId } as any)
+      .insert({ ...payload, account_id: accountId } as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -163,16 +176,14 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
 
 export const updateSecretariaStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({ id: z.string().uuid(), status: z.enum(STATUSES) }).parse(i),
-  )
+  .validator((input) => statusSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "edit");
     const { supabase: client } = context;
     const { data: updated, error } = await client
       .from("secretaria_requests")
-      .update({ status: data.status } as any)
+      .update({ status: data.status } as never)
       .eq("id", data.id)
       .eq("account_id", accountId)
       .select("id")
@@ -184,7 +195,7 @@ export const updateSecretariaStatus = createServerFn({ method: "POST" })
 
 export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "view");
@@ -211,7 +222,7 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
 
 export const listSecretariaAttachments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ request_id: z.string().uuid() }).parse(i))
+  .validator((input) => requestIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "view");
@@ -244,7 +255,7 @@ const attachmentSchema = z.object({
 
 export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => attachmentSchema.parse(i))
+  .validator((input) => attachmentSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "edit");
@@ -280,7 +291,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
         file_path: path,
         content_type: contentType,
         file_size: bytes.length,
-      } as any)
+      } as never)
       .select("id")
       .single();
     if (error) {
@@ -292,7 +303,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
 
 export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "view");
@@ -306,9 +317,10 @@ export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "P
     if (error) throw new Error(error.message);
     if (!attachment) throw new Error("Anexo não encontrado nesta igreja.");
 
+    const filePath = (attachment as SecretariaAttachmentPath).file_path;
     const { data: signed, error: signError } = await supabaseAdmin.storage
       .from("secretaria-attachments")
-      .createSignedUrl((attachment as any).file_path, 120);
+      .createSignedUrl(filePath, 120);
     if (signError || !signed?.signedUrl) {
       throw new Error(signError?.message || "Falha ao gerar link temporário.");
     }
@@ -317,7 +329,7 @@ export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "P
 
 export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "delete");
@@ -337,9 +349,8 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
       .eq("id", data.id)
       .eq("account_id", accountId);
     if (error) throw new Error(error.message);
-    await supabaseAdmin.storage
-      .from("secretaria-attachments")
-      .remove([(attachment as any).file_path]);
+    const filePath = (attachment as SecretariaAttachmentPath).file_path;
+    await supabaseAdmin.storage.from("secretaria-attachments").remove([filePath]);
     return { ok: true };
   });
 
@@ -349,11 +360,13 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
 // ou member_id — esses são de uso exclusivo da equipe.
 
 export const getPublicSecretariaStatus = createServerFn({ method: "GET" })
-  .inputValidator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => idSchema.parse(input))
   .handler(async ({ data }) => {
     const { data: request, error } = await supabaseAdmin
       .from("secretaria_requests" as never)
-      .select("id, account_id, request_type, requester_name, status, preferred_date, scheduled_at, created_at")
+      .select(
+        "id, account_id, request_type, requester_name, status, preferred_date, scheduled_at, created_at",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -362,16 +375,20 @@ export const getPublicSecretariaStatus = createServerFn({ method: "GET" })
     const { data: account } = await supabaseAdmin
       .from("accounts")
       .select("brand_title")
-      .eq("id", (request as any).account_id)
+      .eq("id", (request as unknown as PublicSecretariaRequest).account_id)
       .maybeSingle();
 
-    const { id: _id, account_id: _accountId, ...publicFields } = request as any;
+    const {
+      id: _id,
+      account_id: _accountId,
+      ...publicFields
+    } = request as unknown as PublicSecretariaRequest;
     return { ...publicFields, churchName: account?.brand_title ?? "Igreja" };
   });
 
 export const deleteSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "secretaria", "delete");

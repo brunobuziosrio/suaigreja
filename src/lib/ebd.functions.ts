@@ -31,9 +31,34 @@ const classSchema = z.object({
   active: z.boolean().optional(),
 });
 
+const idSchema = z.object({ id: z.string().uuid() });
+const classIdSchema = z.object({ class_id: z.string().uuid() });
+const enrollmentSchema = z.object({
+  class_id: z.string().uuid(),
+  member_id: z.string().uuid(),
+  enroll: z.boolean(),
+});
+const attendanceDateSchema = z.object({
+  class_id: z.string().uuid(),
+  attendance_date: z.string(),
+});
+const attendanceSchema = z.object({
+  class_id: z.string().uuid(),
+  attendance_date: z.string(),
+  entries: z
+    .array(
+      z.object({
+        member_id: z.string().uuid(),
+        present: z.boolean(),
+      }),
+    )
+    .min(1)
+    .max(500),
+});
+
 export const upsertEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => classSchema.parse(i))
+  .validator((input) => classSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "education", data.id ? "edit" : "create");
@@ -50,7 +75,7 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await supabase
         .from("ebd_classes")
-        .update(payload as any)
+        .update(payload as never)
         .eq("id", data.id)
         .eq("account_id", accountId);
       if (error) throw new Error(error.message);
@@ -58,7 +83,7 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabase
       .from("ebd_classes")
-      .insert({ ...payload, account_id: accountId } as any)
+      .insert({ ...payload, account_id: accountId } as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -67,7 +92,7 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
 
 export const deleteEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "education", "delete");
@@ -83,7 +108,7 @@ export const deleteEbdClass = createServerFn({ method: "POST" })
 
 export const listEnrollments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ class_id: z.string().uuid() }).parse(i))
+  .validator((input) => classIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "education", "view");
@@ -99,13 +124,7 @@ export const listEnrollments = createServerFn({ method: "GET" })
 
 export const setEnrollment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      class_id: z.string().uuid(),
-      member_id: z.string().uuid(),
-      enroll: z.boolean(),
-    }).parse(i),
-  )
+  .validator((input) => enrollmentSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "education", "edit");
@@ -115,7 +134,7 @@ export const setEnrollment = createServerFn({ method: "POST" })
         account_id: accountId,
         class_id: data.class_id,
         member_id: data.member_id,
-      } as any);
+      } as never);
       if (error && !error.message.includes("duplicate")) throw new Error(error.message);
     } else {
       const { error } = await supabase
@@ -131,23 +150,16 @@ export const setEnrollment = createServerFn({ method: "POST" })
 
 export const recordAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      class_id: z.string().uuid(),
-      attendance_date: z.string(),
-      entries: z.array(z.object({
-        member_id: z.string().uuid(),
-        present: z.boolean(),
-      })).min(1).max(500),
-    }).parse(i),
-  )
+  .validator((input) => attendanceSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "education", "edit");
     const { supabase } = context;
     // upsert each entry
     for (const e of data.entries) {
-      await supabase.from("ebd_attendance").delete()
+      await supabase
+        .from("ebd_attendance")
+        .delete()
         .eq("account_id", accountId)
         .eq("class_id", data.class_id)
         .eq("member_id", e.member_id)
@@ -158,7 +170,7 @@ export const recordAttendance = createServerFn({ method: "POST" })
         member_id: e.member_id,
         attendance_date: data.attendance_date,
         present: e.present,
-      } as any);
+      } as never);
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -190,10 +202,7 @@ export const getAttendanceStats = createServerFn({ method: "GET" })
 
 export const getAttendanceForDate = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({
-    class_id: z.string().uuid(),
-    attendance_date: z.string(),
-  }).parse(i))
+  .validator((input) => attendanceDateSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "education", "view");

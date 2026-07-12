@@ -63,7 +63,7 @@ const bankAccountSchema = z.object({
 
 export const upsertBankAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => bankAccountSchema.parse(i))
+  .validator((i) => bankAccountSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "finances", data.id ? "edit" : "create");
@@ -95,7 +95,7 @@ export const upsertBankAccount = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: (row as any)!.id };
+    return { id: (row as { id: string }).id };
   });
 
 // Marca uma conta como principal e desmarca as demais -- a unique index
@@ -103,7 +103,7 @@ export const upsertBankAccount = createServerFn({ method: "POST" })
 // entao o unset das outras precisa vir primeiro na mesma operacao.
 export const setPrimaryBankAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "finances", "edit");
@@ -125,7 +125,7 @@ export const setPrimaryBankAccount = createServerFn({ method: "POST" })
 
 export const setBankAccountActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "finances", "edit");
@@ -141,7 +141,7 @@ export const setBankAccountActive = createServerFn({ method: "POST" })
 
 export const deleteBankAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "premium");
     await requirePermission(context, "finances", "delete");

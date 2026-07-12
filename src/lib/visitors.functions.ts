@@ -21,11 +21,13 @@ export const listVisitors = createServerFn({ method: "GET" })
 
 export const updateVisitorStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      id: z.string().uuid(),
-      status: z.enum(["new", "contacted", "returned", "in_group", "member", "archived"]),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["new", "contacted", "returned", "in_group", "member", "archived"]),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
@@ -41,19 +43,22 @@ export const updateVisitorStatus = createServerFn({ method: "POST" })
 
 export const updateVisitorNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), notes: z.string().max(2000) }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid(), notes: z.string().max(2000) }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
     await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
-    const { error } = await supabase.from("visitors").update({ notes: data.notes }).eq("id", data.id);
+    const { error } = await supabase
+      .from("visitors")
+      .update({ notes: data.notes })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
 export const deleteVisitor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await requirePlanTier(context, "pro");
     await requirePermission(context, "visitors", "delete");
@@ -71,7 +76,9 @@ export const getVisitorSettings = createServerFn({ method: "GET" })
     const { supabase } = context;
     const { data } = await supabase
       .from("accounts")
-      .select("site_id, custom_slug, visitor_whatsapp, visitor_welcome_message, brand_title, primary_color")
+      .select(
+        "site_id, custom_slug, visitor_whatsapp, visitor_welcome_message, brand_title, primary_color",
+      )
       .eq("id", accountId)
       .single();
     return data;
@@ -79,11 +86,13 @@ export const getVisitorSettings = createServerFn({ method: "GET" })
 
 export const saveVisitorSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      visitor_whatsapp: z.string().max(40).optional(),
-      visitor_welcome_message: z.string().max(500).optional(),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        visitor_whatsapp: z.string().max(40).optional(),
+        visitor_welcome_message: z.string().max(500).optional(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
@@ -105,15 +114,21 @@ export const saveVisitorSettings = createServerFn({ method: "POST" })
 async function resolveAccountId(siteId: string): Promise<string | null> {
   const lookup = siteId.toLowerCase();
   const { data: a1 } = await supabaseAdmin
-    .from("accounts").select("id").eq("custom_slug", lookup).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("custom_slug", lookup)
+    .maybeSingle();
   if (a1) return a1.id;
   const { data: a2 } = await supabaseAdmin
-    .from("accounts").select("id").eq("site_id", siteId).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("site_id", siteId)
+    .maybeSingle();
   return a2?.id ?? null;
 }
 
 export const getPublicVisitorForm = createServerFn({ method: "GET" })
-  .inputValidator((i: { siteId: string }) => {
+  .validator((i: { siteId: string }) => {
     const siteId = String(i?.siteId || "").slice(0, 64);
     if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error("invalid site");
     return { siteId };
@@ -142,7 +157,7 @@ const VisitorInput = z.object({
 });
 
 export const submitVisitor = createServerFn({ method: "POST" })
-  .inputValidator((i) => VisitorInput.parse(i))
+  .validator((i) => VisitorInput.parse(i))
   .handler(async ({ data }) => {
     const accountId = await resolveAccountId(data.siteId);
     if (!accountId) throw new Error("Comunidade não encontrada.");

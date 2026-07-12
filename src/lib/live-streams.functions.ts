@@ -8,7 +8,10 @@ const upsertSchema = z.object({
   title: z.string().min(1).max(120),
   recurrence: z.enum(["weekly", "once"]),
   weekday: z.number().int().min(0).max(6).nullable(),
-  event_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  event_date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
   start_time: z.string().regex(/^\d{2}:\d{2}$/),
   duration_minutes: z.number().int().min(5).max(720),
   minutes_before: z.number().int().min(0).max(180),
@@ -43,7 +46,7 @@ export const listLiveStreams = createServerFn({ method: "GET" })
 
 export const upsertLiveStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -76,7 +79,7 @@ export const upsertLiveStream = createServerFn({ method: "POST" })
 
 export const deleteLiveStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -98,7 +101,7 @@ const overrideSchema = z.object({
 
 export const upsertLiveStreamOverride = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => overrideSchema.parse(i))
+  .validator((i) => overrideSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -113,18 +116,16 @@ export const upsertLiveStreamOverride = createServerFn({ method: "POST" })
       if (error) throw new Error(error.message);
       return { ok: true };
     }
-    const { error } = await supabase
-      .from("live_stream_overrides")
-      .upsert(
-        {
-          account_id: accountId,
-          live_stream_id: data.live_stream_id,
-          event_date: data.event_date,
-          live_url: data.live_url,
-          cancelled: data.cancelled,
-        },
-        { onConflict: "live_stream_id,event_date" },
-      );
+    const { error } = await supabase.from("live_stream_overrides").upsert(
+      {
+        account_id: accountId,
+        live_stream_id: data.live_stream_id,
+        event_date: data.event_date,
+        live_url: data.live_url,
+        cancelled: data.cancelled,
+      },
+      { onConflict: "live_stream_id,event_date" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });

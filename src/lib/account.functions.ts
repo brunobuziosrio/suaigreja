@@ -11,10 +11,31 @@ import { randomBytes } from "node:crypto";
 import { resolveTxt } from "node:dns/promises";
 
 const RESERVED_SLUGS = new Set([
-  "a", "admin", "api", "app", "assets", "auth", "agenda", "billing",
-  "dashboard", "embed", "help", "login", "logout", "marketplace",
-  "onboarding", "public", "root", "settings", "signin", "signup",
-  "static", "support", "types", "locations", "www",
+  "a",
+  "admin",
+  "api",
+  "app",
+  "assets",
+  "auth",
+  "agenda",
+  "billing",
+  "dashboard",
+  "embed",
+  "help",
+  "login",
+  "logout",
+  "marketplace",
+  "onboarding",
+  "public",
+  "root",
+  "settings",
+  "signin",
+  "signup",
+  "static",
+  "support",
+  "types",
+  "locations",
+  "www",
 ]);
 
 const SLUG_REGEX = /^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/;
@@ -22,14 +43,35 @@ const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0
 const DOMAIN_TARGET = "suaigreja.top";
 
 function normalizeDomain(value: string) {
-  return value.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .split("/")[0];
 }
 
 function verificationToken() {
   return `suaigreja-domain=${randomBytes(16).toString("hex")}`;
 }
 
-async function requirePremiumDomainAccess(supabase: any, accountId: string) {
+type AccountPlanQueryClient = {
+  from(table: "accounts"): {
+    select(columns: string): {
+      eq(
+        column: "id",
+        value: string,
+      ): {
+        maybeSingle(): Promise<{
+          data: Parameters<typeof resolveAccountAccess>[0] | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  };
+};
+
+async function requirePremiumDomainAccess(supabase: AccountPlanQueryClient, accountId: string) {
   const { data, error } = await supabase
     .from("accounts")
     .select("plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
@@ -54,7 +96,7 @@ const slugSchema = z.object({
 
 export const checkSlugAvailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => slugSchema.parse(input))
+  .validator((input) => slugSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     if (RESERVED_SLUGS.has(data.slug)) {
@@ -73,11 +115,7 @@ export const checkSlugAvailability = createServerFn({ method: "POST" })
 
 export const updateCustomSlug = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({ slug: z.string().trim().toLowerCase().nullable() })
-      .parse(input),
-  )
+  .validator((input) => z.object({ slug: z.string().trim().toLowerCase().nullable() }).parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -126,7 +164,7 @@ const managedDomainSchema = z.object({
 
 export const updateCustomDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => domainSchema.parse(input))
+  .validator((input) => domainSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -221,12 +259,16 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
       })
       .eq("id", accountId);
     if (error) throw new Error(error.message);
-    return { ok: verified, status: verified ? "verified" : "failed", error: verified ? null : message };
+    return {
+      ok: verified,
+      status: verified ? "verified" : "failed",
+      error: verified ? null : message,
+    };
   });
 
 export const requestManagedDomain = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => managedDomainSchema.parse(input))
+  .validator((input) => managedDomainSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -305,19 +347,27 @@ const ALLOWED_IMAGE_EXT = new Set(["jpg", "jpeg", "png", "webp", "gif", "ico"]);
 const UploadInput = z.object({
   folder: z.enum(["church-logo", "card-logo", "donations-image"]),
   filename: z.string().min(1).max(120),
-  contentType: z.string().min(1).max(100).refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
-    message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
-  }),
+  contentType: z
+    .string()
+    .min(1)
+    .max(100)
+    .refine((v) => ALLOWED_IMAGE_MIME.has(v.toLowerCase()), {
+      message: "contentType não permitido. Use JPEG, PNG, WEBP, GIF ou ICO.",
+    }),
   base64: z.string().min(1).max(12_000_000),
 });
 
 export const uploadAccountAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => UploadInput.parse(input))
+  .validator((input) => UploadInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    let ext = (data.filename.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 5) || "jpg";
+    let ext =
+      (data.filename.split(".").pop() || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")
+        .slice(0, 5) || "jpg";
     if (!ALLOWED_IMAGE_EXT.has(ext)) ext = "jpg";
     const rand = Math.random().toString(36).slice(2, 8);
     const path = `${data.folder}/${accountId}-${Date.now()}-${rand}.${ext}`;
@@ -325,7 +375,7 @@ export const uploadAccountAsset = createServerFn({ method: "POST" })
     if (bytes.length === 0 || bytes.length > 8 * 1024 * 1024) {
       throw new Error("A imagem deve ter entre 1 byte e 8 MB.");
     }
-    
+
     // Fix for "mime type image/x-icon is not supported"
     let contentType = data.contentType.toLowerCase();
     if (contentType === "image/x-icon" || contentType === "image/vnd.microsoft.icon") {
@@ -371,7 +421,7 @@ const onboardingSchema = z.object({
 
 export const completeOnboarding = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => onboardingSchema.parse(input))
+  .validator((input) => onboardingSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -419,7 +469,10 @@ const settingsSchema = z.object({
   brand_footer_logo_url: z.string().url().max(500).nullable().optional(),
   card_logo_url: z.string().url().max(500).nullable().optional(),
   card_logo_height_px: z.number().int().min(24).max(160).optional(),
-  card_accent_color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  card_accent_color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   card_footer_text: z.string().max(600).optional(),
   card_title_size_px: z.number().int().min(18).max(60).optional(),
   card_footer_size_px: z.number().int().min(8).max(20).optional(),
@@ -430,27 +483,19 @@ const settingsSchema = z.object({
   force_show_type: z.boolean().optional(),
   donations_fixed_image_url: z.string().url().max(500).nullable().optional(),
   pix_key: z.string().max(200).nullable().optional(),
-  religion_profile: z.enum([
-    "catolico",
-    "evangelico",
-    "adventista",
-    "batista",
-    "pentecostal",
-    "comunidade_crista",
-  ]).optional(),
+  religion_profile: z
+    .enum(["catolico", "evangelico", "adventista", "batista", "pentecostal", "comunidade_crista"])
+    .optional(),
 });
 
 export const updateAccountSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => settingsSchema.parse(input))
+  .validator((input) => settingsSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    const { error } = await supabase
-      .from("accounts")
-      .update(data)
-      .eq("id", accountId);
+    const { error } = await supabase.from("accounts").update(data).eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

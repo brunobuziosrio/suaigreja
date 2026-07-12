@@ -39,7 +39,7 @@ const paymentSettingsSchema = z.object({
 
 export const updatePlatformPaymentSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => paymentSettingsSchema.parse(input))
+  .validator((input) => paymentSettingsSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin

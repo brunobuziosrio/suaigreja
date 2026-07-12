@@ -27,6 +27,33 @@ export type RoomReservationRow = {
   locations?: { name: string } | null;
 };
 
+type RoomReservationConflict = {
+  id: string;
+  title: string;
+  start_at: string;
+  end_at: string;
+  status: string;
+};
+
+type RoomReservationQueryResult = {
+  data: RoomReservationConflict[] | null;
+  error: { message: string } | null;
+};
+
+type RoomReservationQuery = {
+  select(columns: string): RoomReservationQuery;
+  eq(column: string, value: string | null): RoomReservationQuery;
+  in(column: string, values: string[]): RoomReservationQuery;
+  lt(column: string, value: string): RoomReservationQuery;
+  gt(column: string, value: string): RoomReservationQuery;
+  limit(count: number): RoomReservationQuery;
+  neq(column: string, value: string): RoomReservationQuery;
+};
+
+type RoomReservationSupabase = {
+  from(table: string): RoomReservationQuery;
+};
+
 export const listRoomReservations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -44,7 +71,7 @@ export const listRoomReservations = createServerFn({ method: "GET" })
 // Verifica se ja existe reserva aprovada (ou pendente, quando strict=true)
 // do mesmo local com horario sobreposto.
 async function findConflict(
-  supabase: any,
+  supabase: RoomReservationSupabase,
   accountId: string,
   locationId: string | null,
   startAt: string,
@@ -63,9 +90,9 @@ async function findConflict(
     .gt("end_at", startAt)
     .limit(1);
   if (excludeId) query = query.neq("id", excludeId);
-  const { data, error } = await query;
+  const { data, error } = (await query) as RoomReservationQueryResult;
   if (error) throw new Error(error.message);
-  return (data as any[])?.[0] ?? null;
+  return data?.[0] ?? null;
 }
 
 const upsertSchema = z.object({
@@ -82,7 +109,7 @@ const upsertSchema = z.object({
 
 export const upsertRoomReservation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -95,7 +122,13 @@ export const upsertRoomReservation = createServerFn({ method: "POST" })
     // podem se sobrepor ate alguem decidir (aprovar uma delas resolve o
     // conflito na hora de aprovar, ver updateRoomReservationStatus).
     const conflict = await findConflict(
-      supabase, accountId, data.location_id ?? null, data.start_at, data.end_at, data.id, ["approved"],
+      supabase,
+      accountId,
+      data.location_id ?? null,
+      data.start_at,
+      data.end_at,
+      data.id,
+      ["approved"],
     );
     if (conflict) {
       throw new Error(`Esse local já está reservado nesse horário: "${conflict.title}".`);
@@ -127,16 +160,18 @@ export const upsertRoomReservation = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: (row as any)!.id };
+    return { id: (row as { id: string }).id };
   });
 
 export const updateRoomReservationStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      id: z.string().uuid(),
-      status: z.enum(["pending", "approved", "rejected", "cancelled"]),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["pending", "approved", "rejected", "cancelled"]),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
@@ -151,12 +186,20 @@ export const updateRoomReservationStatus = createServerFn({ method: "POST" })
         .maybeSingle();
       if (curErr) throw new Error(curErr.message);
       if (!current) throw new Error("Reserva não encontrada.");
-      const c = current as any;
+      const c = current as { location_id: string | null; start_at: string; end_at: string };
       const conflict = await findConflict(
-        supabase, accountId, c.location_id, c.start_at, c.end_at, data.id, ["approved"],
+        supabase,
+        accountId,
+        c.location_id,
+        c.start_at,
+        c.end_at,
+        data.id,
+        ["approved"],
       );
       if (conflict) {
-        throw new Error(`Não é possível aprovar: conflita com "${conflict.title}", já aprovada para o mesmo horário.`);
+        throw new Error(
+          `Não é possível aprovar: conflita com "${conflict.title}", já aprovada para o mesmo horário.`,
+        );
       }
     }
 
@@ -171,7 +214,7 @@ export const updateRoomReservationStatus = createServerFn({ method: "POST" })
 
 export const deleteRoomReservation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;

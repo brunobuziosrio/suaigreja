@@ -22,31 +22,40 @@ export type EventAttendanceRow = {
   checked_in_at: string | null;
 };
 
+type AttendanceRecord = {
+  member_id: string;
+  attended: boolean;
+  checked_in_at: string | null;
+};
+
 export const listEventAttendance = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "events", "view");
     const { supabase } = context;
 
-    const [{ data: members, error: membersErr }, { data: attendance, error: attErr }] = await Promise.all([
-      supabase
-        .from("members")
-        .select("id, full_name, photo_url")
-        .eq("account_id", accountId)
-        .eq("status", "ativo")
-        .order("full_name", { ascending: true }),
-      supabase
-        .from("event_attendance" as never)
-        .select("member_id, attended, checked_in_at")
-        .eq("account_id", accountId)
-        .eq("event_id", data.event_id),
-    ]);
+    const [{ data: members, error: membersErr }, { data: attendance, error: attErr }] =
+      await Promise.all([
+        supabase
+          .from("members")
+          .select("id, full_name, photo_url")
+          .eq("account_id", accountId)
+          .eq("status", "ativo")
+          .order("full_name", { ascending: true }),
+        supabase
+          .from("event_attendance" as never)
+          .select("member_id, attended, checked_in_at")
+          .eq("account_id", accountId)
+          .eq("event_id", data.event_id),
+      ]);
     if (membersErr) throw new Error(membersErr.message);
     if (attErr) throw new Error(attErr.message);
 
-    const attendanceByMember = new Map((attendance as any[] ?? []).map((a) => [a.member_id, a]));
+    const attendanceByMember = new Map(
+      ((attendance as AttendanceRecord[] | null) ?? []).map((a) => [a.member_id, a]),
+    );
     return (members ?? []).map((m) => {
       const a = attendanceByMember.get(m.id);
       return {
@@ -61,29 +70,29 @@ export const listEventAttendance = createServerFn({ method: "GET" })
 
 export const setEventAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      event_id: z.string().uuid(),
-      member_id: z.string().uuid(),
-      attended: z.boolean(),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        event_id: z.string().uuid(),
+        member_id: z.string().uuid(),
+        attended: z.boolean(),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "events", "edit");
     const { supabase } = context;
-    const { error } = await supabase
-      .from("event_attendance" as never)
-      .upsert(
-        {
-          account_id: accountId,
-          event_id: data.event_id,
-          member_id: data.member_id,
-          attended: data.attended,
-          checked_in_at: data.attended ? new Date().toISOString() : null,
-        } as never,
-        { onConflict: "member_id,event_id" },
-      );
+    const { error } = await supabase.from("event_attendance" as never).upsert(
+      {
+        account_id: accountId,
+        event_id: data.event_id,
+        member_id: data.member_id,
+        attended: data.attended,
+        checked_in_at: data.attended ? new Date().toISOString() : null,
+      } as never,
+      { onConflict: "member_id,event_id" },
+    );
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -126,25 +135,29 @@ export const listAbsentMembers = createServerFn({ method: "GET" })
       return { trackingActive: false, members: [] as AbsentMemberRow[] };
     }
 
-    const [{ data: members, error: membersErr }, { data: attendance, error: attErr }] = await Promise.all([
-      supabase
-        .from("members")
-        .select("id, full_name, photo_url, phone")
-        .eq("account_id", accountId)
-        .eq("status", "ativo"),
-      supabase
-        .from("event_attendance" as never)
-        .select("member_id, checked_in_at")
-        .eq("account_id", accountId)
-        .eq("attended", true)
-        .order("checked_in_at", { ascending: false }),
-    ]);
+    const [{ data: members, error: membersErr }, { data: attendance, error: attErr }] =
+      await Promise.all([
+        supabase
+          .from("members")
+          .select("id, full_name, photo_url, phone")
+          .eq("account_id", accountId)
+          .eq("status", "ativo"),
+        supabase
+          .from("event_attendance" as never)
+          .select("member_id, checked_in_at")
+          .eq("account_id", accountId)
+          .eq("attended", true)
+          .order("checked_in_at", { ascending: false }),
+      ]);
     if (membersErr) throw new Error(membersErr.message);
     if (attErr) throw new Error(attErr.message);
 
     const lastAttendanceByMember = new Map<string, string>();
-    for (const a of (attendance as any[]) ?? []) {
-      if (!lastAttendanceByMember.has(a.member_id)) lastAttendanceByMember.set(a.member_id, a.checked_in_at);
+    for (const a of (attendance as
+      | Pick<AttendanceRecord, "member_id" | "checked_in_at">[]
+      | null) ?? []) {
+      if (!lastAttendanceByMember.has(a.member_id))
+        lastAttendanceByMember.set(a.member_id, a.checked_in_at);
     }
 
     const now = Date.now();
@@ -171,7 +184,7 @@ export const listAbsentMembers = createServerFn({ method: "GET" })
 
 export const getEventAttendanceCount = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "events", "view");

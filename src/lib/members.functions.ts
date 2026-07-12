@@ -6,6 +6,33 @@ import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { parseCsv, normalizeHeader } from "@/lib/csv";
 
+type MemberMutationPayload = {
+  full_name: string;
+  photo_url: string | null;
+  email: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  role: string;
+  member_since: string | null;
+  status: string;
+  address_street?: string | null;
+  address_number?: string | null;
+  address_city?: string | null;
+  address_state?: string | null;
+  neighborhood?: string | null;
+  ministry?: string | null;
+  pastoral?: string | null;
+  notes?: string | null;
+  cpf?: string | null;
+  congregation?: string | null;
+  congregation_id?: string | null;
+  is_tither?: boolean;
+  whatsapp_consent?: boolean;
+  spiritual_stage?: string | null;
+};
+
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -49,9 +76,15 @@ const upsertSchema = z.object({
   spiritual_stage: z.string().max(40).optional().nullable(),
 });
 
+const memberIdSchema = z.object({ id: z.string().uuid() });
+const familyHeadSchema = z.object({
+  member_id: z.string().uuid(),
+  family_head_id: z.string().uuid().nullable(),
+});
+
 export const upsertMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "members", data.id ? "edit" : "create");
@@ -85,7 +118,7 @@ export const upsertMember = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await supabase
         .from("members")
-        .update(payload as any)
+        .update(payload as never)
         .eq("id", data.id)
         .eq("account_id", accountId);
       if (error) throw new Error(error.message);
@@ -93,7 +126,7 @@ export const upsertMember = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await supabase
       .from("members")
-      .insert({ ...payload, account_id: accountId } as any)
+      .insert({ ...payload, account_id: accountId } as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -102,7 +135,7 @@ export const upsertMember = createServerFn({ method: "POST" })
 
 export const deleteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => memberIdSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "members", "delete");
@@ -122,7 +155,13 @@ export const deleteMember = createServerFn({ method: "POST" })
 
 export type FamilyGroup = {
   head: { id: string; full_name: string; phone: string | null; photo_url: string | null };
-  dependents: { id: string; full_name: string; phone: string | null; photo_url: string | null; birth_date: string | null }[];
+  dependents: {
+    id: string;
+    full_name: string;
+    phone: string | null;
+    photo_url: string | null;
+    birth_date: string | null;
+  }[];
 };
 
 export const listFamilyGroups = createServerFn({ method: "GET" })
@@ -146,22 +185,31 @@ export const listFamilyGroups = createServerFn({ method: "GET" })
       if (!head) continue;
       if (!groups.has(head.id)) {
         groups.set(head.id, {
-          head: { id: head.id, full_name: head.full_name, phone: head.phone, photo_url: head.photo_url },
+          head: {
+            id: head.id,
+            full_name: head.full_name,
+            phone: head.phone,
+            photo_url: head.photo_url,
+          },
           dependents: [],
         });
       }
       groups.get(head.id)!.dependents.push({
-        id: m.id, full_name: m.full_name, phone: m.phone, photo_url: m.photo_url, birth_date: m.birth_date,
+        id: m.id,
+        full_name: m.full_name,
+        phone: m.phone,
+        photo_url: m.photo_url,
+        birth_date: m.birth_date,
       });
     }
-    return Array.from(groups.values()).sort((a, b) => a.head.full_name.localeCompare(b.head.full_name));
+    return Array.from(groups.values()).sort((a, b) =>
+      a.head.full_name.localeCompare(b.head.full_name),
+    );
   });
 
 export const setMemberFamilyHead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({ member_id: z.string().uuid(), family_head_id: z.string().uuid().nullable() }).parse(i),
-  )
+  .validator((i) => familyHeadSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "members", "edit");
@@ -181,7 +229,7 @@ export const setMemberFamilyHead = createServerFn({ method: "POST" })
     }
     const { error } = await supabase
       .from("members")
-      .update({ family_head_id: data.family_head_id } as any)
+      .update({ family_head_id: data.family_head_id } as never)
       .eq("id", data.member_id)
       .eq("account_id", accountId);
     if (error) throw new Error(error.message);
@@ -198,21 +246,21 @@ export const SPIRITUAL_STAGES = [
   "lider",
 ] as const;
 
+const spiritualStageSchema = z.object({
+  member_id: z.string().uuid(),
+  spiritual_stage: z.enum(SPIRITUAL_STAGES).nullable(),
+});
+
 export const setMemberSpiritualStage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      member_id: z.string().uuid(),
-      spiritual_stage: z.enum(SPIRITUAL_STAGES).nullable(),
-    }).parse(i),
-  )
+  .validator((i) => spiritualStageSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "members", "edit");
     const { supabase } = context;
     const { error } = await supabase
       .from("members")
-      .update({ spiritual_stage: data.spiritual_stage } as any)
+      .update({ spiritual_stage: data.spiritual_stage } as never)
       .eq("id", data.member_id)
       .eq("account_id", accountId);
     if (error) throw new Error(error.message);
@@ -266,7 +314,7 @@ const importSchema = z.object({
 
 export const importMembersCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => importSchema.parse(i))
+  .validator((i) => importSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "members", "create");
@@ -274,7 +322,8 @@ export const importMembersCsv = createServerFn({ method: "POST" })
 
     const rows = parseCsv(data.csv);
     if (rows.length < 2) throw new Error("CSV vazio ou sem linhas de dados.");
-    if (rows.length - 1 > CSV_ROW_LIMIT) throw new Error(`Limite de ${CSV_ROW_LIMIT} linhas por importação.`);
+    if (rows.length - 1 > CSV_ROW_LIMIT)
+      throw new Error(`Limite de ${CSV_ROW_LIMIT} linhas por importação.`);
 
     const header = rows[0].map(normalizeHeader);
     const columnIndex: Partial<Record<ImportField, number>> = {};
@@ -284,7 +333,9 @@ export const importMembersCsv = createServerFn({ method: "POST" })
       if (idx >= 0) columnIndex[field] = idx;
     }
     if (columnIndex.full_name === undefined) {
-      throw new Error('Coluna "nome" não encontrada no CSV. Baixe o modelo para conferir os cabeçalhos aceitos.');
+      throw new Error(
+        'Coluna "nome" não encontrada no CSV. Baixe o modelo para conferir os cabeçalhos aceitos.',
+      );
     }
 
     const { data: existing, error: existingErr } = await supabase
@@ -320,19 +371,32 @@ export const importMembersCsv = createServerFn({ method: "POST" })
       }
 
       const email = get("email");
-      const validEmail = email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email.slice(0, 255) : null;
-      if (email && !validEmail) errors.push({ row: rowNumber, message: `E-mail inválido ("${email}") — importado sem e-mail.` });
+      const validEmail =
+        email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email.slice(0, 255) : null;
+      if (email && !validEmail)
+        errors.push({
+          row: rowNumber,
+          message: `E-mail inválido ("${email}") — importado sem e-mail.`,
+        });
 
       const birthRaw = get("birth_date");
       const birthDate = birthRaw ? parseFlexibleDate(birthRaw) : null;
-      if (birthRaw && !birthDate) errors.push({ row: rowNumber, message: `Nascimento inválido ("${birthRaw}") — importado sem data.` });
+      if (birthRaw && !birthDate)
+        errors.push({
+          row: rowNumber,
+          message: `Nascimento inválido ("${birthRaw}") — importado sem data.`,
+        });
 
       const memberSinceRaw = get("member_since");
       const memberSince = memberSinceRaw ? parseFlexibleDate(memberSinceRaw) : null;
-      if (memberSinceRaw && !memberSince) errors.push({ row: rowNumber, message: `Data de entrada inválida ("${memberSinceRaw}") — importada sem data.` });
+      if (memberSinceRaw && !memberSince)
+        errors.push({
+          row: rowNumber,
+          message: `Data de entrada inválida ("${memberSinceRaw}") — importada sem data.`,
+        });
 
       const cpf = get("cpf").slice(0, 20) || null;
-      const payload = {
+      const payload: MemberMutationPayload = {
         full_name: fullName,
         email: validEmail,
         phone: get("phone").slice(0, 40) || null,
@@ -351,19 +415,30 @@ export const importMembersCsv = createServerFn({ method: "POST" })
         notes: get("notes").slice(0, 2000) || null,
       };
 
-      const existingId = (cpf && byCpf.get(cpf)) || (validEmail && byEmail.get(validEmail.toLowerCase()));
+      const existingId =
+        (cpf && byCpf.get(cpf)) || (validEmail && byEmail.get(validEmail.toLowerCase()));
 
       if (existingId) {
-        const { error } = await supabase.from("members").update(payload as any).eq("id", existingId).eq("account_id", accountId);
-        if (error) { errors.push({ row: rowNumber, message: error.message }); continue; }
+        const { error } = await supabase
+          .from("members")
+          .update(payload as never)
+          .eq("id", existingId)
+          .eq("account_id", accountId);
+        if (error) {
+          errors.push({ row: rowNumber, message: error.message });
+          continue;
+        }
         updated++;
       } else {
         const { data: inserted, error } = await supabase
           .from("members")
-          .insert({ ...payload, account_id: accountId } as any)
+          .insert({ ...payload, account_id: accountId } as never)
           .select("id")
           .single();
-        if (error) { errors.push({ row: rowNumber, message: error.message }); continue; }
+        if (error) {
+          errors.push({ row: rowNumber, message: error.message });
+          continue;
+        }
         created++;
         if (cpf) byCpf.set(cpf, inserted!.id);
         if (validEmail) byEmail.set(validEmail.toLowerCase(), inserted!.id);
@@ -375,18 +450,22 @@ export const importMembersCsv = createServerFn({ method: "POST" })
 
 // Public card validation — card data is accessed through its non-sequential UUID.
 export const getPublicMemberCard = createServerFn({ method: "GET" })
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => memberIdSchema.parse(i))
   .handler(async ({ data }) => {
     const { data: m, error } = await supabaseAdmin
       .from("members")
-      .select("id, full_name, photo_url, role, member_since, birth_date, status, account_id, cpf, congregation")
+      .select(
+        "id, full_name, photo_url, role, member_since, birth_date, status, account_id, cpf, congregation",
+      )
       .eq("id", data.id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!m) return null;
     const { data: acc } = await supabaseAdmin
       .from("accounts")
-      .select("brand_title, brand_logo_url, primary_color, custom_slug, site_id, card_logo_url, card_logo_height_px, card_accent_color, card_footer_text, card_title_size_px, card_footer_size_px, card_field_size_px, card_label_size_px")
+      .select(
+        "brand_title, brand_logo_url, primary_color, custom_slug, site_id, card_logo_url, card_logo_height_px, card_accent_color, card_footer_text, card_title_size_px, card_footer_size_px, card_field_size_px, card_label_size_px",
+      )
       .eq("id", m.account_id)
       .maybeSingle();
     const safeMember = {

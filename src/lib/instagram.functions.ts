@@ -112,8 +112,10 @@ async function fetchPostsForAccount(accountId: string, limit = 30): Promise<Inst
 
 /** Public: returns recent IG posts for a given site slug (or null if no connection). */
 export const getPublicInstagramPosts = createServerFn({ method: "GET" })
-  .inputValidator((input: { slug: string }) => {
-    const slug = String(input?.slug || "").toLowerCase().slice(0, 64);
+  .validator((input: { slug: string }) => {
+    const slug = String(input?.slug || "")
+      .toLowerCase()
+      .slice(0, 64);
     if (!/^[a-z0-9_-]+$/.test(slug)) throw new Error("invalid slug");
     return { slug };
   })

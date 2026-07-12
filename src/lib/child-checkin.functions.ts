@@ -18,7 +18,14 @@ const childSchema = z.object({
   active: z.boolean().default(true),
 });
 
-async function access(context: any, action: "view" | "create" | "edit") {
+type ChildCheckinContext = Parameters<typeof requirePlanTier>[0];
+
+type ChildCheckinListResponse = {
+  children: unknown[];
+  activeEntries: unknown[];
+};
+
+async function access(context: ChildCheckinContext, action: "view" | "create" | "edit") {
   const result = await requirePlanTier(context, "premium");
   await requirePermission(context, "checkin", action);
   return result;
@@ -42,11 +49,14 @@ export const listChildCheckin = createServerFn({ method: "GET" })
     ]);
     if (children.error) throw new Error(children.error.message);
     if (entries.error) throw new Error(entries.error.message);
-    return { children: children.data ?? [], activeEntries: entries.data ?? [] } as any;
+    return {
+      children: (children.data ?? []) as unknown[],
+      activeEntries: (entries.data ?? []) as unknown[],
+    } satisfies ChildCheckinListResponse;
   });
 export const upsertChildProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => childSchema.parse(i))
+  .validator((i) => childSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await access(context, data.id ? "edit" : "create");
     const clean = (v?: string | null) => v?.trim() || null;
@@ -74,7 +84,7 @@ export const upsertChildProfile = createServerFn({ method: "POST" })
   });
 export const checkinChild = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ child_id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ child_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await access(context, "create");
     const { data: child, error: childError } = await context.supabase
@@ -100,7 +110,7 @@ export const checkinChild = createServerFn({ method: "POST" })
   });
 export const checkoutChild = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         entry_id: z.string().uuid(),
@@ -119,7 +129,7 @@ export const checkoutChild = createServerFn({ method: "POST" })
       .is("checked_out_at", null)
       .maybeSingle();
     if (error || !entry) throw new Error("Entrada aberta não encontrada.");
-    if ((entry as any).pickup_code_hash !== hash(data.code))
+    if ((entry as { pickup_code_hash: string }).pickup_code_hash !== hash(data.code))
       throw new Error("Código de retirada incorreto.");
     const { error: updateError } = await context.supabase
       .from("child_checkin_entries")

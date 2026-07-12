@@ -37,7 +37,7 @@ export const listTithes = createServerFn({ method: "GET" })
 
 export const getTithesByMember = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ memberId: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ memberId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "finances", "view");
@@ -61,14 +61,22 @@ const upsertSchema = z.object({
   notes: z.string().max(500).optional().nullable(),
 });
 
+type TithePayload = {
+  member_id: string;
+  amount_cents: number;
+  contributed_at: string;
+  status: string;
+  notes: string | null;
+};
+
 export const upsertTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "finances", data.id ? "edit" : "create");
     const { supabase: client } = context;
-    const payload = {
+    const payload: TithePayload = {
       member_id: data.member_id,
       amount_cents: data.amount_cents,
       contributed_at: data.contributed_at,
@@ -78,7 +86,7 @@ export const upsertTithe = createServerFn({ method: "POST" })
     if (data.id) {
       const { error } = await client
         .from("tithes")
-        .update(payload as any)
+        .update(payload as never)
         .eq("id", data.id)
         .eq("account_id", accountId);
       if (error) throw new Error(error.message);
@@ -86,7 +94,7 @@ export const upsertTithe = createServerFn({ method: "POST" })
     }
     const { data: row, error } = await client
       .from("tithes")
-      .insert({ ...payload, account_id: accountId } as any)
+      .insert({ ...payload, account_id: accountId } as never)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
@@ -95,7 +103,7 @@ export const upsertTithe = createServerFn({ method: "POST" })
 
 export const deleteTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "finances", "delete");
@@ -111,13 +119,13 @@ export const deleteTithe = createServerFn({ method: "POST" })
 
 export const getTithesReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
+  .validator((i) =>
     z
       .object({
         startDate: z.string().optional(),
         endDate: z.string().optional(),
       })
-      .parse(i)
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
@@ -170,10 +178,7 @@ export const getTithesReport = createServerFn({ method: "GET" })
       count: (tithes ?? []).filter((t) => t.status !== "cancelled").length,
       averageAmount:
         (tithes ?? []).filter((t) => t.status !== "cancelled").length > 0
-          ? Math.round(
-              totalAmount /
-                (tithes ?? []).filter((t) => t.status !== "cancelled").length
-            )
+          ? Math.round(totalAmount / (tithes ?? []).filter((t) => t.status !== "cancelled").length)
           : 0,
       byMember: Array.from(byMember.entries()).map(([_, v]) => v),
     };

@@ -20,11 +20,13 @@ export const listPrayerRequests = createServerFn({ method: "GET" })
 
 export const updatePrayerStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({
-      id: z.string().uuid(),
-      status: z.enum(["pending", "approved", "archived"]),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        id: z.string().uuid(),
+        status: z.enum(["pending", "approved", "archived"]),
+      })
+      .parse(i),
   )
   .handler(async ({ data, context }) => {
     const { supabase } = context;
@@ -40,7 +42,7 @@ export const updatePrayerStatus = createServerFn({ method: "POST" })
 
 export const deletePrayerRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -58,15 +60,21 @@ export const deletePrayerRequest = createServerFn({ method: "POST" })
 async function resolveAccountId(siteId: string): Promise<string | null> {
   const lookup = siteId.toLowerCase();
   const { data: a1 } = await supabaseAdmin
-    .from("accounts").select("id").eq("custom_slug", lookup).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("custom_slug", lookup)
+    .maybeSingle();
   if (a1) return a1.id;
   const { data: a2 } = await supabaseAdmin
-    .from("accounts").select("id").eq("site_id", siteId).maybeSingle();
+    .from("accounts")
+    .select("id")
+    .eq("site_id", siteId)
+    .maybeSingle();
   return a2?.id ?? null;
 }
 
 export const getPublicPrayers = createServerFn({ method: "GET" })
-  .inputValidator((i: { siteId: string }) => {
+  .validator((i: { siteId: string }) => {
     const siteId = String(i?.siteId || "").slice(0, 64);
     if (!/^[a-zA-Z0-9_-]+$/.test(siteId)) throw new Error("invalid site");
     return { siteId };
@@ -106,7 +114,7 @@ const SubmitInput = z.object({
 });
 
 export const submitPrayerRequest = createServerFn({ method: "POST" })
-  .inputValidator((i) => SubmitInput.parse(i))
+  .validator((i) => SubmitInput.parse(i))
   .handler(async ({ data }) => {
     const accountId = await resolveAccountId(data.siteId);
     if (!accountId) throw new Error("Comunidade não encontrada.");
@@ -124,11 +132,13 @@ export const submitPrayerRequest = createServerFn({ method: "POST" })
   });
 
 export const prayForRequest = createServerFn({ method: "POST" })
-  .inputValidator((i) =>
-    z.object({
-      prayerId: z.string().uuid(),
-      fingerprint: z.string().min(4).max(80),
-    }).parse(i),
+  .validator((i) =>
+    z
+      .object({
+        prayerId: z.string().uuid(),
+        fingerprint: z.string().min(4).max(80),
+      })
+      .parse(i),
   )
   .handler(async ({ data }) => {
     const { error: insErr } = await supabaseAdmin
@@ -139,7 +149,10 @@ export const prayForRequest = createServerFn({ method: "POST" })
       return { ok: true, alreadyPrayed: true };
     }
     const { data: cur } = await supabaseAdmin
-      .from("prayer_requests").select("prayer_count").eq("id", data.prayerId).single();
+      .from("prayer_requests")
+      .select("prayer_count")
+      .eq("id", data.prayerId)
+      .single();
     await supabaseAdmin
       .from("prayer_requests")
       .update({ prayer_count: (cur?.prayer_count ?? 0) + 1 })

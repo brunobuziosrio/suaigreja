@@ -57,7 +57,7 @@ const upsertSchema = z.object({
 
 export const upsertMinistryAssignment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "members", data.id ? "edit" : "create");
@@ -85,14 +85,12 @@ export const upsertMinistryAssignment = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: (row as any)!.id };
+    return { id: (row as { id: string }).id };
   });
 
 export const endMinistryAssignment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) =>
-    z.object({ id: z.string().uuid(), end_date: z.string() }).parse(i),
-  )
+  .validator((i) => z.object({ id: z.string().uuid(), end_date: z.string() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "members", "edit");
@@ -108,7 +106,7 @@ export const endMinistryAssignment = createServerFn({ method: "POST" })
 
 export const deleteMinistryAssignment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "members", "delete");

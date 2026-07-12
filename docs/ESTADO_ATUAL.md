@@ -1,6 +1,10 @@
 # Estado atual do produto — implementado x pendente
 
-Atualizado em: 2026-07-04 (sessão contínua autônoma — ver seção 6)
+> Aviso de organização: este arquivo virou histórico detalhado e pode confundir a
+> retomada. A fonte principal atual é `docs/CONTINUIDADE.md`. Use este arquivo
+> apenas para consultar detalhes antigos e evidências de implementação.
+
+Atualizado em: 2026-07-07 (checkpoint de continuidade — ver seção 6)
 
 Este arquivo é um **mapa de continuidade entre IAs/sessões**. Ele responde a duas
 perguntas: **o que já existe no código** e **o que os documentos de planejamento
@@ -1359,3 +1363,531 @@ forma — não impede evoluir para a maior depois, e já destrava valor hoje.
    3 tabelas de sistemas abandonados (`event_inscriptions`,
    `whatsapp_template_library`, `whatsapp_automation_rules`) continuam só
    documentadas como candidatas a apagar — nenhuma decisão tomada.
+
+## 6. Checkpoint de continuidade — 2026-07-07
+
+Estado salvo para retomar amanhã sem depender do histórico da conversa.
+
+### Última entrega concluída
+
+- `Livro Caixa` ganhou lançamento por congregação/unidade.
+- A importação CSV agora aceita coluna `unidade` e aliases de nome/código/id.
+- O `Livro Caixa` agora exporta o recorte filtrado em CSV.
+- A aplicação foi rebuildada e implantada.
+- Validação em produção do `/livro-caixa`: HTTP 200.
+- Logs do container: sem erro recente, servidor e static server ativos.
+
+### Arquivos tocados nesta retomada
+
+- `src/lib/financial-entries.functions.ts`
+- `src/routes/_authenticated.livro-caixa.tsx`
+- `supabase/migrations/20260707193000_financial_entries_congregations.sql`
+
+### Próximo passo recomendado
+
+1. Exportação do `Livro Caixa` filtrado para CSV.
+2. Se quiser ampliar o financeiro depois disso, exportar também os resumos:
+   DRE simplificada, balancete por categoria, resultado por unidade e resumo mensal.
+
+### Como retomar de manhã
+
+1. Abrir este arquivo.
+2. Conferir `git status --short`.
+3. Validar `./deploy.ps1` ou `npm run build` se houver nova alteração.
+4. Seguir pela exportação de relatórios resumidos do `Livro Caixa`, se quiser fechar
+   a parte financeira operacional.
+
+## 7. Checkpoint de continuidade — 2026-07-08
+
+Estado salvo após a retomada do checkpoint de 2026-07-07.
+
+### Entregue
+
+- `Livro Caixa` agora exporta também os relatórios resumidos em CSV:
+  - DRE simplificada;
+  - balancete por categoria;
+  - resumo mensal;
+  - resultado por unidade/congregação.
+- Os relatórios continuam respeitando o recorte filtrado da tela.
+- A tela mantém a visualização resumida e limita só a exibição dos blocos principais
+  (top 8 categorias e 6 meses), enquanto a exportação inclui todos os dados do
+  recorte filtrado.
+
+### Arquivo tocado
+
+- `src/routes/_authenticated.livro-caixa.tsx`
+
+### Validação
+
+- `npm run build` aprovado localmente.
+- `./deploy.ps1` executado com sucesso.
+- Produção validada: `https://suaigreja.top/livro-caixa` respondeu HTTP 200.
+- Logs recentes do container `igreja-app`: servidor iniciado, sem erro recente.
+
+### Próximo passo recomendado
+
+1. Se quiser fechar mais uma camada do financeiro: criar uma tela/aba dedicada de
+   relatórios financeiros com filtros salvos e impressão.
+2. Depois disso, balancete/DRE contábil de verdade e conciliação bancária automática
+   continuam sendo features maiores, com regra de negócio a definir.
+
+## 8. Checkpoint de continuidade — 2026-07-08 (continuação)
+
+### Entregue
+
+- `Livro Caixa` reorganizado em duas abas:
+  - `Lançamentos`: operação diária com a lista filtrada.
+  - `Relatórios`: DRE simplificada, balancete por categoria, resumo mensal e
+    resultado por unidade.
+- Adicionado botão `Imprimir relatório`, gerando uma visão consolidada imprimível
+  com os totais e todos os resumos do recorte filtrado.
+- O HTML de impressão escapa textos vindos de dados/filtros antes de escrever na
+  janela de impressão.
+
+### Arquivo tocado
+
+- `src/routes/_authenticated.livro-caixa.tsx`
+
+### Validação
+
+- `npm run build` aprovado localmente.
+- `./deploy.ps1` executado com sucesso.
+- Produção validada: `https://suaigreja.top/livro-caixa` respondeu HTTP 200.
+- Logs recentes do container `igreja-app`: servidor iniciado, sem erro recente.
+
+### Próximo passo recomendado
+
+1. Se o foco continuar em financeiro operacional: iniciar conciliação manual simples
+   (marcar lançamentos como conciliados, com data e observação), antes de partir para
+   integração bancária automática.
+2. Se o foco for produto/venda: avançar para check-in infantil seguro ou PWA push,
+   que ainda são lacunas comerciais claras.
+
+## 9. Pendência agendada — saneamento de qualidade antes de seguir em produção
+
+Registrado em 2026-07-08 após retomar o fluxo de Membros/Carteirinha.
+
+### Motivo
+
+`npm run build` está aprovado, mas `npm run lint` global ainda reprova por problemas
+pré-existentes espalhados pelo projeto, principalmente:
+
+- formatação Prettier/CRLF em muitos arquivos;
+- usos de `any` em rotas e funções grandes;
+- warnings pontuais de hooks/dependências;
+- avisos recorrentes do TanStack Start sobre `createServerFn().inputValidator()` estar
+  depreciado.
+
+Isso não bloqueia o build hoje, mas deve ser tratado como dívida técnica real para
+reduzir risco de problemas futuros e evitar que entregas novas fiquem misturadas com
+milhares de erros antigos de lint.
+
+### Escopo recomendado
+
+1. Rodar uma etapa dedicada só para saneamento, sem feature nova no mesmo lote.
+2. Normalizar quebras de linha/formatação por grupos pequenos de arquivos.
+3. Remover ou tipar `any` começando pelos módulos mais críticos:
+   `account.functions.ts`, `members.functions.ts`, `_authenticated.settings.tsx` e
+   `_authenticated.membros.tsx`.
+4. Migrar gradualmente server functions de `.inputValidator()` para `.validator()`,
+   em lotes pequenos e com build após cada lote.
+5. Ao final, exigir `npm run lint` e `npm run build` aprovados antes de nova entrega
+   sensível.
+
+### Validação já feita nesta retomada
+
+- `npm run build` aprovado.
+- `npx eslint src/components/member-card.tsx --max-warnings=0` aprovado.
+- `src/components/member-card.tsx` foi formatado e teve um `any` desnecessário removido.
+
+### Progresso do saneamento — 2026-07-08
+
+Primeiro lote concluído no fluxo de Membros/Carteirinha:
+
+- `src/lib/members.functions.ts` formatado e sem `any` explícito.
+- `src/routes/_authenticated.membros.tsx` formatado e sem `any` explícito.
+- `src/components/member-card.tsx` já estava validado no lint isolado.
+- Validação executada:
+  - `npx eslint src/lib/members.functions.ts --max-warnings=0` aprovado;
+  - `npx eslint src/routes/_authenticated.membros.tsx --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado:
+
+1. `src/routes/c.$memberId.tsx` (rota pública da carteirinha).
+2. `src/routes/_authenticated.settings.tsx` (configurações da carteirinha; arquivo
+   grande, fazer com cautela).
+3. `src/lib/account.functions.ts` (payloads e configurações de conta).
+
+Segundo lote concluído na mesma frente:
+
+- `src/routes/c.$memberId.tsx` formatado e sem `any` explícito.
+- `src/lib/account.functions.ts` formatado; removido `any` do helper de validação
+  de domínio Premium com um tipo mínimo para o client usado.
+- `src/routes/_authenticated.settings.tsx` formatado; removidos casts `any` dos
+  campos extras de conta/domínio/carteirinha com `AccountSettingsData` e
+  `SettingsForm`; componentes auxiliares da tela agora usam setters tipados.
+- Validação executada:
+  - `npx eslint src/components/member-card.tsx src/lib/members.functions.ts src/routes/_authenticated.membros.tsx 'src/routes/c.$memberId.tsx' src/lib/account.functions.ts src/routes/_authenticated.settings.tsx --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximos lotes possíveis:
+
+1. Corrigir lint por grupos de módulos pequenos (`congregations.functions.ts`,
+   `bank-accounts.functions.ts`, `financial-entries.functions.ts`) antes de partir
+   para arquivos grandes.
+2. Migrar `.inputValidator()` para `.validator()` por módulo, com build a cada lote.
+3. Só depois reavaliar `npm run lint` global, pois ainda há arquivos fora desta
+   frente com Prettier/CRLF, `any` e avisos de API depreciada.
+
+Terceiro lote concluído:
+
+- `src/lib/congregations.functions.ts` formatado; removido `any` do resultado com
+  `members(count)` usando tipo local.
+- `src/lib/bank-accounts.functions.ts` sem `any` explícito no retorno de insert.
+- `src/lib/financial-entries.functions.ts` formatado; sem `any` explícito no retorno
+  de insert; removido escape desnecessário na regex de valores.
+- Validação executada:
+  - `npx eslint src/lib/congregations.functions.ts src/lib/bank-accounts.functions.ts src/lib/financial-entries.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Quarto lote concluído:
+
+- `src/lib/locations.functions.ts` formatado; removidos `any` explícitos de
+  `update`/`insert` usando `LocationPayload`.
+- `src/lib/types.functions.ts` formatado e com lint local limpo.
+- `src/lib/events.functions.ts` formatado e com lint local limpo.
+- Validação executada:
+  - `npx eslint src/lib/locations.functions.ts src/lib/types.functions.ts src/lib/events.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Quinto lote concluído:
+
+- `src/lib/campaigns.functions.ts` formatado; removidos `any` explícitos de
+  `update`/`insert` usando `CampaignPayload`.
+- `src/lib/products.functions.ts` formatado e com lint local limpo.
+- Validação executada:
+  - `npx eslint src/lib/campaigns.functions.ts src/lib/products.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Sexto lote concluído:
+
+- `src/lib/checkin.functions.ts` formatado e com lint local limpo.
+- Não havia `any` explícito no arquivo; a correção foi de Prettier/CRLF e quebra
+  de linhas.
+- Validação executada:
+  - `npx eslint src/lib/checkin.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Sétimo lote concluído:
+
+- `src/lib/mercadopago-connections.functions.ts` formatado e com lint local limpo.
+- `src/lib/social-assistance.functions.ts` formatado; removido `any` explícito no
+  retorno do insert usando cast estruturado `{ id: string }`.
+- Validação executada:
+  - `npx eslint src/lib/mercadopago-connections.functions.ts src/lib/social-assistance.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Oitavo lote concluído:
+
+- `src/lib/tithes.functions.ts` formatado; removidos `any` explícitos de
+  `update`/`insert` usando `TithePayload`.
+- Validação executada:
+  - `npx eslint src/lib/tithes.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Nono lote concluído:
+
+- `src/lib/admin-products.functions.ts` formatado e com lint local limpo.
+- `src/lib/assets.functions.ts` formatado; removido `any` explícito no retorno do
+  insert usando cast estruturado `{ id: string }`.
+- `src/lib/devotionals.functions.ts` formatado e com lint local limpo.
+- Validação executada:
+  - `npx eslint src/lib/admin-products.functions.ts src/lib/assets.functions.ts src/lib/devotionals.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Décimo lote concluído:
+
+- `src/lib/child-checkin.functions.ts` tipado localmente; removidos `any`
+  explícitos em `access`, no retorno de listagem e na leitura do código de
+  retirada.
+- Validação executada:
+  - `npx eslint src/lib/child-checkin.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Décimo primeiro lote concluído:
+
+- `src/lib/feedback.functions.ts` formatado e com lint local limpo.
+- `src/lib/live-streams.functions.ts` formatado e com lint local limpo.
+- Validação executada:
+  - `npx eslint src/lib/feedback.functions.ts src/lib/live-streams.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: iniciar a migração de `.inputValidator()` para
+`.validator()` em um módulo pequeno primeiro, ou seguir com outro bloco pequeno
+como `event-attendance`/`lgpd`.
+
+Décimo segundo lote concluído:
+
+- `src/lib/event-attendance.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` e removeu `any` explícito dos registros de presença.
+- `src/lib/lgpd.functions.ts` migrou de `.inputValidator()` para `.validator()` e
+  removeu `any` explícito de consentimentos/anonimização.
+- Validação executada:
+  - `npx eslint src/lib/event-attendance.functions.ts src/lib/lgpd.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar a migração de `.inputValidator()` para
+`.validator()` em módulos pequenos, por exemplo `decisions`/`prayer` ou
+`privacy-policy`/`branding`, sempre com lint local e build após cada lote.
+
+Décimo terceiro lote concluído:
+
+- `src/lib/branding.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/privacy-policy.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` e removeu `any` explícito da política pública.
+- Validação executada:
+  - `npx eslint src/lib/branding.functions.ts src/lib/privacy-policy.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: seguir com outro par pequeno de módulos, como
+`decisions` e `prayer`, antes de enfrentar arquivos maiores como `team` ou
+`whatsapp`.
+
+Décimo quarto lote concluído:
+
+- `src/lib/decisions.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/prayer.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/decisions.functions.ts src/lib/prayer.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com módulos pequenos ainda não migrados,
+como `privacy-policy` já ficou pronto, então os próximos pares naturais são
+`events`/`types` ou `feedback`/`live-streams`, mantendo o ritmo de lote curto.
+
+Décimo quinto lote concluído:
+
+- `src/lib/feedback.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/live-streams.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/feedback.functions.ts src/lib/live-streams.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `events`/`types`, antes de subir para módulos mais grandes como `admin`
+ou `team`.
+
+Décimo sexto lote concluído:
+
+- `src/lib/events.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/types.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/events.functions.ts src/lib/types.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: seguir com outro par pequeno ainda não migrado,
+como `billing`/`reports` ou `congregations`/`locations`, antes de arquivos
+mais densos como `admin` e `team`.
+
+Décimo sétimo lote concluído:
+
+- `src/lib/billing.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/reports.functions.ts` migrou de `.inputValidator()` para `.validator()`
+  e removeu `any` explícito dos agregados locais do relatório.
+- Validação executada:
+  - `npx eslint src/lib/billing.functions.ts src/lib/reports.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `congregations`/`locations` ou `products`/`admin-products`, antes de
+arquivos maiores como `admin` e `team`.
+
+Décimo oitavo lote concluído:
+
+- `src/lib/congregations.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/locations.functions.ts` migrou de `.inputValidator()` para `.validator()`
+  e removeu `any` explícito do payload de atualização/inserção.
+- Validação executada:
+  - `npx eslint src/lib/congregations.functions.ts src/lib/locations.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: seguir com outro par pequeno ainda não migrado,
+como `products`/`admin-products` ou `campaigns`/`tithes`, antes de arquivos
+mais densos como `admin` e `team`.
+
+Décimo nono lote concluído:
+
+- `src/lib/products.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/admin-products.functions.ts` migrou de `.inputValidator()` para
+  `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/products.functions.ts src/lib/admin-products.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `campaigns`/`tithes` ou `account`/`members`, antes de módulos mais densos
+como `admin` e `team`.
+
+Vigésimo lote concluído:
+
+- `src/lib/campaigns.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/bank-accounts.functions.ts` migrou de `.inputValidator()` para
+  `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/campaigns.functions.ts src/lib/bank-accounts.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `account`/`members` ou `tithes`/`small-groups`, antes de módulos mais
+densos como `admin` e `team`.
+
+Vigésimo primeiro lote concluído:
+
+- `src/lib/tithes.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/small-groups.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` e teve a formatação ajustada pelo lint.
+- Validação executada:
+  - `npx eslint src/lib/tithes.functions.ts src/lib/small-groups.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `account`/`members` ou `ministry-assignments`/`devotionals`, antes de
+módulos mais densos como `admin` e `team`.
+
+Vigésimo segundo lote concluído:
+
+- `src/lib/ministry-assignments.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` e removeu `any` explícito do retorno de inserção.
+- `src/lib/devotionals.functions.ts` migrou de `.inputValidator()` para
+  `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/ministry-assignments.functions.ts src/lib/devotionals.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `account`/`members` ou `checkin`/`child-checkin`, antes de módulos mais
+densos como `admin` e `team`.
+
+Vigésimo terceiro lote concluído:
+
+- `src/lib/checkin.functions.ts` migrou de `.inputValidator()` para `.validator()`.
+- `src/lib/child-checkin.functions.ts` migrou de `.inputValidator()` para
+  `.validator()`.
+- Validação executada:
+  - `npx eslint src/lib/checkin.functions.ts src/lib/child-checkin.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `event-pages`/`public-agenda` ou `instagram`/`documents`, antes de
+módulos mais densos como `admin` e `team`.
+
+Vigésimo quarto lote concluído:
+
+- `src/lib/event-pages.functions.ts` migrou de `.inputValidator()` para
+  `.validator()`.
+- `src/lib/public-agenda.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` e teve a formatação ajustada pelo lint.
+- Validação executada:
+  - `npx eslint src/lib/event-pages.functions.ts src/lib/public-agenda.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro par pequeno ainda não migrado,
+como `instagram`/`documents` ou `documents`/`visitors`, antes de módulos mais
+densos como `admin` e `team`.
+
+Vigésimo quinto lote concluído:
+
+- `src/lib/documents.functions.ts` teve os `any` explícitos removidos e manteve
+  a migração para `.validator()` nas funções já ajustadas.
+- `src/lib/visitors.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` em `saveVisitorSettings`.
+- `src/lib/admin-payment-settings.functions.ts` migrou de `.inputValidator()`
+  para `.validator()`.
+- `src/lib/mercadopago-connections.functions.ts` migrou de `.inputValidator()`
+  para `.validator()`.
+- `src/lib/financial-entries.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` nas três funções restantes.
+- Validação executada:
+  - `npx eslint src/lib/documents.functions.ts src/lib/visitors.functions.ts --max-warnings=0` aprovado;
+  - `npx eslint src/lib/admin-payment-settings.functions.ts src/lib/mercadopago-connections.functions.ts --max-warnings=0` aprovado;
+  - `npx eslint src/lib/financial-entries.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: continuar com outro bloco pequeno ainda não migrado,
+como `small-group-members`/`room-reservations` ou `donations`/`hub`, antes de
+módulos mais densos como `admin`, `team` e `account`.
+
+Vigésimo sexto lote concluído:
+
+- `src/lib/small-group-members.functions.ts` migrou de `.inputValidator()` para
+  `.validator()` em todas as funções.
+- `src/lib/room-reservations.functions.ts` migrou de `.inputValidator()` para
+  `.validator()`, e os pontos com tipagem explícita foram ajustados para evitar
+  `any`.
+- Validação executada:
+  - `npx eslint src/lib/small-group-members.functions.ts src/lib/room-reservations.functions.ts --max-warnings=0` aprovado;
+  - `npm run build` aprovado.
+
+Próximo lote recomendado: seguir com outro bloco pequeno ainda não migrado,
+como `donations`/`hub` ou `social-assistance`/`volunteer-shifts`, antes de
+módulos mais densos como `admin`, `team` e `account`.
+
+## 10. Checkpoint de continuidade — 2026-07-09
+
+### Entregue
+
+- `src/lib/donations.functions.ts` teve a migração para `.validator()` concluída
+  e a formatação normalizada pelo lint.
+- `src/lib/social-assistance.functions.ts` segue migrado para `.validator()` e
+  validado nesta frente.
+- `src/lib/volunteer-shifts.functions.ts` segue migrado para `.validator()` e
+  tipado sem `any` explícito nesta frente.
+
+### Validação
+
+- `npx eslint src/lib/donations.functions.ts --max-warnings=0` aprovado.
+- `npm run build` aprovado.
+
+### Próximo passo recomendado
+
+1. Seguir com outro bloco pequeno ainda não migrado, de preferência `hub` junto
+   com mais um módulo leve.
+2. Depois disso, atacar os blocos grandes restantes (`account`, `members`,
+   `team`, `admin`) só em lotes curtos com lint isolado por arquivo.
+
+## 11. Checkpoint de continuidade — 2026-07-10
+
+### Entregue
+
+- `src/lib/hub.functions.ts` migrou todos os usos restantes de
+  `.inputValidator()` para `.validator()`.
+- O mesmo arquivo ficou sem `any` explícito em código e comentários rastreados.
+- Foram adicionados schemas reutilizáveis para `slug`, `siteId` e post público de
+  notícia, além de tipos locais para agenda, locais e configurações de mídia do hub.
+- `src/lib/assets.functions.ts` migrou os validadores para `.validator()` e ficou
+  sem `any` explícito.
+- `src/lib/ebd.functions.ts` migrou os validadores para `.validator()`, ganhou
+  schemas locais reutilizáveis e teve os casts `as any` removidos.
+- `src/lib/secretaria.functions.ts` migrou todos os validadores para
+  `.validator()`, ganhou schemas reutilizáveis para IDs/status/anexos e ficou sem
+  `any` explícito.
+
+### Validação
+
+- `rg -n "inputValidator|\bany\b" src/lib/hub.functions.ts` sem ocorrências.
+- `npx eslint src/lib/hub.functions.ts --max-warnings=0` aprovado.
+- `rg -n "inputValidator|\bany\b" src/lib/assets.functions.ts` sem ocorrências.
+- `npx eslint src/lib/assets.functions.ts --max-warnings=0` aprovado.
+- `rg -n "inputValidator|\bany\b" src/lib/ebd.functions.ts` sem ocorrências.
+- `npx eslint src/lib/ebd.functions.ts --max-warnings=0` aprovado.
+- `rg -n "inputValidator|\bany\b" src/lib/secretaria.functions.ts` sem
+  ocorrências.
+- `npx eslint src/lib/secretaria.functions.ts --max-warnings=0` aprovado.
+- `npm run build` aprovado.
+
+### Próximo passo recomendado
+
+1. Continuar com `whatsapp.functions.ts` em um lote isolado.
+2. Depois seguir para os blocos grandes restantes (`account`, `members`, `team`,
+   `admin`) apenas com lint isolado por arquivo e build após cada lote.

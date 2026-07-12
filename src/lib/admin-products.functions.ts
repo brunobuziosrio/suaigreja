@@ -16,7 +16,11 @@ async function assertAdmin(userId: string) {
 
 const productSchema = z.object({
   id: z.string().uuid().optional(),
-  slug: z.string().min(1).max(120).regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífen."),
+  slug: z
+    .string()
+    .min(1)
+    .max(120)
+    .regex(/^[a-z0-9-]+$/, "Use apenas letras minúsculas, números e hífen."),
   name: z.string().min(1).max(160),
   tagline: z.string().max(240).default(""),
   description: z.string().max(5000).default(""),
@@ -45,7 +49,7 @@ export const adminListProducts = createServerFn({ method: "GET" })
 
 export const adminSaveProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => productSchema.parse(i))
+  .validator((i) => productSchema.parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const payload = {
@@ -74,7 +78,7 @@ export const adminSaveProduct = createServerFn({ method: "POST" })
 
 export const adminDeleteProduct = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin.from("products").delete().eq("id", data.id);

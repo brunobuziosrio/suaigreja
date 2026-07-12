@@ -18,10 +18,19 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Plus,
@@ -71,29 +80,67 @@ type Form = {
 };
 
 const empty: Form = {
-  full_name: "", photo_url: "", email: "", phone: "", birth_date: "",
-  gender: "", marital_status: "", role: "membro", member_since: "",
-  status: "ativo", address_city: "", address_state: "", notes: "",
-  cpf: "", congregation: "", congregation_id: "", is_tither: false, whatsapp_consent: false,
+  full_name: "",
+  photo_url: "",
+  email: "",
+  phone: "",
+  birth_date: "",
+  gender: "",
+  marital_status: "",
+  role: "membro",
+  member_since: "",
+  status: "ativo",
+  address_city: "",
+  address_state: "",
+  notes: "",
+  cpf: "",
+  congregation: "",
+  congregation_id: "",
+  is_tither: false,
+  whatsapp_consent: false,
 };
 
 const ROLES = ["membro", "visitante", "lider", "diacono", "obreiro", "pastor"];
 const STATUS = ["ativo", "inativo", "transferido", "falecido"];
 
 const CSV_TEMPLATE_HEADERS = [
-  "nome", "telefone", "email", "nascimento", "sexo", "estado_civil", "cpf",
-  "funcao", "membro_desde", "status", "cidade", "estado", "congregacao",
-  "dizimista", "observacoes",
+  "nome",
+  "telefone",
+  "email",
+  "nascimento",
+  "sexo",
+  "estado_civil",
+  "cpf",
+  "funcao",
+  "membro_desde",
+  "status",
+  "cidade",
+  "estado",
+  "congregacao",
+  "dizimista",
+  "observacoes",
 ];
 const CSV_TEMPLATE_SAMPLE_ROW = [
-  "João da Silva", "(11) 91234-5678", "joao@exemplo.com", "1985-04-12",
-  "masculino", "casado", "123.456.789-00", "membro", "2020-01-15", "ativo",
-  "São Paulo", "SP", "Sede", "sim", "Exemplo de observação",
+  "João da Silva",
+  "(11) 91234-5678",
+  "joao@exemplo.com",
+  "1985-04-12",
+  "masculino",
+  "casado",
+  "123.456.789-00",
+  "membro",
+  "2020-01-15",
+  "ativo",
+  "São Paulo",
+  "SP",
+  "Sede",
+  "sim",
+  "Exemplo de observação",
 ];
 
 function downloadMembersCsvTemplate() {
   const csv = buildCsv(CSV_TEMPLATE_HEADERS, [CSV_TEMPLATE_SAMPLE_ROW]);
-  const blob = new Blob([`﻿${csv}`], { type: "text/csv;charset=utf-8" });
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -102,7 +149,34 @@ function downloadMembersCsvTemplate() {
   URL.revokeObjectURL(url);
 }
 
-type ImportResult = { total: number; created: number; updated: number; errors: { row: number; message: string }[] };
+type ImportResult = {
+  total: number;
+  created: number;
+  updated: number;
+  errors: { row: number; message: string }[];
+};
+
+type MemberListItem = {
+  id: string;
+  full_name: string;
+  photo_url: string | null;
+  email: string | null;
+  phone: string | null;
+  birth_date: string | null;
+  gender: string | null;
+  marital_status: string | null;
+  role: string;
+  member_since: string | null;
+  status: string;
+  address_city: string | null;
+  address_state: string | null;
+  notes: string | null;
+  cpf: string | null;
+  congregation: string | null;
+  congregation_id: string | null;
+  is_tither: boolean | null;
+  whatsapp_consent: boolean | null;
+};
 
 function capitalize(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
@@ -140,9 +214,15 @@ function MembersPage() {
   const fetchCongregations = useServerFn(listCongregations);
   const save = useServerFn(upsertMember);
   const remove = useServerFn(deleteMember);
-  const { data: items = [], isLoading } = useQuery({ queryKey: ["members"], queryFn: () => fetchList() });
+  const { data: items = [], isLoading } = useQuery<MemberListItem[]>({
+    queryKey: ["members"],
+    queryFn: async () => (await fetchList()) as MemberListItem[],
+  });
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
-  const { data: congregations = [] } = useQuery({ queryKey: ["congregations"], queryFn: () => fetchCongregations() });
+  const { data: congregations = [] } = useQuery({
+    queryKey: ["congregations"],
+    queryFn: () => fetchCongregations(),
+  });
   const terms = getReligionTerms(account?.religion_profile);
 
   const [open, setOpen] = useState(false);
@@ -179,36 +259,45 @@ function MembersPage() {
   }
 
   const upsertMut = useMutation({
-    mutationFn: (input: Form) => save({
-      data: {
-        id: input.id, full_name: input.full_name.trim(),
-        photo_url: input.photo_url || null,
-        email: input.email.trim() || null, phone: input.phone.trim() || null,
-        birth_date: input.birth_date || null,
-        gender: input.gender || null, marital_status: input.marital_status || null,
-        role: input.role, member_since: input.member_since || null,
-        status: input.status,
-        address_city: input.address_city.trim() || null,
-        address_state: input.address_state.trim() || null,
-        notes: input.notes.trim() || null,
-        cpf: input.cpf.trim() || null,
-        congregation: input.congregation.trim() || null,
-        congregation_id: input.congregation_id || null,
-        is_tither: input.is_tither,
-        whatsapp_consent: input.whatsapp_consent,
-      },
-    }),
+    mutationFn: (input: Form) =>
+      save({
+        data: {
+          id: input.id,
+          full_name: input.full_name.trim(),
+          photo_url: input.photo_url || null,
+          email: input.email.trim() || null,
+          phone: input.phone.trim() || null,
+          birth_date: input.birth_date || null,
+          gender: input.gender || null,
+          marital_status: input.marital_status || null,
+          role: input.role,
+          member_since: input.member_since || null,
+          status: input.status,
+          address_city: input.address_city.trim() || null,
+          address_state: input.address_state.trim() || null,
+          notes: input.notes.trim() || null,
+          cpf: input.cpf.trim() || null,
+          congregation: input.congregation.trim() || null,
+          congregation_id: input.congregation_id || null,
+          is_tither: input.is_tither,
+          whatsapp_consent: input.whatsapp_consent,
+        },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
       toast.success(`${capitalize(terms.person)} salvo`);
-      setOpen(false); setForm(empty);
+      setOpen(false);
+      setForm(empty);
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["members"] }); toast.success("Removido"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["members"] });
+      toast.success("Removido");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -225,13 +314,18 @@ function MembersPage() {
     setUploading(true);
     try {
       const path = `members/${crypto.randomUUID()}.jpg`;
-      const { error } = await supabase.storage.from("member-photos").upload(path, blob, { contentType: "image/jpeg" });
+      const { error } = await supabase.storage
+        .from("member-photos")
+        .upload(path, blob, { contentType: "image/jpeg" });
       if (error) throw error;
       const { data: pub } = supabase.storage.from("member-photos").getPublicUrl(path);
       setForm((f) => ({ ...f, photo_url: pub.publicUrl }));
       toast.success("Foto enviada");
-    } catch (e) { toast.error((e as Error).message); }
-    finally { setUploading(false); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setUploading(false);
+    }
   }
 
   const memberStats = useMemo(() => {
@@ -241,7 +335,9 @@ function MembersPage() {
       if (!m.birth_date) return false;
       return new Date(`${m.birth_date}T00:00:00`).getMonth() + 1 === currentMonth;
     }).length;
-    const incomplete = items.filter((m) => getMemberCompleteness(m as Record<string, unknown>).percent < 80).length;
+    const incomplete = items.filter(
+      (m) => getMemberCompleteness(m as Record<string, unknown>).percent < 80,
+    ).length;
     return { total: items.length, active, birthdays, incomplete };
   }, [items]);
 
@@ -249,7 +345,7 @@ function MembersPage() {
     const normalizedSearch = search.trim().toLowerCase();
     return items.filter((m) => {
       const completeness = getMemberCompleteness(m as Record<string, unknown>);
-      const searchable = [m.full_name, m.phone, (m as any).cpf, m.email, (m as any).congregation]
+      const searchable = [m.full_name, m.phone, m.cpf, m.email, m.congregation]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
@@ -269,219 +365,399 @@ function MembersPage() {
         <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight">{terms.people}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {terms.peopleDescription}
-            </p>
+            <p className="text-sm text-muted-foreground mt-1">{terms.peopleDescription}</p>
           </div>
           <div className="flex items-center gap-2">
-          <Dialog open={importOpen} onOpenChange={(o) => { setImportOpen(o); if (!o) setImportResult(null); }}>
-            <DialogTrigger asChild>
-              <Button variant="outline"><FileSpreadsheet className="h-4 w-4 mr-2" />Importar CSV</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Importar {terms.people} por CSV</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Cadastre vários {terms.people.toLowerCase()} de uma vez a partir de uma planilha
-                  exportada de outro sistema. Registros com o mesmo CPF ou e-mail já cadastrado são
-                  atualizados em vez de duplicados.
-                </p>
-                <Button type="button" variant="outline" size="sm" onClick={downloadMembersCsvTemplate}>
-                  <Download className="h-3.5 w-3.5 mr-1.5" />Baixar modelo CSV
+            <Dialog
+              open={importOpen}
+              onOpenChange={(o) => {
+                setImportOpen(o);
+                if (!o) setImportResult(null);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+                  Importar CSV
                 </Button>
-                <input
-                  ref={csvFileInput}
-                  type="file"
-                  accept=".csv,text/csv"
-                  className="hidden"
-                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleCsvFile(f); e.target.value = ""; }}
-                />
-                <Button
-                  type="button"
-                  className="w-full"
-                  disabled={importMut.isPending}
-                  onClick={() => csvFileInput.current?.click()}
-                >
-                  {importMut.isPending ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Importando…</>
-                  ) : (
-                    <><Upload className="h-4 w-4 mr-2" />Escolher arquivo CSV</>
-                  )}
-                </Button>
-
-                {importResult && (
-                  <div className="rounded-md border p-3 space-y-2">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      {importResult.created} criado(s), {importResult.updated} atualizado(s) de {importResult.total} linha(s)
-                    </div>
-                    {importResult.errors.length > 0 && (
-                      <div className="max-h-48 overflow-y-auto rounded border bg-amber-50 dark:bg-amber-950/20 p-2 text-xs space-y-1">
-                        <p className="font-medium text-amber-800 dark:text-amber-400">
-                          {importResult.errors.length} aviso(s):
-                        </p>
-                        {importResult.errors.map((err, idx) => (
-                          <p key={idx} className="text-amber-700 dark:text-amber-500">
-                            Linha {err.row}: {err.message}
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setImportOpen(false)}>Fechar</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-2" />Novo {terms.person}</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>{form.id ? `Editar ${terms.person}` : `Novo ${terms.person}`}</DialogTitle>
-              </DialogHeader>
-              <div className="max-h-[70vh] overflow-y-auto pr-1">
-                <div className="flex items-start gap-4">
-                  <div className="shrink-0">
-                    {form.photo_url ? (
-                      <img src={form.photo_url} alt="" className="h-32 w-24 rounded-md object-cover border-2 border-border" />
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Importar {terms.people} por CSV</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Cadastre vários {terms.people.toLowerCase()} de uma vez a partir de uma planilha
+                    exportada de outro sistema. Registros com o mesmo CPF ou e-mail já cadastrado
+                    são atualizados em vez de duplicados.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={downloadMembersCsvTemplate}
+                  >
+                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                    Baixar modelo CSV
+                  </Button>
+                  <input
+                    ref={csvFileInput}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handleCsvFile(f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    className="w-full"
+                    disabled={importMut.isPending}
+                    onClick={() => csvFileInput.current?.click()}
+                  >
+                    {importMut.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Importando…
+                      </>
                     ) : (
-                      <div className="h-32 w-24 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
-                        <Users className="h-8 w-8" />
-                      </div>
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        Escolher arquivo CSV
+                      </>
                     )}
-                    <input ref={fileInput} type="file" accept="image/*" className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ""; }} />
-                    <Button type="button" size="sm" variant="outline" className="mt-2 w-24"
-                      onClick={() => fileInput.current?.click()} disabled={uploading}>
-                      {uploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Upload className="h-3 w-3 mr-1" />Foto</>}
-                    </Button>
-                  </div>
-                  <div className="flex-1 space-y-3">
-                    <div className="space-y-2">
-                      <Label>Nome completo</Label>
-                      <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
+                  </Button>
+
+                  {importResult && (
+                    <div className="rounded-md border p-3 space-y-2">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        {importResult.created} criado(s), {importResult.updated} atualizado(s) de{" "}
+                        {importResult.total} linha(s)
+                      </div>
+                      {importResult.errors.length > 0 && (
+                        <div className="max-h-48 overflow-y-auto rounded border bg-amber-50 dark:bg-amber-950/20 p-2 text-xs space-y-1">
+                          <p className="font-medium text-amber-800 dark:text-amber-400">
+                            {importResult.errors.length} aviso(s):
+                          </p>
+                          {importResult.errors.map((err, idx) => (
+                            <p key={idx} className="text-amber-700 dark:text-amber-500">
+                              Linha {err.row}: {err.message}
+                            </p>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="space-y-2"><Label>Telefone</Label>
-                        <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="(00) 90000-0000" /></div>
-                      <div className="space-y-2"><Label>E-mail</Label>
-                        <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-                    </div>
-                  </div>
+                  )}
                 </div>
-
-                <Tabs defaultValue="pessoal" className="mt-5">
-                  <TabsList className="grid h-auto w-full grid-cols-3">
-                    <TabsTrigger value="pessoal">Dados pessoais</TabsTrigger>
-                    <TabsTrigger value="igreja">{capitalize(terms.institution)}</TabsTrigger>
-                    <TabsTrigger value="contato">Contato e notas</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="pessoal" className="space-y-4 pt-3">
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label>Nascimento</Label>
-                        <Input type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Sexo</Label>
-                        <Select value={form.gender || "_"} onValueChange={(v) => setForm({ ...form, gender: v === "_" ? "" : v })}>
-                          <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="_">—</SelectItem>
-                            <SelectItem value="masculino">Masculino</SelectItem>
-                            <SelectItem value="feminino">Feminino</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Estado civil</Label>
-                        <Input value={form.marital_status} onChange={(e) => setForm({ ...form, marital_status: e.target.value })} placeholder="Solteiro(a), Casado(a)..." />
-                      </div>
-                    </div>
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>CPF</Label>
-                        <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: e.target.value })} placeholder="000.000.000-00" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{capitalize(terms.person)} desde</Label>
-                        <Input type="date" value={form.member_since} onChange={(e) => setForm({ ...form, member_since: e.target.value })} />
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="igreja" className="space-y-4 pt-3">
-                    <div className="grid gap-3 md:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label>Funcao</Label>
-                        <Select value={form.role} onValueChange={(v) => setForm({ ...form, role: v })}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>{ROLES.map((r) => <SelectItem key={r} value={r}>{capitalize(r)}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Status</Label>
-                        <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>{STATUS.map((s) => <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)}</SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>{capitalize(terms.institution)} / congregacao</Label>
-                        {congregations.length > 0 ? <Select value={form.congregation_id || "_"} onValueChange={(id) => { const selected = congregations.find(c => c.id === id); setForm({ ...form, congregation_id: id === "_" ? "" : id, congregation: selected?.name ?? "" }); }}><SelectTrigger><SelectValue placeholder="Selecione a unidade" /></SelectTrigger><SelectContent><SelectItem value="_">Sem unidade</SelectItem>{congregations.filter(c => c.active).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent></Select> : <Input value={form.congregation} onChange={(e) => setForm({ ...form, congregation: e.target.value })} placeholder="Ex: Sede / Filial Centro" />}
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between rounded-md border p-3">
-                      <div>
-                        <Label>{terms.contribution === "dízimo" ? "Dizimista" : "Contribuinte"}</Label>
-                        <p className="text-xs text-muted-foreground">Recebe lembrete mensal de {terms.contribution} via WhatsApp</p>
-                      </div>
-                      <Switch checked={form.is_tither} onCheckedChange={(v) => setForm({ ...form, is_tither: v })} />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="contato" className="space-y-4 pt-3">
-                    <div className="grid gap-3 md:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label>Cidade</Label>
-                        <Input value={form.address_city} onChange={(e) => setForm({ ...form, address_city: e.target.value })} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Estado</Label>
-                        <Input value={form.address_state} onChange={(e) => setForm({ ...form, address_state: e.target.value })} maxLength={2} placeholder="RJ" />
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between rounded-md border p-3">
-                      <div>
-                        <Label>Consentimento para WhatsApp</Label>
-                        <p className="text-xs text-muted-foreground">
-                          Autoriza comunicados, lembretes e mensagens pastorais conforme LGPD.
-                        </p>
-                      </div>
-                      <Switch checked={form.whatsapp_consent} onCheckedChange={(v) => setForm({ ...form, whatsapp_consent: v })} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Observacoes</Label>
-                      <Textarea rows={4} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
-                <Button disabled={!form.full_name.trim() || upsertMut.isPending} onClick={() => upsertMut.mutate(form)}>
-                  {upsertMut.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Salvar
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setImportOpen(false)}>
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <Dialog
+              open={open}
+              onOpenChange={(o) => {
+                setOpen(o);
+                if (!o) setForm(empty);
+              }}
+            >
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo {terms.person}
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>
+                    {form.id ? `Editar ${terms.person}` : `Novo ${terms.person}`}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="flex items-start gap-4">
+                    <div className="shrink-0">
+                      {form.photo_url ? (
+                        <img
+                          src={form.photo_url}
+                          alt=""
+                          className="h-32 w-24 rounded-md object-cover border-2 border-border"
+                        />
+                      ) : (
+                        <div className="h-32 w-24 rounded-md bg-muted flex items-center justify-center text-muted-foreground">
+                          <Users className="h-8 w-8" />
+                        </div>
+                      )}
+                      <input
+                        ref={fileInput}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) handleFile(f);
+                          e.target.value = "";
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-24"
+                        onClick={() => fileInput.current?.click()}
+                        disabled={uploading}
+                      >
+                        {uploading ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Upload className="h-3 w-3 mr-1" />
+                            Foto
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    <div className="flex-1 space-y-3">
+                      <div className="space-y-2">
+                        <Label>Nome completo</Label>
+                        <Input
+                          value={form.full_name}
+                          onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Telefone</Label>
+                          <Input
+                            value={form.phone}
+                            onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                            placeholder="(00) 90000-0000"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>E-mail</Label>
+                          <Input
+                            type="email"
+                            value={form.email}
+                            onChange={(e) => setForm({ ...form, email: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Tabs defaultValue="pessoal" className="mt-5">
+                    <TabsList className="grid h-auto w-full grid-cols-3">
+                      <TabsTrigger value="pessoal">Dados pessoais</TabsTrigger>
+                      <TabsTrigger value="igreja">{capitalize(terms.institution)}</TabsTrigger>
+                      <TabsTrigger value="contato">Contato e notas</TabsTrigger>
+                    </TabsList>
+
+                    <TabsContent value="pessoal" className="space-y-4 pt-3">
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label>Nascimento</Label>
+                          <Input
+                            type="date"
+                            value={form.birth_date}
+                            onChange={(e) => setForm({ ...form, birth_date: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Sexo</Label>
+                          <Select
+                            value={form.gender || "_"}
+                            onValueChange={(v) => setForm({ ...form, gender: v === "_" ? "" : v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="—" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="_">—</SelectItem>
+                              <SelectItem value="masculino">Masculino</SelectItem>
+                              <SelectItem value="feminino">Feminino</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Estado civil</Label>
+                          <Input
+                            value={form.marital_status}
+                            onChange={(e) => setForm({ ...form, marital_status: e.target.value })}
+                            placeholder="Solteiro(a), Casado(a)..."
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>CPF</Label>
+                          <Input
+                            value={form.cpf}
+                            onChange={(e) => setForm({ ...form, cpf: e.target.value })}
+                            placeholder="000.000.000-00"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{capitalize(terms.person)} desde</Label>
+                          <Input
+                            type="date"
+                            value={form.member_since}
+                            onChange={(e) => setForm({ ...form, member_since: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="igreja" className="space-y-4 pt-3">
+                      <div className="grid gap-3 md:grid-cols-3">
+                        <div className="space-y-2">
+                          <Label>Funcao</Label>
+                          <Select
+                            value={form.role}
+                            onValueChange={(v) => setForm({ ...form, role: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ROLES.map((r) => (
+                                <SelectItem key={r} value={r}>
+                                  {capitalize(r)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Status</Label>
+                          <Select
+                            value={form.status}
+                            onValueChange={(v) => setForm({ ...form, status: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS.map((s) => (
+                                <SelectItem key={s} value={s}>
+                                  {capitalize(s)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>{capitalize(terms.institution)} / congregacao</Label>
+                          {congregations.length > 0 ? (
+                            <Select
+                              value={form.congregation_id || "_"}
+                              onValueChange={(id) => {
+                                const selected = congregations.find((c) => c.id === id);
+                                setForm({
+                                  ...form,
+                                  congregation_id: id === "_" ? "" : id,
+                                  congregation: selected?.name ?? "",
+                                });
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a unidade" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="_">Sem unidade</SelectItem>
+                                {congregations
+                                  .filter((c) => c.active)
+                                  .map((c) => (
+                                    <SelectItem key={c.id} value={c.id}>
+                                      {c.name}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Input
+                              value={form.congregation}
+                              onChange={(e) => setForm({ ...form, congregation: e.target.value })}
+                              placeholder="Ex: Sede / Filial Centro"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border p-3">
+                        <div>
+                          <Label>
+                            {terms.contribution === "dízimo" ? "Dizimista" : "Contribuinte"}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Recebe lembrete mensal de {terms.contribution} via WhatsApp
+                          </p>
+                        </div>
+                        <Switch
+                          checked={form.is_tither}
+                          onCheckedChange={(v) => setForm({ ...form, is_tither: v })}
+                        />
+                      </div>
+                    </TabsContent>
+
+                    <TabsContent value="contato" className="space-y-4 pt-3">
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Cidade</Label>
+                          <Input
+                            value={form.address_city}
+                            onChange={(e) => setForm({ ...form, address_city: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Estado</Label>
+                          <Input
+                            value={form.address_state}
+                            onChange={(e) => setForm({ ...form, address_state: e.target.value })}
+                            maxLength={2}
+                            placeholder="RJ"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between rounded-md border p-3">
+                        <div>
+                          <Label>Consentimento para WhatsApp</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Autoriza comunicados, lembretes e mensagens pastorais conforme LGPD.
+                          </p>
+                        </div>
+                        <Switch
+                          checked={form.whatsapp_consent}
+                          onCheckedChange={(v) => setForm({ ...form, whatsapp_consent: v })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Observacoes</Label>
+                        <Textarea
+                          rows={4}
+                          value={form.notes}
+                          onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                        />
+                      </div>
+                    </TabsContent>
+                  </Tabs>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setOpen(false)}>
+                    Cancelar
+                  </Button>
+                  <Button
+                    disabled={!form.full_name.trim() || upsertMut.isPending}
+                    onClick={() => upsertMut.mutate(form)}
+                  >
+                    {upsertMut.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Salvar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -544,14 +820,22 @@ function MembersPage() {
               />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os status</SelectItem>
-                {STATUS.map((s) => <SelectItem key={s} value={s}>{capitalize(s)}</SelectItem>)}
+                {STATUS.map((s) => (
+                  <SelectItem key={s} value={s}>
+                    {capitalize(s)}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <Select value={completenessFilter} onValueChange={setCompletenessFilter}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todas as fichas</SelectItem>
                 <SelectItem value="incompletos">Abaixo de 80%</SelectItem>
@@ -580,12 +864,16 @@ function MembersPage() {
         </Card>
 
         {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <h3 className="font-semibold">Nenhum {terms.person} ainda</h3>
-            <p className="text-sm text-muted-foreground mt-1">Cadastre seu primeiro {terms.person} para começar.</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Cadastre seu primeiro {terms.person} para começar.
+            </p>
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -595,7 +883,11 @@ function MembersPage() {
                 <Card key={m.id} className="p-4">
                   <div className="flex items-start gap-3">
                     {m.photo_url ? (
-                      <img src={m.photo_url} alt="" className="h-14 w-14 rounded-full object-cover shrink-0" />
+                      <img
+                        src={m.photo_url}
+                        alt=""
+                        className="h-14 w-14 rounded-full object-cover shrink-0"
+                      />
                     ) : (
                       <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center shrink-0">
                         <Users className="h-5 w-5 text-muted-foreground" />
@@ -604,10 +896,18 @@ function MembersPage() {
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate">{m.full_name}</p>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        <Badge variant="neutral" className="text-[10px] capitalize">{m.role}</Badge>
-                        {m.status !== "ativo" && <Badge variant="outline" className="text-[10px] capitalize">{m.status}</Badge>}
+                        <Badge variant="neutral" className="text-[10px] capitalize">
+                          {m.role}
+                        </Badge>
+                        {m.status !== "ativo" && (
+                          <Badge variant="outline" className="text-[10px] capitalize">
+                            {m.status}
+                          </Badge>
+                        )}
                       </div>
-                      {m.phone && <p className="text-xs text-muted-foreground mt-1 truncate">{m.phone}</p>}
+                      {m.phone && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">{m.phone}</p>
+                      )}
                     </div>
                   </div>
                   <div className="mt-3 rounded-md border bg-muted/20 p-3">
@@ -633,27 +933,49 @@ function MembersPage() {
                   <div className="flex gap-1 mt-3 pt-3 border-t">
                     <Button asChild variant="ghost" size="sm" className="flex-1">
                       <a href={`/c/${m.id}`} target="_blank" rel="noopener noreferrer">
-                        <QrCode className="h-3.5 w-3.5 mr-1" />Carteirinha
+                        <QrCode className="h-3.5 w-3.5 mr-1" />
+                        Carteirinha
                       </a>
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                      setForm({
-                        id: m.id, full_name: m.full_name, photo_url: m.photo_url ?? "",
-                        email: m.email ?? "", phone: m.phone ?? "",
-                        birth_date: m.birth_date ?? "", gender: m.gender ?? "",
-                        marital_status: m.marital_status ?? "", role: m.role,
-                        member_since: m.member_since ?? "", status: m.status,
-                        address_city: m.address_city ?? "", address_state: m.address_state ?? "",
-                        notes: m.notes ?? "",
-                      cpf: (m as any).cpf ?? "", congregation: (m as any).congregation ?? "", congregation_id: (m as any).congregation_id ?? "",
-                      is_tither: (m as any).is_tither ?? false,
-                      whatsapp_consent: (m as any).whatsapp_consent ?? false,
-                    });
-                      setOpen(true);
-                    }}><Pencil className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => {
-                      if (confirm(`Remover ${m.full_name}?`)) deleteMut.mutate(m.id);
-                    }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setForm({
+                          id: m.id,
+                          full_name: m.full_name,
+                          photo_url: m.photo_url ?? "",
+                          email: m.email ?? "",
+                          phone: m.phone ?? "",
+                          birth_date: m.birth_date ?? "",
+                          gender: m.gender ?? "",
+                          marital_status: m.marital_status ?? "",
+                          role: m.role,
+                          member_since: m.member_since ?? "",
+                          status: m.status,
+                          address_city: m.address_city ?? "",
+                          address_state: m.address_state ?? "",
+                          notes: m.notes ?? "",
+                          cpf: m.cpf ?? "",
+                          congregation: m.congregation ?? "",
+                          congregation_id: m.congregation_id ?? "",
+                          is_tither: m.is_tither ?? false,
+                          whatsapp_consent: m.whatsapp_consent ?? false,
+                        });
+                        setOpen(true);
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        if (confirm(`Remover ${m.full_name}?`)) deleteMut.mutate(m.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
                   </div>
                 </Card>
               );
@@ -664,9 +986,12 @@ function MembersPage() {
       <ImageCropDialog
         open={!!cropSrc}
         imageSrc={cropSrc}
-        aspect={3/4}
+        aspect={3 / 4}
         onCancel={() => setCropSrc(null)}
-        onConfirm={async (blob) => { setCropSrc(null); await uploadBlob(blob); }}
+        onConfirm={async (blob) => {
+          setCropSrc(null);
+          await uploadBlob(blob);
+        }}
       />
     </AppShell>
   );

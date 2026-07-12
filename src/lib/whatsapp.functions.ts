@@ -58,6 +58,36 @@ const SettingsInput = z.object({
   newsletter_template: z.string().min(10).max(800),
 });
 
+const CreditPackageInput = z.object({ package_id: z.string().uuid() });
+const DeleteQueuedMessageInput = z.object({ id: z.string().uuid() });
+const EnqueueMessageInput = z.object({
+  phone: z.string().min(10).max(20),
+  recipient_name: z.string().max(200).nullable().optional(),
+  content: z.string().min(1).max(800),
+  kind: z.enum(MSG_KINDS),
+  member_id: z.string().uuid().nullable().optional(),
+});
+
+type WhatsappCountRow = {
+  status: string;
+  kind: string;
+};
+
+type WhatsappPeriodMessage = WhatsappCountRow & {
+  cost_credits: number | null;
+  credit_refunded_at: string | null;
+  provider_delivery_status: string | null;
+};
+
+type WhatsappAnalytics = {
+  total: number;
+  reservedCredits: number;
+  netCredits: number;
+  byStatus: Record<string, number>;
+  byKind: Record<string, number>;
+  byDelivery: Record<string, number>;
+};
+
 async function getAtivoPayKey() {
   const key = await resolveAtivoPayApiKey();
   if (!key) throw new Error("A chave da AtivoPay ainda não foi configurada.");
@@ -66,7 +96,10 @@ async function getAtivoPayKey() {
 
 function readPaymentData(raw: unknown) {
   const payload = raw as { data?: Record<string, unknown> } & Record<string, unknown>;
-  return (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<string, unknown>;
+  return (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<
+    string,
+    unknown
+  >;
 }
 
 function pickText(value: unknown) {
@@ -91,34 +124,35 @@ export const getWhatsappData = createServerFn({ method: "GET" })
       { data: recent },
       { data: counts },
       { data: periodMessages },
-    ] =
-      await Promise.all([
-        supabase.from("whatsapp_settings").select("*").eq("account_id", accountId).maybeSingle(),
-        supabase.from("whatsapp_packages").select("*").eq("active", true).order("sort_order"),
-        supabase
-          .from("whatsapp_credit_purchases")
-          .select("id, package_id, message_count, amount_cents, status, paid_at, created_at")
-          .eq("account_id", accountId)
-          .order("created_at", { ascending: false })
-          .limit(20),
-        supabase
-          .from("whatsapp_messages")
-          .select(
-            "id, kind, phone, recipient_name, content, status, scheduled_for, sent_at, delivered_at, read_at, provider_delivery_status, provider_status_at, error_message, cost_credits, credit_reserved_at, credit_refunded_at, created_at",
-          )
-          .eq("account_id", accountId)
-          .order("created_at", { ascending: false })
-          .limit(100),
-        supabase.from("whatsapp_messages").select("status, kind").eq("account_id", accountId),
-        supabase
-          .from("whatsapp_messages")
-          .select("status, kind, cost_credits, credit_refunded_at, provider_delivery_status, created_at")
-          .eq("account_id", accountId)
-          .gte("created_at", thirtyDaysAgo),
-      ]);
+    ] = await Promise.all([
+      supabase.from("whatsapp_settings").select("*").eq("account_id", accountId).maybeSingle(),
+      supabase.from("whatsapp_packages").select("*").eq("active", true).order("sort_order"),
+      supabase
+        .from("whatsapp_credit_purchases")
+        .select("id, package_id, message_count, amount_cents, status, paid_at, created_at")
+        .eq("account_id", accountId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("whatsapp_messages")
+        .select(
+          "id, kind, phone, recipient_name, content, status, scheduled_for, sent_at, delivered_at, read_at, provider_delivery_status, provider_status_at, error_message, cost_credits, credit_reserved_at, credit_refunded_at, created_at",
+        )
+        .eq("account_id", accountId)
+        .order("created_at", { ascending: false })
+        .limit(100),
+      supabase.from("whatsapp_messages").select("status, kind").eq("account_id", accountId),
+      supabase
+        .from("whatsapp_messages")
+        .select(
+          "status, kind, cost_credits, credit_refunded_at, provider_delivery_status, created_at",
+        )
+        .eq("account_id", accountId)
+        .gte("created_at", thirtyDaysAgo),
+    ]);
 
-    const totals = (counts ?? []).reduce(
-      (acc: Record<string, number>, m: any) => {
+    const totals = ((counts ?? []) as WhatsappCountRow[]).reduce(
+      (acc: Record<string, number>, m) => {
         acc[m.status] = (acc[m.status] ?? 0) + 1;
         acc[`kind_${m.kind}`] = (acc[`kind_${m.kind}`] ?? 0) + 1;
         acc.total = (acc.total ?? 0) + 1;
@@ -127,8 +161,8 @@ export const getWhatsappData = createServerFn({ method: "GET" })
       { total: 0 },
     );
 
-    const analytics = (periodMessages ?? []).reduce(
-      (acc: Record<string, any>, message: any) => {
+    const analytics = ((periodMessages ?? []) as WhatsappPeriodMessage[]).reduce(
+      (acc: WhatsappAnalytics, message) => {
         acc.total += 1;
         acc.reservedCredits += Number(message.cost_credits ?? 0);
         if (!message.credit_refunded_at) acc.netCredits += Number(message.cost_credits ?? 0);
@@ -162,7 +196,7 @@ export const getWhatsappData = createServerFn({ method: "GET" })
 
 export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => z.object({ package_id: z.string().uuid() }).parse(input))
+  .validator((input) => CreditPackageInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "whatsapp", "manage");
@@ -195,7 +229,9 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
     const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
-      typeof claims.user_metadata === "object" && claims.user_metadata && "name" in claims.user_metadata
+      typeof claims.user_metadata === "object" &&
+      claims.user_metadata &&
+      "name" in claims.user_metadata
         ? String(claims.user_metadata.name)
         : "Cliente";
 
@@ -244,13 +280,21 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
         .update({ status: "failed" })
         .eq("id", purchase.id)
         .eq("account_id", accountId);
-      throw new Error((raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.");
+      throw new Error(
+        (raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.",
+      );
     }
 
     const payment = readPaymentData(raw);
-    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<string, unknown>;
-    const copyPaste = pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
-    const qrCode = copyPaste ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 }) : pickText(payment.qrCode);
+    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<
+      string,
+      unknown
+    >;
+    const copyPaste =
+      pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
+    const qrCode = copyPaste
+      ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 })
+      : pickText(payment.qrCode);
 
     const { data: tx, error: txError } = await supabaseAdmin
       .from("payment_transactions")
@@ -288,7 +332,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
 
 export const upsertWhatsappSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => SettingsInput.parse(input))
+  .validator((input) => SettingsInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "whatsapp", "manage");
@@ -302,7 +346,7 @@ export const upsertWhatsappSettings = createServerFn({ method: "POST" })
 
 export const deleteQueuedWhatsappMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { id: string }) => z.object({ id: z.string().uuid() }).parse(input))
+  .validator((input) => DeleteQueuedMessageInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "whatsapp", "delete");
@@ -340,17 +384,7 @@ export const deleteQueuedWhatsappMessage = createServerFn({ method: "POST" })
 
 export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z
-      .object({
-        phone: z.string().min(10).max(20),
-        recipient_name: z.string().max(200).nullable().optional(),
-        content: z.string().min(1).max(800),
-        kind: z.enum(MSG_KINDS),
-        member_id: z.string().uuid().nullable().optional(),
-      })
-      .parse(input),
-  )
+  .validator((input) => EnqueueMessageInput.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     await requirePermission(context, "whatsapp", "create");
@@ -365,7 +399,8 @@ export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
     if (!settings?.enabled) throw new Error("WhatsApp não está ativado nas configurações gerais.");
 
     const phone = normalizeWhatsappPhone(data.phone);
-    if (phone.length < 10) throw new Error("Número de telefone inválido (mínimo 10 dígitos com DDD).");
+    if (phone.length < 10)
+      throw new Error("Número de telefone inválido (mínimo 10 dígitos com DDD).");
     if (await hasWhatsappOptedOut({ supabase, accountId, phone })) {
       throw new Error("Este número retirou o consentimento para receber WhatsApp.");
     }

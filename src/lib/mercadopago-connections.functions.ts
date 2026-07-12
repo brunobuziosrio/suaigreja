@@ -14,7 +14,11 @@ export const getMyMercadoPagoConnection = createServerFn({ method: "GET" })
       .eq("account_id", accountId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { connected: !!data, publicKey: data?.public_key ?? null, connectedAt: data?.connected_at ?? null };
+    return {
+      connected: !!data,
+      publicKey: data?.public_key ?? null,
+      connectedAt: data?.connected_at ?? null,
+    };
   });
 
 const saveSchema = z.object({
@@ -24,7 +28,7 @@ const saveSchema = z.object({
 
 export const saveMercadoPagoConnection = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => saveSchema.parse(input))
+  .validator((input) => saveSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -45,7 +49,10 @@ export const disconnectMercadoPago = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
-    const { error } = await supabase.from("mercadopago_connections").delete().eq("account_id", accountId);
+    const { error } = await supabase
+      .from("mercadopago_connections")
+      .delete()
+      .eq("account_id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

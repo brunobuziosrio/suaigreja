@@ -36,7 +36,7 @@ export const listProducts = createServerFn({ method: "GET" })
 
 export const getProductBySlug = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ slug: z.string().min(1).max(120) }).parse(i))
+  .validator((i) => z.object({ slug: z.string().min(1).max(120) }).parse(i))
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -66,7 +66,9 @@ export const listMyPurchases = createServerFn({ method: "GET" })
     const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
       .from("product_purchases")
-      .select("id, status, amount_cents, purchased_at, created_at, product:products(id, name, slug, image_url)")
+      .select(
+        "id, status, amount_cents, purchased_at, created_at, product:products(id, name, slug, image_url)",
+      )
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
@@ -75,7 +77,7 @@ export const listMyPurchases = createServerFn({ method: "GET" })
 
 export const createProductPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ productId: z.string().uuid() }).parse(i))
+  .validator((i) => z.object({ productId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { claims } = context;
     const { accountId } = await resolveAccountContext(context.userId);
@@ -93,7 +95,9 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
     const postbackUrl = `${protocol}://${host}/api/public/ativopay-webhook`;
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
-      typeof claims.user_metadata === "object" && claims.user_metadata && "name" in claims.user_metadata
+      typeof claims.user_metadata === "object" &&
+      claims.user_metadata &&
+      "name" in claims.user_metadata
         ? String((claims.user_metadata as Record<string, unknown>).name)
         : "Cliente";
 
@@ -136,9 +140,16 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
       throw new Error((raw as { message?: string } | null)?.message ?? "Falha ao gerar PIX.");
     }
 
-    const payment = ((raw as { data?: Record<string, unknown> })?.data ?? raw) as Record<string, unknown>;
-    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<string, unknown>;
-    const copyPaste = pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
+    const payment = ((raw as { data?: Record<string, unknown> })?.data ?? raw) as Record<
+      string,
+      unknown
+    >;
+    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<
+      string,
+      unknown
+    >;
+    const copyPaste =
+      pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
     const qrCode = copyPaste ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 }) : null;
 
     const { data: tx, error: txErr } = await supabaseAdmin

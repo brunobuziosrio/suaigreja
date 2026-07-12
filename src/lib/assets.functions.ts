@@ -10,7 +10,14 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
 
-export const ASSET_CATEGORIES = ["instrumento", "som", "projecao", "moveis", "informatica", "outro"] as const;
+export const ASSET_CATEGORIES = [
+  "instrumento",
+  "som",
+  "projecao",
+  "moveis",
+  "informatica",
+  "outro",
+] as const;
 export const ASSET_STATUSES = ["available", "loaned", "maintenance", "retired"] as const;
 
 export type AssetRow = {
@@ -59,9 +66,11 @@ const upsertSchema = z.object({
   notes: z.string().max(1000).optional().nullable(),
 });
 
+const assetIdSchema = z.object({ id: z.string().uuid() });
+
 export const upsertAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => upsertSchema.parse(i))
+  .validator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -90,12 +99,12 @@ export const upsertAsset = createServerFn({ method: "POST" })
       .select("id")
       .single();
     if (error) throw new Error(error.message);
-    return { id: (row as any)!.id };
+    return { id: (row as { id: string }).id };
   });
 
 export const deleteAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => assetIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -115,7 +124,7 @@ const loanSchema = z.object({
 
 export const loanAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => loanSchema.parse(i))
+  .validator((input) => loanSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -134,7 +143,7 @@ export const loanAsset = createServerFn({ method: "POST" })
 
 export const returnAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .validator((input) => assetIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
@@ -149,7 +158,11 @@ export const returnAsset = createServerFn({ method: "POST" })
 
 export const setAssetMaintenance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((i) => z.object({ id: z.string().uuid(), status: z.enum(["maintenance", "available", "retired"]) }).parse(i))
+  .validator((input) =>
+    z
+      .object({ id: z.string().uuid(), status: z.enum(["maintenance", "available", "retired"]) })
+      .parse(input),
+  )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
     const { supabase } = context;
