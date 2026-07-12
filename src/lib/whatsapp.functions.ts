@@ -12,9 +12,10 @@ import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  buildAtivoPayPostbackUrl,
-  resolveAtivoPayApiKey,
+  buildMercadoPagoPlatformNotificationUrl,
+  resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
+import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import {
   createWhatsappMessageId,
   refundWhatsappMessageCredits,
@@ -25,9 +26,6 @@ import {
   hasWhatsappOptedOut,
   normalizeWhatsappPhone,
 } from "@/lib/whatsapp-consent.server";
-import QRCode from "qrcode";
-
-const ATIVOPAY_BASE_URL = "https://api-gateway.ativopay.com";
 
 const MSG_KINDS = [
   "birthday",
@@ -91,22 +89,10 @@ type WhatsappAnalytics = {
   byDelivery: Record<string, number>;
 };
 
-async function getAtivoPayKey() {
-  const key = await resolveAtivoPayApiKey();
-  if (!key) throw new Error("A chave da AtivoPay ainda não foi configurada.");
+async function getMercadoPagoAccessToken() {
+  const key = await resolveMercadoPagoAccessToken();
+  if (!key) throw new Error("O access token do Mercado Pago ainda não foi configurado.");
   return key;
-}
-
-function readPaymentData(raw: unknown) {
-  const payload = raw as { data?: Record<string, unknown> } & Record<string, unknown>;
-  return (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<
-    string,
-    unknown
-  >;
-}
-
-function pickText(value: unknown) {
-  return typeof value === "string" && value.length > 0 ? value : null;
 }
 
 function normalizeStatus(status: unknown) {
@@ -227,7 +213,6 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
       .single();
     if (purchaseError) throw new Error(purchaseError.message);
 
-    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
       typeof claims.user_metadata === "object" &&
@@ -236,66 +221,31 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
         ? String(claims.user_metadata.name)
         : "Cliente";
 
-    const response = await fetch(`${ATIVOPAY_BASE_URL}/api/user/transactions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "AtivoB2B/1.0",
-        "x-api-key": await getAtivoPayKey(),
-      },
-      body: JSON.stringify({
-        pix: { expiresInDays: 1 },
-        items: [
-          {
-            title: `Créditos WhatsApp - ${pack.name}`,
-            quantity: 1,
-            tangible: false,
-            unitPrice: pack.price_cents,
-            externalRef: `whatsapp-credits-${pack.id}`,
-          },
-        ],
-        amount: pack.price_cents,
-        currency: "BRL",
-        customer: {
-          name: customerName,
-          email: customerEmail,
-          phone: "11999999999",
-          document: { type: "CPF", number: "00000000000" },
-        },
-        metadata: JSON.stringify({
-          accountId,
+    let payment: Awaited<ReturnType<typeof createMercadoPagoPixPayment>>;
+    try {
+      payment = await createMercadoPagoPixPayment({
+        accessToken: await getMercadoPagoAccessToken(),
+        amountCents: pack.price_cents,
+        description: `Créditos WhatsApp - ${pack.name}`,
+        payerEmail: customerEmail,
+        payerName: customerName,
+        notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),
+        externalReference: `${accountId}:whatsapp:${purchase.id}`,
+        idempotencyKey: `whatsapp:${accountId}:${purchase.id}`,
+        metadata: {
+          account_id: accountId,
           kind: "whatsapp_credits",
-          purchaseId: purchase.id,
-        }),
-        traceable: false,
-        externalRef: `${accountId}:whatsapp:${purchase.id}`,
-        postbackUrl,
-        paymentMethod: "PIX",
-      }),
-    });
-
-    const raw = await response.json().catch(() => null);
-    if (!response.ok) {
+          purchase_id: purchase.id,
+        },
+      });
+    } catch (error) {
       await supabaseAdmin
         .from("whatsapp_credit_purchases")
         .update({ status: "failed" })
         .eq("id", purchase.id)
         .eq("account_id", accountId);
-      throw new Error(
-        (raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.",
-      );
+      throw error;
     }
-
-    const payment = readPaymentData(raw);
-    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<
-      string,
-      unknown
-    >;
-    const copyPaste =
-      pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
-    const qrCode = copyPaste
-      ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 })
-      : pickText(payment.qrCode);
 
     const { data: tx, error: txError } = await supabaseAdmin
       .from("payment_transactions")
@@ -305,12 +255,12 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
         kind: "whatsapp_credits",
         amount_cents: pack.price_cents,
         status: normalizeStatus(payment.status),
-        ativopay_transaction_id: pickText(payment.id),
-        copy_paste: copyPaste,
-        qr_code: qrCode,
-        pay_url: pickText(payment.payUrl) ?? pickText(payment.webUrl) ?? pickText(payment.appUrl),
-        expires_at: pickText(pix.expirationDate) ?? null,
-        raw_response: raw as never,
+        mercadopago_payment_id: payment.id || null,
+        copy_paste: payment.copyPaste,
+        qr_code: payment.qrCode,
+        pay_url: payment.payUrl,
+        expires_at: payment.expiresAt,
+        raw_response: payment.raw as never,
       })
       .select("id, amount_cents, status, copy_paste, pay_url, qr_code, expires_at, created_at")
       .single();

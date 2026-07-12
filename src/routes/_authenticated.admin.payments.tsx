@@ -82,16 +82,12 @@ function PlatformBrandingSection() {
   });
 
   const [paymentForm, setPaymentForm] = useState({
-    ativopayApiKey: "",
-    ativopayWebhookSecret: "",
     mercadopagoAccessToken: "",
   });
 
   useEffect(() => {
     if (paymentSettings) {
       setPaymentForm({
-        ativopayApiKey: paymentSettings.ativopayApiKey,
-        ativopayWebhookSecret: paymentSettings.ativopayWebhookSecret,
         mercadopagoAccessToken: paymentSettings.mercadopagoAccessToken,
       });
     }
@@ -349,41 +345,23 @@ function PlatformBrandingSection() {
 
       <div className="rounded-md border p-4 space-y-3">
         <div>
-          <h3 className="text-sm font-semibold">Gateways de pagamento (assinatura)</h3>
+          <h3 className="text-sm font-semibold">Gateway de pagamento da plataforma</h3>
           <p className="text-xs text-muted-foreground mt-0.5">
-            AtivoPay recebe o pagamento das assinaturas das igrejas. O campo de Mercado Pago da plataforma
-            fica reservado para uma futura migração — ainda não está em uso na cobrança.
+            Mercado Pago recebe assinaturas das igrejas, produtos do marketplace,
+            inscrições pagas e compras de créditos WhatsApp.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <div className="space-y-1">
-            <Label className="text-xs">AtivoPay — API Key</Label>
-            <Input
-              type="password"
-              value={paymentForm.ativopayApiKey}
-              onChange={(e) => setPaymentForm({ ...paymentForm, ativopayApiKey: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">AtivoPay — Webhook Secret</Label>
-            <Input
-              type="password"
-              value={paymentForm.ativopayWebhookSecret}
-              onChange={(e) => setPaymentForm({ ...paymentForm, ativopayWebhookSecret: e.target.value })}
-            />
-          </div>
-          <div className="space-y-1 sm:col-span-2">
-            <Label className="text-xs">Mercado Pago da plataforma — Access Token (reservado)</Label>
-            <Input
-              type="password"
-              value={paymentForm.mercadopagoAccessToken}
-              onChange={(e) => setPaymentForm({ ...paymentForm, mercadopagoAccessToken: e.target.value })}
-            />
-          </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Mercado Pago — Access Token da empresa</Label>
+          <Input
+            type="password"
+            value={paymentForm.mercadopagoAccessToken}
+            onChange={(e) => setPaymentForm({ ...paymentForm, mercadopagoAccessToken: e.target.value })}
+          />
         </div>
         <div className="flex justify-end border-t pt-3">
           <Button onClick={() => savePaymentMut.mutate()} disabled={savePaymentMut.isPending}>
-            {savePaymentMut.isPending ? "Salvando…" : "Salvar gateways"}
+            {savePaymentMut.isPending ? "Salvando…" : "Salvar gateway"}
           </Button>
         </div>
       </div>

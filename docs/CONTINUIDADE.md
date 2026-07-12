@@ -79,7 +79,7 @@ Prioridade para finalizar e parar de abrir frentes novas:
 Estas são as pendências que impactam diretamente começar a vender/operar:
 
 1. Confirmar preços, limites e política de upgrade/downgrade dos planos.
-2. Testar compra e webhook AtivoPay para os seis produtos.
+2. Testar compra e webhook Mercado Pago para os seis produtos.
 3. Corrigir SMTP Zoho ou manter oficialmente o fluxo de convite por link enquanto
    e-mails transacionais não saem.
 4. Validar convite de equipe ponta-a-ponta em navegador.

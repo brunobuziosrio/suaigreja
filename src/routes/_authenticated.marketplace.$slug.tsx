@@ -121,7 +121,7 @@ function ProductDetail() {
                   {mut.isPending ? "Gerando PIX…" : "Comprar com PIX"}
                 </Button>
                 <p className="text-xs text-muted-foreground">
-                  Pagamento via AtivoPay. Liberação automática após confirmação.
+                  Pagamento via Mercado Pago. Liberação automática após confirmação.
                 </p>
               </>
             )}

@@ -3,23 +3,17 @@ import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  buildAtivoPayPostbackUrl,
-  resolveAtivoPayApiKey,
+  buildMercadoPagoPlatformNotificationUrl,
+  resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
-import QRCode from "qrcode";
+import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import { z } from "zod";
 
-const ATIVOPAY_BASE_URL = "https://api-gateway.ativopay.com";
-
-async function getAtivoPayKey() {
-  const key = await resolveAtivoPayApiKey();
-  if (!key) throw new Error("ATIVOPAY_API_KEY não configurada.");
+async function getMercadoPagoAccessToken() {
+  const key = await resolveMercadoPagoAccessToken();
+  if (!key) throw new Error("Access token do Mercado Pago não configurado.");
   return key;
-}
-
-function pickText(v: unknown) {
-  return typeof v === "string" && v.length > 0 ? v : null;
 }
 
 export const listProducts = createServerFn({ method: "GET" })
@@ -93,7 +87,6 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
     if (!product || !product.active) throw new Error("Produto indisponível.");
     if (product.price_cents <= 0) throw new Error("Produto sem preço definido.");
 
-    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
       typeof claims.user_metadata === "object" &&
@@ -102,56 +95,17 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
         ? String((claims.user_metadata as Record<string, unknown>).name)
         : "Cliente";
 
-    const response = await fetch(`${ATIVOPAY_BASE_URL}/api/user/transactions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "AtivoB2B/1.0",
-        "x-api-key": await getAtivoPayKey(),
-      },
-      body: JSON.stringify({
-        pix: { expiresInDays: 1 },
-        items: [
-          {
-            title: product.name,
-            quantity: 1,
-            tangible: false,
-            unitPrice: product.price_cents,
-            externalRef: `product-${product.id}`,
-          },
-        ],
-        amount: product.price_cents,
-        currency: "BRL",
-        customer: {
-          name: customerName,
-          email: customerEmail,
-          phone: "11999999999",
-          document: { type: "CPF", number: "00000000000" },
-        },
-        metadata: JSON.stringify({ accountId, kind: "product", productId: product.id }),
-        traceable: false,
-        externalRef: `${accountId}:product:${product.id}:${Date.now()}`,
-        postbackUrl,
-        paymentMethod: "PIX",
-      }),
+    const payment = await createMercadoPagoPixPayment({
+      accessToken: await getMercadoPagoAccessToken(),
+      amountCents: product.price_cents,
+      description: product.name,
+      payerEmail: customerEmail,
+      payerName: customerName,
+      notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),
+      externalReference: `${accountId}:product:${product.id}:${Date.now()}`,
+      idempotencyKey: `product:${accountId}:${product.id}:${Date.now()}`,
+      metadata: { account_id: accountId, kind: "product", product_id: product.id },
     });
-
-    const raw = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error((raw as { message?: string } | null)?.message ?? "Falha ao gerar PIX.");
-    }
-
-    const payment = ((raw as { data?: Record<string, unknown> })?.data ?? raw) as Record<
-      string,
-      unknown
-    >;
-    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<
-      string,
-      unknown
-    >;
-    const copyPaste =
-      pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
-    const qrCode = copyPaste ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 }) : null;
 
     const { data: tx, error: txErr } = await supabaseAdmin
       .from("payment_transactions")
@@ -161,13 +115,13 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
         product_id: product.id,
         plan: null,
         amount_cents: product.price_cents,
-        status: String(payment.status ?? "pending").toLowerCase(),
-        ativopay_transaction_id: pickText(payment.id),
-        copy_paste: copyPaste,
-        qr_code: qrCode,
-        pay_url: pickText(payment.payUrl) ?? pickText(payment.webUrl) ?? pickText(payment.appUrl),
-        expires_at: pickText(pix.expirationDate) ?? null,
-        raw_response: raw as never,
+        status: payment.status,
+        mercadopago_payment_id: payment.id || null,
+        copy_paste: payment.copyPaste,
+        qr_code: payment.qrCode,
+        pay_url: payment.payUrl,
+        expires_at: payment.expiresAt,
+        raw_response: payment.raw as never,
       })
       .select("id, amount_cents, status, copy_paste, pay_url, qr_code, expires_at")
       .single();

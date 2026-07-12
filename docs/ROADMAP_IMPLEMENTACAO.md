@@ -78,7 +78,7 @@ Arquivos principais:
 
 - `src/lib/billing-plans.ts`
 - `src/lib/billing.functions.ts`
-- `src/routes/api.public.ativopay-webhook.ts`
+- `src/routes/api.public.Mercado Pago-webhook.ts`
 - `supabase/migrations/20260621120000_subscription_plan_tiers.sql`
 
 Decisões:
@@ -337,7 +337,7 @@ Arquivos principais:
 - `src/lib/admin.functions.ts`
 - `src/lib/plan-access.ts`
 - `src/lib/billing.functions.ts`
-- `src/routes/api.public.ativopay-webhook.ts`
+- `src/routes/api.public.Mercado Pago-webhook.ts`
 - `supabase/migrations/20260627130000_whatsapp_admin_credit_ops.sql`
 - `supabase/migrations/20260627131000_billing_access_integrity.sql`
 
@@ -355,11 +355,11 @@ Arquivos principais:
   de forma idempotente e creditar saldo no ledger.
 - A tela WhatsApp da igreja ganhou aba Créditos com pacotes, geração de PIX,
   QR Code/copia-e-cola e histórico de compras.
-- O webhook AtivoPay agora reconhece `kind: whatsapp_credits` e credita
+- O webhook Mercado Pago agora reconhece `kind: whatsapp_credits` e credita
   automaticamente a compra paga.
 - Corrigida a constraint de `payment_transactions.plan` para aceitar os seis planos
   comerciais e mantida compatibilidade com `monthly`/`annual`.
-- Adicionada unicidade parcial em `ativopay_transaction_id` para reduzir risco de
+- Adicionada unicidade parcial em `Mercado Pago_transaction_id` para reduzir risco de
   processamento duplicado de webhook.
 - Acesso por plano agora considera status e vencimento: trial vencido, assinatura
   expirada, cancelada ou em atraso não libera módulos pagos.
@@ -587,7 +587,7 @@ Arquivos principais:
 ### P0 - concluir antes de produção
 
 1. Aplicar e validar a migration `plan_tier` no Supabase.
-2. Testar compra e webhook AtivoPay para os seis IDs de produto.
+2. Testar compra e webhook Mercado Pago para os seis IDs de produto.
 3. Confirmar preços, limites e política de upgrade/downgrade.
 4. Testar responsividade das Configurações em 375 px, tablet e desktop.
 5. Aplicar `requirePlanTier` nos endpoints Pro/Premium para impedir chamadas diretas. Concluído em 2026-06-26.

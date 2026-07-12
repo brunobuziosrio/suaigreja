@@ -77,7 +77,6 @@ import { Route as ManifestSiteIdJsonRouteImport } from './routes/manifest.$siteI
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api.public.whatsapp-webhook'
 import { Route as ApiPublicWhatsappOptOutRouteImport } from './routes/api.public.whatsapp-opt-out'
 import { Route as ApiPublicMercadopagoWebhookRouteImport } from './routes/api.public.mercadopago-webhook'
-import { Route as ApiPublicAtivopayWebhookRouteImport } from './routes/api.public.ativopay-webhook'
 import { Route as AuthenticatedMarketplaceSlugRouteImport } from './routes/_authenticated.marketplace.$slug'
 import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated.admin.whatsapp'
 import { Route as AuthenticatedAdminTestDataRouteImport } from './routes/_authenticated.admin.test-data'
@@ -441,12 +440,6 @@ const ApiPublicMercadopagoWebhookRoute =
     path: '/api/public/mercadopago-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicAtivopayWebhookRoute =
-  ApiPublicAtivopayWebhookRouteImport.update({
-    id: '/api/public/ativopay-webhook',
-    path: '/api/public/ativopay-webhook',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const AuthenticatedMarketplaceSlugRoute =
   AuthenticatedMarketplaceSlugRouteImport.update({
     id: '/$slug',
@@ -588,7 +581,6 @@ export interface FileRoutesByFullPath {
   '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
-  '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -670,7 +662,6 @@ export interface FileRoutesByTo {
   '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
-  '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -754,7 +745,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
   '/_authenticated/marketplace/$slug': typeof AuthenticatedMarketplaceSlugRoute
-  '/api/public/ativopay-webhook': typeof ApiPublicAtivopayWebhookRoute
   '/api/public/mercadopago-webhook': typeof ApiPublicMercadopagoWebhookRoute
   '/api/public/whatsapp-opt-out': typeof ApiPublicWhatsappOptOutRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -838,7 +828,6 @@ export interface FileRouteTypes {
     | '/admin/test-data'
     | '/admin/whatsapp'
     | '/marketplace/$slug'
-    | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
     | '/api/public/whatsapp-opt-out'
     | '/api/public/whatsapp-webhook'
@@ -920,7 +909,6 @@ export interface FileRouteTypes {
     | '/admin/test-data'
     | '/admin/whatsapp'
     | '/marketplace/$slug'
-    | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
     | '/api/public/whatsapp-opt-out'
     | '/api/public/whatsapp-webhook'
@@ -1003,7 +991,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/test-data'
     | '/_authenticated/admin/whatsapp'
     | '/_authenticated/marketplace/$slug'
-    | '/api/public/ativopay-webhook'
     | '/api/public/mercadopago-webhook'
     | '/api/public/whatsapp-opt-out'
     | '/api/public/whatsapp-webhook'
@@ -1038,7 +1025,6 @@ export interface RootRouteChildren {
   ProtocoloIdRoute: typeof ProtocoloIdRoute
   ReciboDonationIdRoute: typeof ReciboDonationIdRoute
   VSiteIdRoute: typeof VSiteIdRoute
-  ApiPublicAtivopayWebhookRoute: typeof ApiPublicAtivopayWebhookRoute
   ApiPublicMercadopagoWebhookRoute: typeof ApiPublicMercadopagoWebhookRoute
   ApiPublicWhatsappOptOutRoute: typeof ApiPublicWhatsappOptOutRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -1528,13 +1514,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMercadopagoWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/ativopay-webhook': {
-      id: '/api/public/ativopay-webhook'
-      path: '/api/public/ativopay-webhook'
-      fullPath: '/api/public/ativopay-webhook'
-      preLoaderRoute: typeof ApiPublicAtivopayWebhookRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/marketplace/$slug': {
       id: '/_authenticated/marketplace/$slug'
       path: '/$slug'
@@ -1775,7 +1754,6 @@ const rootRouteChildren: RootRouteChildren = {
   ProtocoloIdRoute: ProtocoloIdRoute,
   ReciboDonationIdRoute: ReciboDonationIdRoute,
   VSiteIdRoute: VSiteIdRoute,
-  ApiPublicAtivopayWebhookRoute: ApiPublicAtivopayWebhookRoute,
   ApiPublicMercadopagoWebhookRoute: ApiPublicMercadopagoWebhookRoute,
   ApiPublicWhatsappOptOutRoute: ApiPublicWhatsappOptOutRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,

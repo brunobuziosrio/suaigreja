@@ -3,15 +3,13 @@ import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
-  buildAtivoPayPostbackUrl,
-  resolveAtivoPayApiKey,
+  buildMercadoPagoPlatformNotificationUrl,
+  resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
-import QRCode from "qrcode";
+import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import { z } from "zod";
-
-const ATIVOPAY_BASE_URL = "https://api-gateway.ativopay.com";
 
 function slugify(input: string) {
   return input
@@ -334,9 +332,9 @@ export const registerForEvent = createServerFn({ method: "POST" })
       return { registrationId: reg.id, status: "confirmed" as const, payment: null };
     }
 
-    // Paid event → generate Pix
-    const apiKey = await resolveAtivoPayApiKey();
-    if (!apiKey) {
+    // Paid event -> generate Pix
+    const accessToken = await resolveMercadoPagoAccessToken();
+    if (!accessToken) {
       return {
         registrationId: reg.id,
         status: "pending" as const,
@@ -345,65 +343,22 @@ export const registerForEvent = createServerFn({ method: "POST" })
       };
     }
 
-    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
-
-    const response = await fetch(`${ATIVOPAY_BASE_URL}/api/user/transactions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "AtivoB2B/1.0",
-        "x-api-key": apiKey,
+    const payment = await createMercadoPagoPixPayment({
+      accessToken,
+      amountCents: page.price_cents,
+      description: `Inscrição: ${page.title}`,
+      payerEmail: data.email,
+      payerName: data.name,
+      notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),
+      externalReference: `event:${reg.id}:${Date.now()}`,
+      idempotencyKey: `event:${reg.id}:${Date.now()}`,
+      metadata: {
+        account_id: page.account_id,
+        kind: "event_registration",
+        registration_id: reg.id,
+        event_page_id: page.id,
       },
-      body: JSON.stringify({
-        pix: { expiresInDays: 1 },
-        items: [
-          {
-            title: `Inscrição: ${page.title}`,
-            quantity: 1,
-            tangible: false,
-            unitPrice: page.price_cents,
-            externalRef: `evt-${page.id}`,
-          },
-        ],
-        amount: page.price_cents,
-        currency: "BRL",
-        customer: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone?.replace(/\D/g, "") || "11999999999",
-          document: { type: "CPF", number: "00000000000" },
-        },
-        metadata: JSON.stringify({
-          kind: "event_registration",
-          accountId: page.account_id,
-          registrationId: reg.id,
-          eventPageId: page.id,
-        }),
-        traceable: false,
-        externalRef: `evt:${reg.id}:${Date.now()}`,
-        postbackUrl,
-        paymentMethod: "PIX",
-      }),
     });
-
-    const raw = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error(
-        (raw as { message?: string } | null)?.message ?? "Não foi possível gerar o PIX.",
-      );
-    }
-    const payment =
-      (raw as { data?: Record<string, unknown> } & Record<string, unknown>).data ?? raw;
-    const pay = payment as Record<string, unknown>;
-    const pix = (pay.pix && typeof pay.pix === "object" ? pay.pix : {}) as Record<string, unknown>;
-    const copyPaste =
-      (typeof pix.qrcode === "string" && pix.qrcode) ||
-      (typeof pay.qrCode === "string" && pay.qrCode) ||
-      (typeof pay.copyPaste === "string" && pay.copyPaste) ||
-      null;
-    const qrCodeImage = copyPaste
-      ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 })
-      : null;
 
     const { data: tx } = await supabaseAdmin
       .from("payment_transactions")
@@ -411,13 +366,13 @@ export const registerForEvent = createServerFn({ method: "POST" })
         account_id: page.account_id,
         kind: "event_registration",
         amount_cents: page.price_cents,
-        status: String(pay.status ?? "pending").toLowerCase(),
-        ativopay_transaction_id: typeof pay.id === "string" ? pay.id : null,
-        copy_paste: copyPaste,
-        qr_code: qrCodeImage,
-        pay_url: (typeof pay.payUrl === "string" && pay.payUrl) || null,
-        expires_at: (typeof pix.expirationDate === "string" && pix.expirationDate) || null,
-        raw_response: raw as never,
+        status: payment.status,
+        mercadopago_payment_id: payment.id || null,
+        copy_paste: payment.copyPaste,
+        qr_code: payment.qrCode,
+        pay_url: payment.payUrl,
+        expires_at: payment.expiresAt,
+        raw_response: payment.raw as never,
       })
       .select("id")
       .single();
@@ -433,10 +388,10 @@ export const registerForEvent = createServerFn({ method: "POST" })
       registrationId: reg.id,
       status: "pending" as const,
       payment: {
-        copyPaste,
-        qrCodeImage,
+        copyPaste: payment.copyPaste,
+        qrCodeImage: payment.qrCode,
         amountCents: page.price_cents,
-        payUrl: (typeof pay.payUrl === "string" && pay.payUrl) || null,
+        payUrl: payment.payUrl,
       },
     };
   });

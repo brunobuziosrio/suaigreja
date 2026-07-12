@@ -155,15 +155,15 @@ function BillingPage() {
             </div>
           )}
           <div className="text-xs text-muted-foreground">
-            Webhook: <code>/api/public/ativopay-webhook</code>
+            Webhook: <code>/api/public/mercadopago-webhook</code>
           </div>
         </Card>
 
-        {!setup?.hasAtivoPayKey && (
+        {!setup?.hasMercadoPagoAccessToken && (
           <Card className="p-5 border-destructive/40">
-            <h2 className="font-semibold">Falta só a chave da AtivoPay</h2>
+            <h2 className="font-semibold">Falta só o Mercado Pago da plataforma</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              No painel da AtivoPay, entre em <b>Suas Chaves → Chave de API</b>. Depois me envie a chave ou peça para salvar como <b>ATIVOPAY_API_KEY</b>.
+              Salve o access token da conta Mercado Pago da empresa em Configurações da Plataforma.
             </p>
           </Card>
         )}
@@ -197,7 +197,7 @@ function BillingPage() {
                 <Button
                   className="w-full"
                   variant={plan.tier === "pro" ? "default" : "outline"}
-                  disabled={!setup?.hasAtivoPayKey || mut.isPending}
+                  disabled={!setup?.hasMercadoPagoAccessToken || mut.isPending}
                   onClick={() => mut.mutate(planId)}
                 >
                   {mut.isPending ? "Gerando…" : "Gerar PIX"}
@@ -226,7 +226,7 @@ function BillingPage() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Depois do pagamento, a AtivoPay envia o webhook e a assinatura fica ativa automaticamente.
+                Depois do pagamento, o Mercado Pago envia o webhook e a assinatura fica ativa automaticamente.
               </p>
             </div>
           </Card>

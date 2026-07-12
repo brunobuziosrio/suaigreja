@@ -90,15 +90,15 @@ privados** em bucket sem URL pública (`secretaria_private_attachments`).
 ### Planos, cobrança e acesso
 Seis produtos (Essencial/Pro/Premium × mensal/anual), `plan_tier`, bloqueio por
 plano no menu, na rota e no servidor (`requirePlanTier`/`requireModuleAccess`),
-webhook AtivoPay, integração MercadoPago (`mercadopago-connections.functions.ts`,
-`api.public.mercadopago-webhook.ts`).
+webhook Mercado Pago, integração Mercado Pago (`Mercado Pago-connections.functions.ts`,
+`api.public.Mercado Pago-webhook.ts`).
 
 ### Admin da plataforma
 Contas (troca de plano/status/nome), Produtos, Atualizações/feedback, Pagamentos,
 WhatsApp e **Domínios**, além de gerador de dados de teste.
 
 ### Integrações presentes
-Supabase (auth/db/storage/realtime), Chatwoot (suporte), MercadoPago, AtivoPay,
+Supabase (auth/db/storage/realtime), Chatwoot (suporte), Mercado Pago, Mercado Pago,
 Instagram (`instagram.functions.ts`, callback), WhatsApp (Meta/UAZAPI).
 
 ---
@@ -127,7 +127,7 @@ Instagram (`instagram.functions.ts`, callback), WhatsApp (Meta/UAZAPI).
 ---
 
 ## 3. Pendências P0 do roadmap (antes de produção plena)
-1. Validar migration `plan_tier` e compra/webhook AtivoPay para os 6 produtos.
+1. Validar migration `plan_tier` e compra/webhook Mercado Pago para os 6 produtos.
 2. Confirmar preços, limites e política de upgrade/downgrade.
 3. Testar responsividade das Configurações em 375px/tablet/desktop.
 (item 5 — `requirePlanTier` nos endpoints Pro/Premium — já concluído.)
@@ -1581,11 +1581,11 @@ Sexto lote concluído:
 
 Sétimo lote concluído:
 
-- `src/lib/mercadopago-connections.functions.ts` formatado e com lint local limpo.
+- `src/lib/Mercado Pago-connections.functions.ts` formatado e com lint local limpo.
 - `src/lib/social-assistance.functions.ts` formatado; removido `any` explícito no
   retorno do insert usando cast estruturado `{ id: string }`.
 - Validação executada:
-  - `npx eslint src/lib/mercadopago-connections.functions.ts src/lib/social-assistance.functions.ts --max-warnings=0` aprovado;
+  - `npx eslint src/lib/Mercado Pago-connections.functions.ts src/lib/social-assistance.functions.ts --max-warnings=0` aprovado;
   - `npm run build` aprovado.
 
 Oitavo lote concluído:
@@ -1804,13 +1804,13 @@ Vigésimo quinto lote concluído:
   `.validator()` em `saveVisitorSettings`.
 - `src/lib/admin-payment-settings.functions.ts` migrou de `.inputValidator()`
   para `.validator()`.
-- `src/lib/mercadopago-connections.functions.ts` migrou de `.inputValidator()`
+- `src/lib/Mercado Pago-connections.functions.ts` migrou de `.inputValidator()`
   para `.validator()`.
 - `src/lib/financial-entries.functions.ts` migrou de `.inputValidator()` para
   `.validator()` nas três funções restantes.
 - Validação executada:
   - `npx eslint src/lib/documents.functions.ts src/lib/visitors.functions.ts --max-warnings=0` aprovado;
-  - `npx eslint src/lib/admin-payment-settings.functions.ts src/lib/mercadopago-connections.functions.ts --max-warnings=0` aprovado;
+  - `npx eslint src/lib/admin-payment-settings.functions.ts src/lib/Mercado Pago-connections.functions.ts --max-warnings=0` aprovado;
   - `npx eslint src/lib/financial-entries.functions.ts --max-warnings=0` aprovado;
   - `npm run build` aprovado.
 

@@ -2435,12 +2435,12 @@ export type Database = {
         Row: {
           account_id: string;
           amount_cents: number;
-          ativopay_transaction_id: string | null;
           copy_paste: string | null;
           created_at: string;
           expires_at: string | null;
           id: string;
           kind: string;
+          mercadopago_payment_id: string | null;
           paid_at: string | null;
           pay_url: string | null;
           plan: string | null;
@@ -2454,12 +2454,12 @@ export type Database = {
         Insert: {
           account_id: string;
           amount_cents: number;
-          ativopay_transaction_id?: string | null;
           copy_paste?: string | null;
           created_at?: string;
           expires_at?: string | null;
           id?: string;
           kind?: string;
+          mercadopago_payment_id?: string | null;
           paid_at?: string | null;
           pay_url?: string | null;
           plan?: string | null;
@@ -2473,12 +2473,12 @@ export type Database = {
         Update: {
           account_id?: string;
           amount_cents?: number;
-          ativopay_transaction_id?: string | null;
           copy_paste?: string | null;
           created_at?: string;
           expires_at?: string | null;
           id?: string;
           kind?: string;
+          mercadopago_payment_id?: string | null;
           paid_at?: string | null;
           pay_url?: string | null;
           plan?: string | null;
@@ -2536,22 +2536,16 @@ export type Database = {
       };
       platform_payment_settings: {
         Row: {
-          ativopay_api_key: string | null;
-          ativopay_webhook_secret: string | null;
           id: boolean;
           mercadopago_access_token: string | null;
           updated_at: string;
         };
         Insert: {
-          ativopay_api_key?: string | null;
-          ativopay_webhook_secret?: string | null;
           id?: boolean;
           mercadopago_access_token?: string | null;
           updated_at?: string;
         };
         Update: {
-          ativopay_api_key?: string | null;
-          ativopay_webhook_secret?: string | null;
           id?: boolean;
           mercadopago_access_token?: string | null;
           updated_at?: string;

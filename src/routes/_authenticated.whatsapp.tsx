@@ -778,7 +778,7 @@ function CreditPackages({
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Após o pagamento, o webhook da AtivoPay credita automaticamente o saldo no ledger
+                Após o pagamento, o webhook do Mercado Pago credita automaticamente o saldo no ledger
                 da igreja.
               </p>
             </div>

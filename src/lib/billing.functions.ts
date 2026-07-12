@@ -4,43 +4,21 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
 import {
-  buildAtivoPayPostbackUrl,
-  resolveAtivoPayApiKey,
+  buildMercadoPagoPlatformNotificationUrl,
+  resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
-import QRCode from "qrcode";
+import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import { z } from "zod";
 
-const ATIVOPAY_BASE_URL = "https://api-gateway.ativopay.com";
-
-async function getAtivoPayKey() {
-  const key = await resolveAtivoPayApiKey();
+async function getMercadoPagoAccessToken() {
+  const key = await resolveMercadoPagoAccessToken();
   if (!key) {
     throw new Error(
-      "A chave da AtivoPay ainda não foi configurada. Configure em Configurações > Plataforma.",
+      "O access token do Mercado Pago ainda não foi configurado. Configure em Configurações > Plataforma.",
     );
   }
   return key;
-}
-
-function readPaymentData(raw: unknown) {
-  const payload = raw as { data?: Record<string, unknown> } & Record<string, unknown>;
-  return (payload.data && typeof payload.data === "object" ? payload.data : payload) as Record<
-    string,
-    unknown
-  >;
-}
-
-function pickText(value: unknown) {
-  return typeof value === "string" && value.length > 0 ? value : null;
-}
-
-function normalizeStatus(status: unknown) {
-  return String(status ?? "pending").toLowerCase();
-}
-
-function isPaidStatus(status: string) {
-  return ["paid", "authorized"].includes(status.toLowerCase());
 }
 
 async function activateSubscription(
@@ -102,7 +80,7 @@ export const getBillingSetup = createServerFn({ method: "GET" })
       .eq("id", accountId)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { account: data, hasAtivoPayKey: !!(await resolveAtivoPayApiKey()) };
+    return { account: data, hasMercadoPagoAccessToken: !!(await resolveMercadoPagoAccessToken()) };
   });
 
 export const createPixPayment = createServerFn({ method: "POST" })
@@ -146,7 +124,6 @@ export const createPixPayment = createServerFn({ method: "POST" })
       return existingPending;
     }
 
-    const postbackUrl = await buildAtivoPayPostbackUrl(getRequestHost());
     const customerEmail = typeof claims.email === "string" ? claims.email : "cliente@email.com";
     const customerName =
       typeof claims.user_metadata === "object" &&
@@ -155,58 +132,17 @@ export const createPixPayment = createServerFn({ method: "POST" })
         ? String(claims.user_metadata.name)
         : "Cliente";
 
-    const response = await fetch(`${ATIVOPAY_BASE_URL}/api/user/transactions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "User-Agent": "AtivoB2B/1.0",
-        "x-api-key": await getAtivoPayKey(),
-      },
-      body: JSON.stringify({
-        pix: { expiresInDays: 1 },
-        items: [
-          {
-            title: `Agenda Religiosa - Plano ${planInfo.label}`,
-            quantity: 1,
-            tangible: false,
-            unitPrice: planInfo.amountCents,
-            externalRef: `agenda-${plan}`,
-          },
-        ],
-        amount: planInfo.amountCents,
-        currency: "BRL",
-        customer: {
-          name: customerName,
-          email: customerEmail,
-          phone: "11999999999",
-          document: { type: "CPF", number: "00000000000" },
-        },
-        metadata: JSON.stringify({ accountId, plan }),
-        traceable: false,
-        externalRef: `${accountId}:${plan}:${Date.now()}`,
-        postbackUrl,
-        paymentMethod: "PIX",
-      }),
+    const payment = await createMercadoPagoPixPayment({
+      accessToken: await getMercadoPagoAccessToken(),
+      amountCents: planInfo.amountCents,
+      description: `Saas Igreja - Plano ${planInfo.label}`,
+      payerEmail: customerEmail,
+      payerName: customerName,
+      notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),
+      externalReference: `${accountId}:${plan}:${Date.now()}`,
+      idempotencyKey: `subscription:${accountId}:${plan}:${Date.now()}`,
+      metadata: { account_id: accountId, kind: "subscription", plan },
     });
-
-    const raw = await response.json().catch(() => null);
-    if (!response.ok) {
-      throw new Error(
-        (raw as { message?: string } | null)?.message ??
-          "Não foi possível gerar o PIX na AtivoPay.",
-      );
-    }
-
-    const payment = readPaymentData(raw);
-    const pix = (payment.pix && typeof payment.pix === "object" ? payment.pix : {}) as Record<
-      string,
-      unknown
-    >;
-    const copyPaste =
-      pickText(pix.qrcode) ?? pickText(payment.qrCode) ?? pickText(payment.copyPaste);
-    const qrCode = copyPaste
-      ? await QRCode.toDataURL(copyPaste, { margin: 1, width: 280 })
-      : pickText(payment.qrCode);
 
     const { data: inserted, error } = await supabaseAdmin
       .from("payment_transactions")
@@ -214,13 +150,13 @@ export const createPixPayment = createServerFn({ method: "POST" })
         account_id: accountId,
         plan,
         amount_cents: planInfo.amountCents,
-        status: normalizeStatus(payment.status),
-        ativopay_transaction_id: pickText(payment.id),
-        copy_paste: copyPaste,
-        qr_code: qrCode,
-        pay_url: pickText(payment.payUrl) ?? pickText(payment.webUrl) ?? pickText(payment.appUrl),
-        expires_at: pickText(pix.expirationDate) ?? null,
-        raw_response: raw as never,
+        status: payment.status,
+        mercadopago_payment_id: payment.id || null,
+        copy_paste: payment.copyPaste,
+        qr_code: payment.qrCode,
+        pay_url: payment.payUrl,
+        expires_at: payment.expiresAt,
+        raw_response: payment.raw as never,
       })
       .select(
         "id, plan, amount_cents, status, copy_paste, pay_url, qr_code, expires_at, paid_at, created_at",
