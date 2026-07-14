@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getPublicAgenda } from "@/lib/public-agenda.functions";
 import { PublicAgendaView } from "@/components/public-agenda-view";
 import { getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { BackToSite } from "@/components/back-to-site";
 import { PublicHero } from "@/components/public-hero";
 import { CalendarDays } from "lucide-react";
@@ -109,7 +109,7 @@ function PublicAgenda() {
     </>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{content}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{content}</HubChrome>;
 
   return (
     <div className="min-h-screen bg-[#faf6ee]">

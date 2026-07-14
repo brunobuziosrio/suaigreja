@@ -93,6 +93,26 @@ const VOLUNTEER_TYPES = [
   "limpeza",
   "transmissão",
 ];
+type ScheduleForm = typeof emptyScheduleForm;
+type ShiftForm = typeof emptyShiftForm;
+
+const emptyScheduleForm = {
+  id: "",
+  name: "",
+  description: "",
+  volunteer_type: "",
+  is_active: true,
+  notes: "",
+};
+
+const emptyShiftForm = {
+  id: "",
+  member_id: "",
+  shift_date: "",
+  shift_start_time: "",
+  shift_end_time: "",
+  notes: "",
+};
 
 function escapeHtml(value: unknown) {
   return String(value ?? "").replace(/[&<>"']/g, (c) =>
@@ -182,22 +202,8 @@ function VolunteerSchedulesPage() {
     staleTime: 3600000,
     gcTime: Infinity,
   });
-  const [scheduleForm, setScheduleForm] = useState({
-    id: "",
-    name: "",
-    description: "",
-    volunteer_type: "",
-    is_active: true,
-    notes: "",
-  });
-  const [shiftForm, setShiftForm] = useState({
-    id: "",
-    member_id: "",
-    shift_date: "",
-    shift_start_time: "",
-    shift_end_time: "",
-    notes: "",
-  });
+  const [scheduleForm, setScheduleForm] = useState<ScheduleForm>(emptyScheduleForm);
+  const [shiftForm, setShiftForm] = useState<ShiftForm>(emptyShiftForm);
 
   const activeScheduleId = selectedScheduleId ?? schedules[0]?.id ?? null;
 
@@ -210,13 +216,13 @@ function VolunteerSchedulesPage() {
   });
 
   const schedulesMut = useMutation({
-    mutationFn: (form: typeof scheduleForm) =>
-      saveSchedule({ data: form as any }),
+    mutationFn: (form: ScheduleForm) =>
+      saveSchedule({ data: form }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volunteer-schedules"] });
       toast.success("Escala salva");
       setOpenScheduleDialog(false);
-      setScheduleForm({ id: "", name: "", description: "", volunteer_type: "", is_active: true, notes: "" });
+      setScheduleForm(emptyScheduleForm);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -231,18 +237,18 @@ function VolunteerSchedulesPage() {
   });
 
   const shiftsMut = useMutation({
-    mutationFn: (form: typeof shiftForm) =>
+    mutationFn: (form: ShiftForm) =>
       saveShift({
         data: {
           ...form,
           schedule_id: selectedScheduleId || "",
-        } as any,
+        },
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["volunteer-shifts", selectedScheduleId] });
       toast.success("Turno salvo");
       setOpenShiftDialog(false);
-      setShiftForm({ id: "", member_id: "", shift_date: "", shift_start_time: "", shift_end_time: "", notes: "" });
+      setShiftForm(emptyShiftForm);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -326,7 +332,7 @@ function VolunteerSchedulesPage() {
           </Button>
           <Dialog open={openScheduleDialog} onOpenChange={setOpenScheduleDialog}>
             <DialogTrigger asChild>
-              <Button onClick={() => setScheduleForm({ id: "", name: "", description: "", volunteer_type: "", is_active: true, notes: "" })}>
+              <Button onClick={() => setScheduleForm(emptyScheduleForm)}>
                 <Plus className="mr-2 h-4 w-4" /> Nova Escala
               </Button>
             </DialogTrigger>
@@ -440,12 +446,12 @@ function VolunteerSchedulesPage() {
                         <h3 className="text-lg font-semibold">Turnos</h3>
                         <Dialog open={openShiftDialog && selectedScheduleId === schedule.id} onOpenChange={(open) => {
                           setOpenShiftDialog(open);
-                          if (!open) setShiftForm({ id: "", member_id: "", shift_date: "", shift_start_time: "", shift_end_time: "", notes: "" });
+                          if (!open) setShiftForm(emptyShiftForm);
                         }}>
                           <DialogTrigger asChild>
                             <Button size="sm" onClick={() => {
                               setSelectedScheduleId(schedule.id);
-                              setShiftForm({ id: "", member_id: "", shift_date: "", shift_start_time: "", shift_end_time: "", notes: "" });
+                              setShiftForm(emptyShiftForm);
                             }}>
                               <Plus className="mr-2 h-4 w-4" /> Adicionar Turno
                             </Button>

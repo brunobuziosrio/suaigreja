@@ -15,6 +15,11 @@ export const Route = createFileRoute("/_authenticated/familias")({
   component: FamiliesPage,
 });
 
+type MemberOption = {
+  id: string;
+  full_name: string;
+};
+
 function initials(name: string) {
   return name.trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
 }
@@ -56,7 +61,7 @@ function FamiliesPage() {
   );
 
   const headOptions = useMemo(
-    () => members.filter((m: any) => m.id !== memberId),
+    () => (members as MemberOption[]).filter((m) => m.id !== memberId),
     [members, memberId],
   );
 
@@ -80,7 +85,7 @@ function FamiliesPage() {
               <Select value={memberId} onValueChange={setMemberId}>
                 <SelectTrigger><SelectValue placeholder="Selecione o membro…" /></SelectTrigger>
                 <SelectContent>
-                  {members.map((m: any) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                  {(members as MemberOption[]).map((m) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -89,7 +94,7 @@ function FamiliesPage() {
               <Select value={headId} onValueChange={setHeadId} disabled={!memberId}>
                 <SelectTrigger><SelectValue placeholder="Selecione o chefe da família…" /></SelectTrigger>
                 <SelectContent>
-                  {headOptions.map((m: any) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                  {headOptions.map((m) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

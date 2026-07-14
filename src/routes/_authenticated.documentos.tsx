@@ -23,6 +23,15 @@ export const Route = createFileRoute("/_authenticated/documentos")({
   component: DocsPage,
 });
 
+type MemberDocument = {
+  id: string;
+  title: string;
+  body: string;
+  issued_at: string;
+  certificate_number: string | null;
+  members?: { full_name: string } | null;
+};
+
 function escapeHtml(value: unknown) {
   return String(value ?? "")
     .replace(/&/g, "&amp;")
@@ -85,7 +94,7 @@ function DocsPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  async function printDoc(d: any) {
+  async function printDoc(d: MemberDocument) {
     const w = window.open("", "_blank", "width=800,height=900");
     if (!w) return;
     const safeTitle = escapeHtml(d.title);
@@ -208,7 +217,7 @@ function DocsPage() {
           </Card>
         ) : (
           <div className="grid gap-3">
-            {docs.map((d: any) => (
+            {(docs as MemberDocument[]).map((d) => (
               <Card key={d.id} className="p-4 flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">

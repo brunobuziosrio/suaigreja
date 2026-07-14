@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicPrayers, submitPrayerRequest, prayForRequest } from "@/lib/prayer.functions";
 import { getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { BackToSite } from "@/components/back-to-site";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -169,6 +169,6 @@ function PublicPrayers() {
     </>
   );
 
-  if (data.chrome) return <HubChrome account={data.chrome as any} contained={false}>{body}</HubChrome>;
+  if (data.chrome) return <HubChrome account={data.chrome as HubChromeAccount} contained={false}>{body}</HubChrome>;
   return <div className="min-h-screen bg-background">{body}</div>;
 }

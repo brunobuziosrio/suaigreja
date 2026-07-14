@@ -35,12 +35,20 @@ export const Route = createFileRoute("/_authenticated/patrimonio")({
 type Form = {
   id?: string;
   name: string;
-  category: (typeof ASSET_CATEGORIES)[number];
+  category: AssetCategory;
   serial_or_invoice: string;
   location_id: string;
   acquired_at: string;
   value_cents: string;
   notes: string;
+};
+
+type AssetCategory = (typeof ASSET_CATEGORIES)[number];
+type AssetStatusFilter = "todos" | AssetRow["status"];
+
+type LocationOption = {
+  id: string;
+  name: string;
 };
 
 const empty: Form = { name: "", category: "outro", serial_or_invoice: "", location_id: "", acquired_at: "", value_cents: "", notes: "" };
@@ -83,7 +91,7 @@ function AssetsPage() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(empty);
-  const [statusFilter, setStatusFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState<AssetStatusFilter>("todos");
   const [loanTarget, setLoanTarget] = useState<AssetRow | null>(null);
   const [loanMemberId, setLoanMemberId] = useState("");
 
@@ -161,7 +169,7 @@ function AssetsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Categoria</Label>
-                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as any })}>
+                    <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v as AssetCategory })}>
                       <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {ASSET_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>)}
@@ -174,7 +182,7 @@ function AssetsPage() {
                       <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_">—</SelectItem>
-                        {locations.map((l: any) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                        {(locations as LocationOption[]).map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

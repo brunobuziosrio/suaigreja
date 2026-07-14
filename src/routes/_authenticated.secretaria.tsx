@@ -162,6 +162,8 @@ const emptyForm = {
   due_date: "",
   internal_notes: "",
 };
+type SecretariaForm = typeof emptyForm;
+type SecretariaStatus = keyof typeof STATUS_LABELS;
 
 function SecretariaPage() {
   const qc = useQueryClient();
@@ -177,9 +179,9 @@ function SecretariaPage() {
   const changeStatus = useServerFn(updateSecretariaStatus);
   const removeRequest = useServerFn(deleteSecretariaRequest);
 
-  const [statusFilter, setStatusFilter] = useState("todos");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [openDialog, setOpenDialog] = useState(false);
-  const [form, setForm] = useState(emptyForm);
+  const [form, setForm] = useState<SecretariaForm>(emptyForm);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const {
@@ -239,7 +241,7 @@ function SecretariaPage() {
   };
 
   const saveMut = useMutation({
-    mutationFn: (data: typeof form) => saveRequest({ data: data as any }),
+    mutationFn: (data: SecretariaForm) => saveRequest({ data }),
     onSuccess: () => {
       invalidate();
       toast.success("Solicitação salva");
@@ -250,8 +252,8 @@ function SecretariaPage() {
   });
 
   const statusMut = useMutation({
-    mutationFn: (vars: { id: string; status: string }) =>
-      changeStatus({ data: vars as any }),
+    mutationFn: (vars: { id: string; status: SecretariaStatus }) =>
+      changeStatus({ data: vars }),
     onSuccess: () => {
       invalidate();
       toast.success("Status atualizado");
@@ -432,7 +434,7 @@ function SecretariaPage() {
                       <TableCell>
                         <Select
                           value={req.status}
-                          onValueChange={(status) => statusMut.mutate({ id: req.id, status })}
+                          onValueChange={(status) => statusMut.mutate({ id: req.id, status: status as SecretariaStatus })}
                         >
                           <SelectTrigger className="h-8 w-[150px]">
                             <SelectValue />

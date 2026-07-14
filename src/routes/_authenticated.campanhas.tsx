@@ -70,6 +70,30 @@ type Tithe = {
   members?: { full_name: string; email: string | null; phone?: string | null };
 };
 
+type CampaignForm = typeof initialCampaignForm;
+type TitheForm = typeof initialTitheForm;
+
+const initialCampaignForm = {
+  id: "",
+  name: "",
+  description: "",
+  goal_amount_cents: 0,
+  start_date: "",
+  end_date: "",
+  is_active: true,
+  pix_key: "",
+  sort_order: 0,
+};
+
+const initialTitheForm = {
+  id: "",
+  member_id: "",
+  amount_cents: 0,
+  contributed_at: new Date().toISOString().split("T")[0],
+  status: "recorded",
+  notes: "",
+};
+
 function formatCurrency(cents: number): string {
   return (cents / 100).toLocaleString("pt-BR", {
     style: "currency",
@@ -177,43 +201,16 @@ function CampaignsPage() {
   });
 
   const [openCampaignDialog, setOpenCampaignDialog] = useState(false);
-  const [campaignForm, setCampaignForm] = useState({
-    id: "",
-    name: "",
-    description: "",
-    goal_amount_cents: 0,
-    start_date: "",
-    end_date: "",
-    is_active: true,
-    pix_key: "",
-    sort_order: 0,
-  });
-  const [titheForm, setTitheForm] = useState({
-    id: "",
-    member_id: "",
-    amount_cents: 0,
-    contributed_at: new Date().toISOString().split("T")[0],
-    status: "recorded",
-    notes: "",
-  });
+  const [campaignForm, setCampaignForm] = useState<CampaignForm>(initialCampaignForm);
+  const [titheForm, setTitheForm] = useState<TitheForm>(initialTitheForm);
 
   const campaignsMut = useMutation({
-    mutationFn: (form: typeof campaignForm) => saveCampaign({ data: form as any }),
+    mutationFn: (form: CampaignForm) => saveCampaign({ data: form }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["campaigns"] });
       toast.success("Campanha salva");
       setOpenCampaignDialog(false);
-      setCampaignForm({
-        id: "",
-        name: "",
-        description: "",
-        goal_amount_cents: 0,
-        start_date: "",
-        end_date: "",
-        is_active: true,
-        pix_key: "",
-        sort_order: 0,
-      });
+      setCampaignForm(initialCampaignForm);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -228,20 +225,13 @@ function CampaignsPage() {
   });
 
   const thithesMut = useMutation({
-    mutationFn: (form: typeof titheForm) => saveTithe({ data: form as any }),
+    mutationFn: (form: TitheForm) => saveTithe({ data: form }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tithes"] });
       qc.invalidateQueries({ queryKey: ["tithes-report"] });
       toast.success("Dízimo registrado");
       setOpenTitheDialog(false);
-      setTitheForm({
-        id: "",
-        member_id: "",
-        amount_cents: 0,
-        contributed_at: new Date().toISOString().split("T")[0],
-        status: "recorded",
-        notes: "",
-      });
+      setTitheForm(initialTitheForm);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -313,17 +303,7 @@ function CampaignsPage() {
             <DialogTrigger asChild>
               <Button
                 onClick={() =>
-                  setCampaignForm({
-                    id: "",
-                    name: "",
-                    description: "",
-                    goal_amount_cents: 0,
-                    start_date: "",
-                    end_date: "",
-                    is_active: true,
-                    pix_key: "",
-                    sort_order: 0,
-                  })
+                  setCampaignForm(initialCampaignForm)
                 }
               >
                 <Plus className="mr-2 h-4 w-4" /> Nova Campanha
@@ -524,14 +504,7 @@ function CampaignsPage() {
                   <DialogTrigger asChild>
                     <Button
                       onClick={() =>
-                        setTitheForm({
-                          id: "",
-                          member_id: "",
-                          amount_cents: 0,
-                          contributed_at: new Date().toISOString().split("T")[0],
-                          status: "recorded",
-                          notes: "",
-                        })
+                        setTitheForm(initialTitheForm)
                       }
                     >
                       <Plus className="mr-2 h-4 w-4" /> Registrar Dízimo
