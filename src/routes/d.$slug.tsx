@@ -4,13 +4,28 @@ import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicDonations, generateDonationPix } from "@/lib/donations.functions";
 import { getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { HandCoins, Copy, Check, Heart, Loader2 } from "lucide-react";
 import { PublicHero } from "@/components/public-hero";
 import { toast } from "sonner";
+
+type DonationCampaign = {
+  id: string;
+  title: string;
+  description: string | null;
+  image_url: string | null;
+  featured: boolean | null;
+  goal_cents: number | null;
+  suggested_amounts_cents?: number[] | null;
+};
+
+type GeneratedPix = {
+  payload: string;
+  qrDataUrl: string;
+};
 
 export const Route = createFileRoute("/d/$slug")({
   loader: async ({ params }) => {
@@ -51,7 +66,7 @@ function PublicDonationsPage() {
   const { account, campaigns, chrome } = Route.useLoaderData();
   const { slug } = Route.useParams();
   const primary = account?.primary_color || "#467da5";
-  const [active, setActive] = useState<any>(null);
+  const [active, setActive] = useState<DonationCampaign | null>(null);
 
   const body = (
     <div className="pb-16 bg-background">
@@ -78,7 +93,7 @@ function PublicDonationsPage() {
           </Card>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
-            {campaigns.map((c: any) => (
+            {(campaigns as DonationCampaign[]).map((c) => (
               <Card
                 key={c.id}
                 className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
@@ -93,8 +108,8 @@ function PublicDonationsPage() {
                   )}
                   <h3 className="font-semibold mt-1">{c.title}</h3>
                   <p className="text-xs text-muted-foreground line-clamp-3 mt-1">{c.description}</p>
-                  {c.goal_cents > 0 && (
-                    <p className="text-xs mt-2 text-muted-foreground">Meta: <strong className="text-foreground">{fmtBRL(c.goal_cents)}</strong></p>
+                  {(c.goal_cents ?? 0) > 0 && (
+                    <p className="text-xs mt-2 text-muted-foreground">Meta: <strong className="text-foreground">{fmtBRL(c.goal_cents ?? 0)}</strong></p>
                   )}
                   <Button className="w-full mt-3" style={{ background: primary }}>
                     <HandCoins className="h-4 w-4 mr-2" /> Contribuir agora
@@ -114,22 +129,22 @@ function PublicDonationsPage() {
     </div>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{body}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{body}</HubChrome>;
   return <div className="min-h-screen bg-background">{body}</div>;
 }
 
-function PixDialog({ campaign, slug, primary, onClose }: { campaign: any; slug: string; primary: string; onClose: () => void }) {
+function PixDialog({ campaign, slug, primary, onClose }: { campaign: DonationCampaign; slug: string; primary: string; onClose: () => void }) {
   const gen = useServerFn(generateDonationPix);
   const [amountBRL, setAmountBRL] = useState("");
-  const [pix, setPix] = useState<{ payload: string; qrDataUrl: string } | null>(null);
+  const [pix, setPix] = useState<GeneratedPix | null>(null);
   const [copied, setCopied] = useState(false);
   const [lightbox, setLightbox] = useState(false);
 
   const mut = useMutation({
     mutationFn: async (cents: number | undefined) =>
       gen({ data: { slug, id: campaign.id, amountCents: cents } }),
-    onSuccess: (d: any) => setPix(d),
-    onError: (e: any) => toast.error(e?.message || "Erro ao gerar Pix"),
+    onSuccess: (d: GeneratedPix) => setPix(d),
+    onError: (e: Error) => toast.error(e.message || "Erro ao gerar Pix"),
   });
 
   function generate(presetCents?: number) {
@@ -146,7 +161,7 @@ function PixDialog({ campaign, slug, primary, onClose }: { campaign: any; slug: 
     });
   }
 
-  const suggested = (campaign.suggested_amounts_cents as number[] | undefined) ?? [];
+  const suggested = campaign.suggested_amounts_cents ?? [];
 
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-sm" onClick={onClose}>

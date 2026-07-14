@@ -1,8 +1,37 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublicHub, getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { BackToSite } from "@/components/back-to-site";
 import { MapPin, Phone, MessageCircle } from "lucide-react";
+
+type PublicLocationAccount = {
+  brand_title: string | null;
+  primary_color: string | null;
+  custom_slug: string | null;
+  site_id: string | null;
+};
+
+type PublicLocation = {
+  id?: string | null;
+  name: string;
+  address: string | null;
+  latitude: number | string | null;
+  longitude: number | string | null;
+  maps_url?: string | null;
+  place_id?: string | null;
+  waze_url?: string | null;
+  uber_url?: string | null;
+  whatsapp?: string | null;
+  phone?: string | null;
+  office_hours?: string | null;
+  is_main?: boolean | null;
+};
+
+type LocationsLoaderData = {
+  account: PublicLocationAccount;
+  locations?: PublicLocation[] | null;
+  chrome?: HubChromeAccount | null;
+};
 
 export const Route = createFileRoute("/enderecos/$slug")({
   loader: async ({ params }) => {
@@ -34,11 +63,11 @@ export const Route = createFileRoute("/enderecos/$slug")({
 });
 
 function LocationsPage() {
-  const { account, locations, chrome } = Route.useLoaderData() as any;
+  const { account, locations = [], chrome } = Route.useLoaderData() as LocationsLoaderData;
   const accent = account.primary_color || "#7d9b76";
   const slug = account.custom_slug || account.site_id;
   const brand = account.brand_title || "Nossos endereços";
-  const list = (locations ?? []).filter((l: any) => l.address);
+  const list = locations.filter((l) => l.address);
 
   const content = (
     <div className="min-h-screen bg-stone-50">
@@ -76,7 +105,7 @@ function LocationsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {list.map((loc: any) => (
+            {list.map((loc) => (
               <FullLocationCard key={loc.id ?? loc.name} loc={loc} accent={accent} />
             ))}
           </div>
@@ -85,12 +114,12 @@ function LocationsPage() {
     </div>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{content}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{content}</HubChrome>;
   return content;
 }
 
-function FullLocationCard({ loc, accent }: { loc: any; accent: string }) {
-  const address = loc.address as string;
+function FullLocationCard({ loc, accent }: { loc: PublicLocation; accent: string }) {
+  const address = loc.address ?? "";
   const lat = loc.latitude != null ? Number(loc.latitude) : NaN;
   const lng = loc.longitude != null ? Number(loc.longitude) : NaN;
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lng);

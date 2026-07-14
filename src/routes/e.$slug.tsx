@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getPublicEventPage, registerForEvent } from "@/lib/event-pages.functions";
 import { getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,11 +15,38 @@ import { toast } from "sonner";
 import { formatCentsBRL } from "@/lib/billing-plans";
 import { BackToSite } from "@/components/back-to-site";
 
+type PublicEventPageData = {
+  slug: string;
+  title: string;
+  description: string;
+  cover_image_url: string | null;
+  event_date: string;
+  start_time: string;
+  end_time: string | null;
+  location_name: string | null;
+  location_address: string | null;
+  max_attendees: number | null;
+  confirmed_count: number;
+  price_cents: number;
+  primary_color: string | null;
+  account_slug?: string | null;
+  site_id?: string | null;
+  brand_title?: string | null;
+  chrome?: HubChromeAccount | null;
+};
+
+type RegResult = {
+  registrationId: string;
+  status: "confirmed" | "pending";
+  payment: { copyPaste: string | null; qrCodeImage: string | null; amountCents: number; payUrl: string | null } | null;
+};
+
 export const Route = createFileRoute("/e/$slug")({
   loader: async ({ params }) => {
     const page = await getPublicEventPage({ data: { slug: params.slug } });
     if (!page) throw notFound();
-    const accountSlug = (page as any).account_slug as string | undefined;
+    const typedPage = page as PublicEventPageData;
+    const accountSlug = typedPage.account_slug ?? undefined;
     const chrome = accountSlug
       ? await getHubChrome({ data: { siteId: accountSlug } })
       : null;
@@ -58,15 +85,10 @@ function formatDate(d: string) {
 }
 
 function EventPage() {
-  const page = Route.useLoaderData();
+  const page = Route.useLoaderData() as PublicEventPageData;
   const register = useServerFn(registerForEvent);
   const [form, setForm] = useState({ name: "", email: "", phone: "", notes: "" });
   const [imgOpen, setImgOpen] = useState(false);
-  type RegResult = {
-    registrationId: string;
-    status: "confirmed" | "pending";
-    payment: { copyPaste: string | null; qrCodeImage: string | null; amountCents: number; payUrl: string | null } | null;
-  };
   const [result, setResult] = useState<RegResult | null>(null);
 
   const mutation = useMutation({
@@ -80,7 +102,7 @@ function EventPage() {
           notes: form.notes || undefined,
         },
       }),
-    onSuccess: (data: any) => {
+    onSuccess: (data: RegResult) => {
       setResult(data);
       if (data.status === "confirmed") toast.success("Inscrição confirmada!");
       else toast.success("Inscrição registrada!");
@@ -90,8 +112,8 @@ function EventPage() {
 
   const isPaid = page.price_cents > 0;
   const color = page.primary_color || "#467da5";
-  const slug = (page as any).account_slug || (page as any).site_id || "";
-  const brand = (page as any).brand_title || "Evento";
+  const slug = page.account_slug || page.site_id || "";
+  const brand = page.brand_title || "Evento";
 
   const share = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -107,7 +129,7 @@ function EventPage() {
     }
   };
 
-  const chrome = (page as any).chrome;
+  const chrome = page.chrome;
   const body = (
     <div className="min-h-screen bg-stone-50">
       {/* Header band — mesmo padrão das notícias */}
@@ -365,6 +387,6 @@ function EventPage() {
     </div>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{body}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{body}</HubChrome>;
   return body;
 }

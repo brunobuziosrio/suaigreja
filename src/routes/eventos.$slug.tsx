@@ -1,9 +1,33 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { listPublicEventsBySite } from "@/lib/event-pages.functions";
 import { getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { CalendarHeart, ArrowUpRight } from "lucide-react";
 import { BackToSite } from "@/components/back-to-site";
+
+type PublicEventsAccount = {
+  brand_title: string | null;
+  primary_color: string | null;
+  custom_slug: string | null;
+  site_id: string | null;
+};
+
+type PublicEventSummary = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string | null;
+  cover_image_url: string | null;
+  price_cents: number | null;
+  event_date: string;
+  start_time: string | null;
+};
+
+type EventsLoaderData = {
+  account: PublicEventsAccount;
+  events: PublicEventSummary[];
+  chrome?: HubChromeAccount | null;
+};
 
 export const Route = createFileRoute("/eventos/$slug")({
   loader: async ({ params }) => {
@@ -32,7 +56,7 @@ export const Route = createFileRoute("/eventos/$slug")({
 });
 
 function EventsListPage() {
-  const { account, events, chrome } = Route.useLoaderData() as any;
+  const { account, events, chrome } = Route.useLoaderData() as EventsLoaderData;
   const accent = account.primary_color || "#467da5";
   const slug = account.custom_slug || account.site_id;
   const brand = account.brand_title || "Eventos";
@@ -85,7 +109,7 @@ function EventsListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {events.map((e: any, idx: number) => {
+            {events.map((e, idx) => {
               const free = !e.price_cents || e.price_cents <= 0;
               return (
                 <Link
@@ -122,7 +146,7 @@ function EventsListPage() {
                             : { background: `${accent}1a`, color: accent }
                         }
                       >
-                        {priceLabel(e.price_cents)}
+                        {priceLabel(e.price_cents ?? 0)}
                       </span>
                     </div>
                     <div className="text-xs text-stone-500">
@@ -155,6 +179,6 @@ function EventsListPage() {
     </div>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{content}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{content}</HubChrome>;
   return content;
 }
