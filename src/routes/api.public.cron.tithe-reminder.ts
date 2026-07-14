@@ -2,13 +2,41 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyCronRequest } from "@/lib/cron-auth.server";
 import { appendWhatsappOptOutNotice, hasWhatsappOptedOut } from "@/lib/whatsapp-consent.server";
+import type { WhatsappConsentClient } from "@/lib/whatsapp-consent.server";
 import {
   createWhatsappMessageId,
   refundWhatsappMessageCredits,
   reserveWhatsappCredits,
+  type SupabaseRpcClient,
 } from "@/lib/whatsapp-credits.server";
 
 const REMINDER_DAY_OF_MONTH = 5;
+
+type TitheSettingsRow = {
+  account_id: string;
+  tithe_reminder_enabled: boolean | null;
+  tithe_reminder_template: string | null;
+};
+
+type TitheMember = {
+  id: string;
+  full_name: string | null;
+  phone: string | null;
+};
+
+type DbError = { message: string } | null;
+type DbResult<T> = { data: T | null; error: DbError };
+
+type DbQuery<T> = PromiseLike<DbResult<T>> & {
+  select(columns: string): DbQuery<T>;
+  eq(column: string, value: unknown): DbQuery<T>;
+  maybeSingle(): Promise<DbResult<T extends Array<infer Row> ? Row : T>>;
+  insert(values: Record<string, unknown>): Promise<DbResult<unknown>>;
+};
+
+type TitheCronDb = {
+  from<T = unknown>(table: string): DbQuery<T>;
+};
 
 /**
  * Cron mensal — enfileira lembrete de contribuição pros membros marcados como dizimista.
@@ -23,7 +51,7 @@ export const Route = createFileRoute("/api/public/cron/tithe-reminder")({
         const unauthorized = verifyCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const db = supabaseAdmin as any;
+        const db = supabaseAdmin as unknown as TitheCronDb;
         const now = new Date();
         const brt = new Date(now.getTime() - 3 * 60 * 60 * 1000);
         const brtDate = brt.toISOString().slice(0, 10);
@@ -33,7 +61,7 @@ export const Route = createFileRoute("/api/public/cron/tithe-reminder")({
         }
 
         const { data: settingsRows, error: settingsErr } = await db
-          .from("whatsapp_settings")
+          .from<TitheSettingsRow[]>("whatsapp_settings")
           .select("account_id, tithe_reminder_enabled, tithe_reminder_template")
           .eq("enabled", true)
           .eq("tithe_reminder_enabled", true);
@@ -50,14 +78,14 @@ export const Route = createFileRoute("/api/public/cron/tithe-reminder")({
 
         for (const s of settingsRows ?? []) {
           const { data: accRow } = await db
-            .from("accounts")
+            .from<{ brand_title: string | null }>("accounts")
             .select("brand_title")
             .eq("id", s.account_id)
             .maybeSingle();
           const churchName = accRow?.brand_title ?? "nossa igreja";
 
           const { data: members } = await db
-            .from("members")
+            .from<TitheMember[]>("members")
             .select("id, full_name, phone")
             .eq("account_id", s.account_id)
             .eq("status", "ativo")
@@ -69,7 +97,13 @@ export const Route = createFileRoute("/api/public/cron/tithe-reminder")({
               skippedNoPhone++;
               continue;
             }
-            if (await hasWhatsappOptedOut({ supabase: db, accountId: s.account_id, phone: m.phone })) {
+            if (
+              await hasWhatsappOptedOut({
+                supabase: db as unknown as WhatsappConsentClient,
+                accountId: s.account_id,
+                phone: m.phone,
+              })
+            ) {
               skippedOptOut++;
               continue;
             }
@@ -82,7 +116,7 @@ export const Route = createFileRoute("/api/public/cron/tithe-reminder")({
 
             const messageId = createWhatsappMessageId();
             const reservation = await reserveWhatsappCredits({
-              supabase: db,
+              supabase: db as unknown as SupabaseRpcClient,
               accountId: s.account_id,
               messageId,
               costCredits: 1,
@@ -114,7 +148,7 @@ export const Route = createFileRoute("/api/public/cron/tithe-reminder")({
               enqueued++;
             } else if (reservation.reason !== "idempotent") {
               await refundWhatsappMessageCredits({
-                supabase: db,
+                supabase: db as unknown as SupabaseRpcClient,
                 accountId: s.account_id,
                 messageId,
                 idempotencyKey: `refund:tithe_reminder_insert_failed:${messageId}`,

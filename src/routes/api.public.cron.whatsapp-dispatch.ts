@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyCronRequest } from "@/lib/cron-auth.server";
-import { refundWhatsappMessageCredits } from "@/lib/whatsapp-credits.server";
-import { hasWhatsappOptedOut } from "@/lib/whatsapp-consent.server";
+import { refundWhatsappMessageCredits, type SupabaseRpcClient } from "@/lib/whatsapp-credits.server";
+import { hasWhatsappOptedOut, type WhatsappConsentClient } from "@/lib/whatsapp-consent.server";
 import {
   getWhatsappProviderConnection,
   sendWhatsappMessage,
@@ -13,6 +13,23 @@ type ClaimedMessage = WhatsappOutboundMessage & {
   member_id: string | null;
   delivery_attempts: number;
   cost_credits: number;
+};
+
+type DbError = { message: string } | null;
+type DbResult<T> = { data: T | null; error: DbError };
+
+type UpdateQuery = PromiseLike<DbResult<unknown>> & {
+  eq(column: string, value: unknown): UpdateQuery;
+};
+
+type DispatchDb = {
+  rpc(
+    fn: "claim_whatsapp_messages",
+    args: { p_limit: number; p_lock_seconds: number },
+  ): Promise<DbResult<unknown>>;
+  from(table: "whatsapp_messages"): {
+    update(values: Record<string, unknown>): UpdateQuery;
+  };
 };
 
 function normalizeClaimed(data: unknown): ClaimedMessage[] {
@@ -31,7 +48,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
         const unauthorized = verifyCronRequest(request);
         if (unauthorized) return unauthorized;
 
-        const db = supabaseAdmin as any;
+        const db = supabaseAdmin as unknown as DispatchDb;
         const { data, error } = await db.rpc("claim_whatsapp_messages", {
           p_limit: 25,
           p_lock_seconds: 300,
@@ -50,9 +67,15 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
 
         for (const message of messages) {
           try {
-            if (await hasWhatsappOptedOut({ supabase: db, accountId: message.account_id, phone: message.phone })) {
+            if (
+              await hasWhatsappOptedOut({
+                supabase: db as unknown as WhatsappConsentClient,
+                accountId: message.account_id,
+                phone: message.phone,
+              })
+            ) {
               await refundWhatsappMessageCredits({
-                supabase: db,
+                supabase: db as unknown as SupabaseRpcClient,
                 accountId: message.account_id,
                 messageId: message.id,
                 idempotencyKey: `refund:opt_out:${message.id}`,
@@ -64,7 +87,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
                   status: "skipped",
                   locked_until: null,
                   error_message: "Destinatário retirou o consentimento para WhatsApp.",
-                } as never)
+                })
                 .eq("id", message.id)
                 .eq("account_id", message.account_id);
               if (updateError) {
@@ -84,7 +107,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
                   delivery_attempts: Math.max((message.delivery_attempts ?? 1) - 1, 0),
                   locked_until: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
                   error_message: "Nenhum provedor WhatsApp ativo configurado para esta conta.",
-              } as never)
+              })
                 .eq("id", message.id)
                 .eq("account_id", message.account_id);
               if (updateError) {
@@ -104,7 +127,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
                 provider_payload: result.raw,
                 locked_until: null,
                 error_message: null,
-              } as never)
+              })
               .eq("id", message.id)
               .eq("account_id", message.account_id);
             if (updateError) {
@@ -117,7 +140,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
 
             if (definitive) {
               await refundWhatsappMessageCredits({
-                supabase: db,
+                supabase: db as unknown as SupabaseRpcClient,
                 accountId: message.account_id,
                 messageId: message.id,
                 idempotencyKey: `refund:delivery_failed:${message.id}`,
@@ -129,7 +152,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
                   status: "failed",
                   locked_until: null,
                   error_message: messageText,
-                } as never)
+                })
                 .eq("id", message.id)
                 .eq("account_id", message.account_id);
               if (updateError) {
@@ -145,7 +168,7 @@ export const Route = createFileRoute("/api/public/cron/whatsapp-dispatch")({
                 status: "queued",
                 locked_until: retryDate(message.delivery_attempts ?? 1),
                 error_message: messageText,
-              } as never)
+              })
               .eq("id", message.id)
               .eq("account_id", message.account_id);
             if (updateError) {

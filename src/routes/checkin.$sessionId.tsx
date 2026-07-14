@@ -10,6 +10,12 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
+type PublicCheckinPayload = {
+  session_id: string;
+  visitor_name: FormDataEntryValue | null;
+  visitor_phone: FormDataEntryValue | null;
+};
+
 export const Route = createFileRoute("/checkin/$sessionId")({
   component: PublicCheckin,
   head: () => ({ meta: [{ title: "Check-in" }] }),
@@ -23,9 +29,9 @@ function PublicCheckin() {
   const [done, setDone] = useState(false);
 
   const mut = useMutation({
-    mutationFn: (p: any) => submit({ data: p }),
+    mutationFn: (p: PublicCheckinPayload) => submit({ data: p }),
     onSuccess: () => { setDone(true); toast.success("Check-in registrado!"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (!data) return <div className="p-6 text-center">Carregando…</div>;
