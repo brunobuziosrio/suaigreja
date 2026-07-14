@@ -156,7 +156,7 @@ async function handlePlatformWebhook(paymentId: string, payload: Record<string, 
   if (txError) throw new Error(txError.message);
   if (!tx) return json({ error: "unknown transaction" }, 404);
 
-  const { error: updateError } = await supabaseAdmin
+  let paymentUpdate = supabaseAdmin
     .from("payment_transactions")
     .update({
       status: newStatus,
@@ -164,9 +164,12 @@ async function handlePlatformWebhook(paymentId: string, payload: Record<string, 
       webhook_payload: (payload ?? {}) as never,
     })
     .eq("id", tx.id);
+  if (newStatus === "paid") paymentUpdate = paymentUpdate.neq("status", "paid");
+
+  const { data: updatedTransactions, error: updateError } = await paymentUpdate.select("id");
   if (updateError) throw new Error(updateError.message);
 
-  if (newStatus !== "paid" || tx.status === "paid") return json({ ok: true });
+  if (newStatus !== "paid" || updatedTransactions.length === 0) return json({ ok: true });
 
   const kind = tx.kind ?? "subscription";
   if (kind === "product") {
@@ -206,4 +209,3 @@ export const Route = createFileRoute("/api/public/mercadopago-webhook")({
     },
   },
 });
-
