@@ -1,8 +1,30 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublicNews, getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { Newspaper } from "lucide-react";
 import { BackToSite } from "@/components/back-to-site";
+
+type PublicNewsAccount = {
+  brand_title: string | null;
+  primary_color: string | null;
+  custom_slug: string | null;
+  site_id: string | null;
+};
+
+type PublicNewsItem = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  content: string | null;
+  image_url: string | null;
+  created_at: string;
+};
+
+type NewsLoaderData = {
+  account: PublicNewsAccount;
+  news: PublicNewsItem[];
+  chrome?: HubChromeAccount | null;
+};
 
 export const Route = createFileRoute("/n/$slug")({
   loader: async ({ params }) => {
@@ -31,7 +53,7 @@ export const Route = createFileRoute("/n/$slug")({
 });
 
 function NewsListPage() {
-  const { account, news, chrome } = Route.useLoaderData() as any;
+  const { account, news, chrome } = Route.useLoaderData() as NewsLoaderData;
   const accent = account.primary_color || "#7d9b76";
   const slug = account.custom_slug || account.site_id;
   const brand = account.brand_title || "Notícias";
@@ -81,7 +103,7 @@ function NewsListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {news.map((n: any, idx: number) => (
+            {news.map((n, idx) => (
               <Link
                 key={n.id}
                 to="/n/$slug/$postId"
@@ -138,6 +160,6 @@ function NewsListPage() {
     </div>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{content}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{content}</HubChrome>;
   return content;
 }

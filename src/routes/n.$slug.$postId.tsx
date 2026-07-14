@@ -1,11 +1,34 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublicNewsPost, getHubChrome } from "@/lib/hub.functions";
-import { HubChrome } from "@/components/hub-chrome";
+import { HubChrome, type HubChromeAccount } from "@/components/hub-chrome";
 import { ArrowLeft, Calendar, Share2 } from "lucide-react";
 import { BackToSite } from "@/components/back-to-site";
 import { useState } from "react";
 import { toast } from "sonner";
 import DOMPurify from "isomorphic-dompurify";
+
+type PublicNewsPostAccount = {
+  brand_title: string | null;
+  primary_color: string | null;
+  custom_slug: string | null;
+  site_id: string | null;
+};
+
+type PublicNewsPost = {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  content: string | null;
+  image_url: string | null;
+  created_at: string;
+};
+
+type NewsPostLoaderData = {
+  account: PublicNewsPostAccount;
+  post: PublicNewsPost;
+  related: PublicNewsPost[];
+  chrome?: HubChromeAccount | null;
+};
 
 export const Route = createFileRoute("/n/$slug/$postId")({
   loader: async ({ params }) => {
@@ -37,7 +60,7 @@ export const Route = createFileRoute("/n/$slug/$postId")({
 });
 
 function NewsPostPage() {
-  const { account, post, related, chrome } = Route.useLoaderData() as any;
+  const { account, post, related, chrome } = Route.useLoaderData() as NewsPostLoaderData;
   const accent = account.primary_color || "#7d9b76";
   const slug = account.custom_slug || account.site_id;
   const brand = account.brand_title || "Notícias";
@@ -175,7 +198,7 @@ function NewsPostPage() {
               Continue lendo
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              {related.map((r: any) => (
+              {related.map((r) => (
                 <Link
                   key={r.id}
                   to="/n/$slug/$postId"
@@ -238,6 +261,6 @@ function NewsPostPage() {
     </div>
   );
 
-  if (chrome) return <HubChrome account={chrome as any} contained={false}>{content}</HubChrome>;
+  if (chrome) return <HubChrome account={chrome as HubChromeAccount} contained={false}>{content}</HubChrome>;
   return content;
 }

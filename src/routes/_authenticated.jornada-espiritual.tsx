@@ -9,6 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sprout, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+type SpiritualStage = (typeof SPIRITUAL_STAGES)[number];
+
+type JourneyMember = {
+  id: string;
+  full_name: string;
+  status: string | null;
+  spiritual_stage: SpiritualStage | null;
+  photo_url: string | null;
+};
+
 export const Route = createFileRoute("/_authenticated/jornada-espiritual")({
   component: SpiritualJourneyPage,
 });
@@ -36,7 +46,7 @@ function SpiritualJourneyPage() {
   const [filter, setFilter] = useState("todos");
 
   const stageMut = useMutation({
-    mutationFn: (v: { member_id: string; spiritual_stage: string | null }) => setStage({ data: v as any }),
+    mutationFn: (v: { member_id: string; spiritual_stage: SpiritualStage | null }) => setStage({ data: v }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["members"] });
       toast.success("Etapa atualizada");
@@ -47,7 +57,7 @@ function SpiritualJourneyPage() {
   const counts = useMemo(() => {
     const c: Record<string, number> = { sem_etapa: 0 };
     for (const stage of STAGE_ORDER) c[stage] = 0;
-    for (const m of members as any[]) {
+    for (const m of members as JourneyMember[]) {
       if (m.status !== "ativo") continue;
       if (m.spiritual_stage && c[m.spiritual_stage] !== undefined) c[m.spiritual_stage]++;
       else c.sem_etapa++;
@@ -56,7 +66,7 @@ function SpiritualJourneyPage() {
   }, [members]);
 
   const filtered = useMemo(() => {
-    const active = (members as any[]).filter((m) => m.status === "ativo");
+    const active = (members as JourneyMember[]).filter((m) => m.status === "ativo");
     if (filter === "todos") return active;
     if (filter === "sem_etapa") return active.filter((m) => !m.spiritual_stage);
     return active.filter((m) => m.spiritual_stage === filter);
@@ -79,7 +89,7 @@ function SpiritualJourneyPage() {
             onClick={() => setFilter("todos")}
             className={`text-left rounded-lg border p-3 transition-colors ${filter === "todos" ? "border-primary bg-primary/5" : "hover:bg-muted/40"}`}
           >
-            <p className="text-2xl font-semibold">{(members as any[]).filter((m) => m.status === "ativo").length}</p>
+            <p className="text-2xl font-semibold">{(members as JourneyMember[]).filter((m) => m.status === "ativo").length}</p>
             <p className="text-xs text-muted-foreground">Todos</p>
           </button>
           {STAGE_ORDER.map((stage) => (
@@ -107,7 +117,7 @@ function SpiritualJourneyPage() {
           <Card className="p-12 text-center text-sm text-muted-foreground">Nenhum fiel nesta etapa.</Card>
         ) : (
           <div className="grid gap-2">
-            {filtered.map((m: any) => (
+            {filtered.map((m) => (
               <Card key={m.id} className="p-3 flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-3 min-w-0">
                   {m.photo_url ? (

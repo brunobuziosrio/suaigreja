@@ -14,6 +14,24 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 
+type Devotional = {
+  id: string;
+  devotional_date: string;
+  verse_ref: string;
+  verse_text: string;
+  message: string | null;
+  published: boolean;
+};
+
+type DevotionalPayload = {
+  id?: string;
+  devotional_date: FormDataEntryValue | null;
+  verse_ref: FormDataEntryValue | null;
+  verse_text: FormDataEntryValue | null;
+  message: FormDataEntryValue | null;
+  published: boolean;
+};
+
 export const Route = createFileRoute("/_authenticated/devocional")({
   component: DevocionalPage,
   head: () => ({ meta: [{ title: "Devocional Diário" }] }),
@@ -26,12 +44,12 @@ function DevocionalPage() {
   const qc = useQueryClient();
   const { data: items = [] } = useQuery({ queryKey: ["devotionals"], queryFn: () => list() });
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
+  const [editing, setEditing] = useState<Devotional | null>(null);
 
   const save = useMutation({
-    mutationFn: (p: any) => upsert({ data: p }),
+    mutationFn: (p: DevotionalPayload) => upsert({ data: p }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["devotionals"] }); setOpen(false); toast.success("Salvo"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (e: Error) => toast.error(e.message),
   });
   const remove = useMutation({
     mutationFn: (id: string) => del({ data: { id } }),
@@ -50,7 +68,7 @@ function DevocionalPage() {
       </div>
 
       <div className="space-y-3">
-        {items.map((d: any) => (
+        {(items as Devotional[]).map((d) => (
           <Card key={d.id} className="p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
