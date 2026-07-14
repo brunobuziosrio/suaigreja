@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
-import { useEffect, useMemo, useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listEvents, upsertEvent, deleteEvent } from "@/lib/events.functions";
@@ -43,7 +43,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { buildDayMessage, buildRangeMessage, openWhatsAppShare } from "@/lib/whatsapp-share";
-import { listEventAttendance, setEventAttendance } from "@/lib/event-attendance.functions";
+import { listEventAttendance, setEventAttendance, type EventAttendanceRow } from "@/lib/event-attendance.functions";
 
 export const Route = createFileRoute("/_authenticated/agenda")({
   component: AgendaPage,
@@ -267,16 +267,16 @@ function AgendaPage() {
       });
     }
     return out;
-  }, [cursor, range.last]);
+  }, [cursor, range.first, range.last]);
 
   const todayIso = useMemo(() => toIso(new Date()), []);
 
   const noBase = activeLocations.length === 0 || activeTypes.length === 0;
-  const currentPalette = {
+  const currentPalette = useMemo(() => ({
     ...palette,
     location_id: palette.location_id || activeLocations[0]?.id || "",
     type_id: palette.type_id || activeTypes[0]?.id || "",
-  };
+  }), [activeLocations, activeTypes, palette]);
   const paletteReady =
     !!currentPalette.location_id &&
     !!currentPalette.type_id &&
@@ -288,9 +288,10 @@ function AgendaPage() {
     /^\d{2}:\d{2}$/.test(form.start_time) &&
     /^\d{4}-\d{2}-\d{2}$/.test(form.event_date);
 
-  function canDropDraft(draft: Form) {
-    return !!draft.location_id && !!draft.type_id && /^\d{2}:\d{2}$/.test(draft.start_time);
-  }
+  const canDropDraft = useCallback(
+    (draft: Form) => !!draft.location_id && !!draft.type_id && /^\d{2}:\d{2}$/.test(draft.start_time),
+    [],
+  );
 
   function beginNativeDrag(e: DragEvent<HTMLElement>, draft: Form) {
     if (!canDropDraft(draft)) {
@@ -329,7 +330,7 @@ function AgendaPage() {
     setIsDragging(true);
   }
 
-  function handleDrop(date: string, draft: Form = currentPalette) {
+  const handleDrop = useCallback((date: string, draft: Form = currentPalette) => {
     setDragOverDate(null);
     setIsDragging(false);
     if (!canDropDraft(draft)) {
@@ -337,7 +338,7 @@ function AgendaPage() {
       return;
     }
     upsertMut.mutate({ ...draft, event_date: date });
-  }
+  }, [canDropDraft, currentPalette, upsertMut]);
 
   const pointerActive = pointerDrag !== null;
 
@@ -364,7 +365,7 @@ function AgendaPage() {
       window.removeEventListener("pointerup", finish);
       window.removeEventListener("pointercancel", finish);
     };
-  }, [pointerActive]);
+  }, [pointerActive, handleDrop]);
 
   const selectedLocation = activeLocations.find((l) => l.id === currentPalette.location_id);
   const selectedType = activeTypes.find((t) => t.id === currentPalette.type_id);
@@ -1041,9 +1042,9 @@ function AttendanceDialog({ eventId, onClose }: { eventId: string | null; onClos
   const fetchAttendance = useServerFn(listEventAttendance);
   const mark = useServerFn(setEventAttendance);
 
-  const { data: rows = [], isLoading } = useQuery({
+  const { data: rows = [], isLoading } = useQuery<EventAttendanceRow[]>({
     queryKey: ["event-attendance", eventId],
-    queryFn: () => fetchAttendance({ data: { event_id: eventId! } }),
+    queryFn: async () => await fetchAttendance({ data: { event_id: eventId! } }) as EventAttendanceRow[],
     enabled: !!eventId,
   });
 
@@ -1052,7 +1053,7 @@ function AttendanceDialog({ eventId, onClose }: { eventId: string | null; onClos
       mark({ data: { event_id: eventId!, ...v } }),
     onMutate: async (v) => {
       await qc.cancelQueries({ queryKey: ["event-attendance", eventId] });
-      qc.setQueryData(["event-attendance", eventId], (old: any[] = []) =>
+      qc.setQueryData<EventAttendanceRow[]>(["event-attendance", eventId], (old = []) =>
         old.map((r) => (r.member_id === v.member_id ? { ...r, attended: v.attended } : r)),
       );
     },

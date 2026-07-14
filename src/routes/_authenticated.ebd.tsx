@@ -17,6 +17,15 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GraduationCap, Plus, Pencil, Trash2, Loader2, Users, CheckSquare } from "lucide-react";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
+
+type EbdClass = Database["public"]["Tables"]["ebd_classes"]["Row"];
+type EbdClassForm = Pick<EbdClass, "name" | "teacher_name" | "weekday" | "start_time" | "age_range" | "active"> & {
+  id?: string;
+};
+type Member = Pick<Database["public"]["Tables"]["members"]["Row"], "id" | "full_name">;
+type Enrollment = Pick<Database["public"]["Tables"]["ebd_enrollments"]["Row"], "member_id">;
+type Attendance = Pick<Database["public"]["Tables"]["ebd_attendance"]["Row"], "member_id" | "present">;
 
 export const Route = createFileRoute("/_authenticated/ebd")({
   component: EbdPage,
@@ -32,13 +41,13 @@ function EbdPage() {
   const saveClass = useServerFn(upsertEbdClass);
   const removeClass = useServerFn(deleteEbdClass);
 
-  const { data: classes = [], isLoading } = useQuery({ queryKey: ["ebd-classes"], queryFn: () => fetchClasses() });
-  const { data: members = [] } = useQuery({ queryKey: ["members"], queryFn: () => fetchMembers() });
+  const { data: classes = [], isLoading } = useQuery<EbdClass[]>({ queryKey: ["ebd-classes"], queryFn: async () => await fetchClasses() as EbdClass[] });
+  const { data: members = [] } = useQuery<Member[]>({ queryKey: ["members"], queryFn: async () => await fetchMembers() as Member[] });
   const { data: stats } = useQuery({ queryKey: ["ebd-stats"], queryFn: () => fetchStats() });
 
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<any>({ name: "", teacher_name: "", weekday: 0, start_time: "09:00", age_range: "adultos", active: true });
-  const [rosterClass, setRosterClass] = useState<any | null>(null);
+  const [form, setForm] = useState<EbdClassForm>({ name: "", teacher_name: "", weekday: 0, start_time: "09:00", age_range: "adultos", active: true });
+  const [rosterClass, setRosterClass] = useState<EbdClass | null>(null);
 
   const saveMut = useMutation({
     mutationFn: () => saveClass({ data: form }),
@@ -151,7 +160,7 @@ function EbdPage() {
   );
 }
 
-function RosterDialog({ classRow, members, onClose }: { classRow: any; members: any[]; onClose: () => void }) {
+function RosterDialog({ classRow, members, onClose }: { classRow: EbdClass; members: Member[]; onClose: () => void }) {
   const fetchEnroll = useServerFn(listEnrollments);
   const toggleEnroll = useServerFn(setEnrollment);
   const fetchAtt = useServerFn(getAttendanceForDate);
@@ -159,11 +168,11 @@ function RosterDialog({ classRow, members, onClose }: { classRow: any; members: 
 
   const today = new Date().toISOString().slice(0, 10);
   const [date, setDate] = useState(today);
-  const enrolledQ = useQuery({ queryKey: ["ebd-enrollments", classRow.id], queryFn: () => fetchEnroll({ data: { class_id: classRow.id } }) });
-  const attQ = useQuery({ queryKey: ["ebd-att", classRow.id, date], queryFn: () => fetchAtt({ data: { class_id: classRow.id, attendance_date: date } }) });
+  const enrolledQ = useQuery<Enrollment[]>({ queryKey: ["ebd-enrollments", classRow.id], queryFn: async () => await fetchEnroll({ data: { class_id: classRow.id } }) as Enrollment[] });
+  const attQ = useQuery<Attendance[]>({ queryKey: ["ebd-att", classRow.id, date], queryFn: async () => await fetchAtt({ data: { class_id: classRow.id, attendance_date: date } }) as Attendance[] });
 
   const enrolled = enrolledQ.data ?? [];
-  const attendance = new Map((attQ.data ?? []).map((r: any) => [r.member_id, r.present]));
+  const attendance = new Map((attQ.data ?? []).map((record) => [record.member_id, record.present]));
 
   async function toggle(memberId: string, enroll: boolean) {
     await toggleEnroll({ data: { class_id: classRow.id, member_id: memberId, enroll } });
@@ -191,7 +200,7 @@ function RosterDialog({ classRow, members, onClose }: { classRow: any; members: 
             </div>
             {members.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">Cadastre membros primeiro.</div>}
             {members.map((m) => {
-              const isEnrolled = enrolled.some((e: any) => e.member_id === m.id);
+              const isEnrolled = enrolled.some((enrollment) => enrollment.member_id === m.id);
               const isPresent = attendance.get(m.id) === true;
               return (
                 <div key={m.id} className="px-3 py-2 grid grid-cols-[1fr_80px_80px] gap-2 items-center text-sm">

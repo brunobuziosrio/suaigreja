@@ -13,6 +13,17 @@ import { Switch } from "@/components/ui/switch";
 import { Plus, QrCode, Pencil, Trash2, Users, ExternalLink, Copy } from "lucide-react";
 import { toast } from "sonner";
 import QRCode from "qrcode";
+import type { Database } from "@/integrations/supabase/types";
+
+type CheckinSession = Database["public"]["Tables"]["checkin_sessions"]["Row"];
+type CheckinEntry = Database["public"]["Tables"]["checkin_entries"]["Row"] & {
+  members: Pick<Database["public"]["Tables"]["members"]["Row"], "full_name" | "photo_url"> | null;
+};
+type CheckinSessionInput = Pick<CheckinSession, "title" | "session_date" | "active"> & {
+  id?: string;
+  start_time?: string | null;
+  notes?: string | null;
+};
 
 export const Route = createFileRoute("/_authenticated/checkin")({
   component: CheckinPage,
@@ -25,30 +36,34 @@ function CheckinPage() {
   const del = useServerFn(deleteCheckinSession);
   const listEntries = useServerFn(listCheckinEntries);
   const qc = useQueryClient();
-  const { data: sessions = [] } = useQuery({ queryKey: ["checkin_sessions"], queryFn: () => list() });
+  const { data: sessions = [] } = useQuery<CheckinSession[]>({
+    queryKey: ["checkin_sessions"],
+    queryFn: async () => await list() as CheckinSession[],
+  });
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [qrFor, setQrFor] = useState<any>(null);
+  const [editing, setEditing] = useState<CheckinSession | null>(null);
+  const [qrFor, setQrFor] = useState<(CheckinSession & { url: string }) | null>(null);
   const [qrData, setQrData] = useState<string>("");
-  const [entriesFor, setEntriesFor] = useState<any>(null);
+  const [entriesFor, setEntriesFor] = useState<CheckinSession | null>(null);
+  const entriesForId = entriesFor?.id ?? "";
 
-  const { data: entries = [] } = useQuery({
-    queryKey: ["checkin_entries", entriesFor?.id],
-    queryFn: () => listEntries({ data: { session_id: entriesFor.id } }),
+  const { data: entries = [] } = useQuery<CheckinEntry[]>({
+    queryKey: ["checkin_entries", entriesForId],
+    queryFn: async () => entriesForId ? await listEntries({ data: { session_id: entriesForId } }) as CheckinEntry[] : [],
     enabled: !!entriesFor,
   });
 
   const save = useMutation({
-    mutationFn: (p: any) => upsert({ data: p }),
+    mutationFn: (p: CheckinSessionInput) => upsert({ data: p }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["checkin_sessions"] }); setOpen(false); toast.success("Salvo"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (error: Error) => toast.error(error.message),
   });
   const remove = useMutation({
     mutationFn: (id: string) => del({ data: { id } }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["checkin_sessions"] }); toast.success("Removido"); },
   });
 
-  async function showQr(s: any) {
+  async function showQr(s: CheckinSession) {
     const url = `${window.location.origin}/checkin/${s.id}`;
     const data = await QRCode.toDataURL(url, { width: 400, margin: 2 });
     setQrData(data);
@@ -67,7 +82,7 @@ function CheckinPage() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
-        {sessions.map((s: any) => (
+        {sessions.map((s) => (
           <Card key={s.id} className="p-4 space-y-2">
             <div className="flex items-start justify-between">
               <div>
@@ -94,13 +109,17 @@ function CheckinPage() {
           <form onSubmit={(e) => {
             e.preventDefault();
             const f = new FormData(e.currentTarget);
+            const getText = (name: string) => {
+              const value = f.get(name);
+              return typeof value === "string" ? value : "";
+            };
             save.mutate({
               id: editing?.id,
-              title: f.get("title"),
-              session_date: f.get("session_date"),
-              start_time: f.get("start_time") || null,
-              notes: f.get("notes") || null,
-              active: f.get("active") === "on",
+              title: getText("title"),
+              session_date: getText("session_date"),
+              start_time: getText("start_time") || null,
+              notes: getText("notes") || null,
+              active: getText("active") === "on",
             });
           }} className="space-y-3">
             <div><Label>Título*</Label><Input name="title" required defaultValue={editing?.title} placeholder="Culto de Domingo" /></div>
@@ -137,7 +156,7 @@ function CheckinPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>{entriesFor?.title} — Presenças ({entries.length})</DialogTitle></DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto space-y-2">
-            {entries.map((e: any) => (
+            {entries.map((e) => (
               <div key={e.id} className="flex items-center gap-3 p-2 border rounded">
                 {e.members?.photo_url && <img src={e.members.photo_url} className="h-8 w-8 rounded-full object-cover" />}
                 <div className="flex-1">

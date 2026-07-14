@@ -40,8 +40,29 @@ export const Route = createFileRoute("/_authenticated/equipe")({
 });
 
 type PermMap = Record<string, string[]>;
+type TeamMember = {
+  id: string;
+  userId: string | null;
+  email: string | null;
+  role: string;
+  status: string;
+  createdAt: string;
+};
+type TeamData = {
+  accountId: string;
+  myRole: string;
+  canManage: boolean;
+  members: TeamMember[];
+  overrides: Record<string, PermMap>;
+};
+type InviteResponse = { ok: boolean; linked: boolean; inviteLink: string | null };
+type InviteLinkResponse = { ok: boolean; inviteLink: string | null; email: string | null };
 
 const EDITABLE_ROLES = ROLE_CATALOG.filter((role) => !role.fullAccess);
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
 
 function cloneDefaults(role: string, overrides?: PermMap): PermMap {
   const source =
@@ -70,9 +91,9 @@ function EquipePage() {
   const saveRole = useServerFn(updateRolePermissions);
   const qc = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery<TeamData>({
     queryKey: ["team-permissions"],
-    queryFn: () => fetchTeam(),
+    queryFn: async () => await fetchTeam() as TeamData,
   });
 
   const canManage = !!data?.canManage;
@@ -95,7 +116,7 @@ function EquipePage() {
       toast.success("Permissões atualizadas.");
       qc.invalidateQueries({ queryKey: ["team-permissions"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Não foi possível salvar."),
+    onError: (error: Error) => toast.error(errorMessage(error, "Não foi possível salvar.")),
   });
 
   const invite = useServerFn(inviteMember);
@@ -109,7 +130,7 @@ function EquipePage() {
 
   const inviteMutation = useMutation({
     mutationFn: (payload: { email: string; role: string }) => invite({ data: payload }),
-    onSuccess: (res: any, vars) => {
+    onSuccess: (res: InviteResponse, vars) => {
       if (res?.inviteLink) {
         setShareLink({ email: vars.email, link: res.inviteLink });
         setCopied(false);
@@ -120,19 +141,19 @@ function EquipePage() {
       setInviteEmail("");
       qc.invalidateQueries({ queryKey: ["team-permissions"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Não foi possível convidar."),
+    onError: (error: Error) => toast.error(errorMessage(error, "Não foi possível convidar.")),
   });
 
   const linkMutation = useMutation({
     mutationFn: (payload: { memberId: string }) => genLink({ data: payload }),
-    onSuccess: (res: any) => {
+    onSuccess: (res: InviteLinkResponse) => {
       if (res?.inviteLink) {
         setShareLink({ email: res.email ?? "", link: res.inviteLink });
         setCopied(false);
         toast.success("Link de acesso gerado.");
       }
     },
-    onError: (e: any) => toast.error(e?.message || "Não foi possível gerar o link."),
+    onError: (error: Error) => toast.error(errorMessage(error, "Não foi possível gerar o link.")),
   });
 
   async function copyShareLink() {
@@ -152,7 +173,7 @@ function EquipePage() {
       toast.success("Cargo atualizado.");
       qc.invalidateQueries({ queryKey: ["team-permissions"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Não foi possível alterar o cargo."),
+    onError: (error: Error) => toast.error(errorMessage(error, "Não foi possível alterar o cargo.")),
   });
 
   const removeMutation = useMutation({
@@ -161,7 +182,7 @@ function EquipePage() {
       toast.success("Usuário removido.");
       qc.invalidateQueries({ queryKey: ["team-permissions"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Não foi possível remover."),
+    onError: (error: Error) => toast.error(errorMessage(error, "Não foi possível remover.")),
   });
 
   function isChecked(moduleId: string, verb: PermissionVerb) {
