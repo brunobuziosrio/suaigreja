@@ -10,6 +10,7 @@ import {
 } from "@/lib/donations.functions";
 import { getMyAccount, updateAccountSettings, uploadAccountAsset } from "@/lib/account.functions";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { validateImageFile } from "@/lib/file-validation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,45 @@ type Campaign = {
   sort_order: number;
 };
 
+type DonationCampaignRow = Database["public"]["Tables"]["donation_campaigns"]["Row"];
+type Account = Database["public"]["Tables"]["accounts"]["Row"];
+type CampaignStats = {
+  campaignId: string;
+  title: string;
+  goalCents: number | null;
+  raisedCents: number;
+};
+
+function isPixKeyType(value: string): value is Campaign["pix_key_type"] {
+  return ["cpf", "cnpj", "email", "telefone", "aleatoria"].includes(value);
+}
+
+function campaignFromRow(row: DonationCampaignRow): Campaign {
+  const amounts = Array.isArray(row.suggested_amounts_cents)
+    ? row.suggested_amounts_cents.filter((value): value is number => typeof value === "number")
+    : [];
+
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    image_url: row.image_url,
+    pix_key: row.pix_key,
+    pix_key_type: isPixKeyType(row.pix_key_type) ? row.pix_key_type : "aleatoria",
+    recipient_name: row.recipient_name,
+    recipient_city: row.recipient_city,
+    suggested_amounts_cents: amounts,
+    goal_cents: row.goal_cents,
+    active: row.active,
+    featured: row.featured,
+    sort_order: row.sort_order,
+  };
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 const EMPTY: Campaign = {
   title: "",
   description: "",
@@ -74,19 +114,25 @@ export function DonationsManager({ slug }: { slug?: string | null }) {
   const save = useServerFn(upsertDonationCampaign);
   const remove = useServerFn(deleteDonationCampaign);
   const fetchStats = useServerFn(getDonationCampaignStats);
-  const { data: items = [], isLoading } = useQuery({ queryKey: ["my-donations"], queryFn: () => list() });
-  const { data: stats = [] } = useQuery({ queryKey: ["donation-campaign-stats"], queryFn: () => fetchStats() });
-  const statsByCampaign = new Map(stats.map((s: any) => [s.campaignId, s]));
+  const { data: items = [], isLoading } = useQuery<Campaign[]>({
+    queryKey: ["my-donations"],
+    queryFn: async () => (await list() as DonationCampaignRow[]).map(campaignFromRow),
+  });
+  const { data: stats = [] } = useQuery<CampaignStats[]>({
+    queryKey: ["donation-campaign-stats"],
+    queryFn: async () => await fetchStats() as CampaignStats[],
+  });
+  const statsByCampaign = new Map(stats.map((stat) => [stat.campaignId, stat]));
   const [editing, setEditing] = useState<Campaign | null>(null);
 
   const saveMut = useMutation({
-    mutationFn: (c: Campaign) => save({ data: c as any }),
+    mutationFn: (campaign: Campaign) => save({ data: campaign }),
     onSuccess: () => {
       toast.success("Campanha salva");
       setEditing(null);
       qc.invalidateQueries({ queryKey: ["my-donations"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+    onError: (error) => toast.error(getErrorMessage(error, "Erro ao salvar")),
   });
   const delMut = useMutation({
     mutationFn: (id: string) => remove({ data: { id } }),
@@ -139,7 +185,7 @@ export function DonationsManager({ slug }: { slug?: string | null }) {
         </Card>
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
-          {items.map((c: any) => (
+          {items.map((c) => (
             <Card key={c.id} className="p-4 flex gap-3">
               {c.image_url && <img src={c.image_url} alt="" className="h-16 w-16 rounded object-cover" />}
               <div className="flex-1 min-w-0">
@@ -295,7 +341,9 @@ function CampaignForm({
       <div className="grid sm:grid-cols-3 gap-3">
         <div>
           <Label>Tipo</Label>
-          <Select value={f.pix_key_type} onValueChange={(v) => set("pix_key_type", v as any)}>
+          <Select value={f.pix_key_type} onValueChange={(value) => {
+            if (isPixKeyType(value)) set("pix_key_type", value);
+          }}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="aleatoria">Aleatória</SelectItem>
@@ -372,20 +420,23 @@ function PixKeyCard() {
   const qc = useQueryClient();
   const getAccount = useServerFn(getMyAccount);
   const saveSettings = useServerFn(updateAccountSettings);
-  const { data: account } = useQuery({ queryKey: ["my-account"], queryFn: () => getAccount() });
+  const { data: account } = useQuery<Account | null>({
+    queryKey: ["my-account"],
+    queryFn: async () => await getAccount() as Account | null,
+  });
   const [pixKey, setPixKey] = useState("");
 
   useEffect(() => {
-    setPixKey((account as any)?.pix_key ?? "");
+    setPixKey(account?.pix_key ?? "");
   }, [account]);
 
   const saveMut = useMutation({
     mutationFn: () =>
       saveSettings({
         data: {
-          brand_title: (account as any)?.brand_title ?? "Igreja",
-          brand_empty_message: (account as any)?.brand_empty_message ?? "Sem celebrações.",
-          primary_color: (account as any)?.primary_color ?? "#467da5",
+          brand_title: account?.brand_title ?? "Igreja",
+          brand_empty_message: account?.brand_empty_message ?? "Sem celebrações.",
+          primary_color: account?.primary_color ?? "#467da5",
           pix_key: pixKey.trim() || null,
         },
       }),
@@ -393,7 +444,7 @@ function PixKeyCard() {
       toast.success("Chave Pix salva");
       qc.invalidateQueries({ queryKey: ["my-account"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+    onError: (error) => toast.error(getErrorMessage(error, "Erro ao salvar")),
   });
 
   return (
@@ -432,30 +483,33 @@ function FixedImageCard() {
   const qc = useQueryClient();
   const getAccount = useServerFn(getMyAccount);
   const saveSettings = useServerFn(updateAccountSettings);
-  const { data: account } = useQuery({ queryKey: ["my-account"], queryFn: () => getAccount() });
+  const { data: account } = useQuery<Account | null>({
+    queryKey: ["my-account"],
+    queryFn: async () => await getAccount() as Account | null,
+  });
   const [url, setUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    setUrl((account as any)?.donations_fixed_image_url ?? "");
+    setUrl(account?.donations_fixed_image_url ?? "");
   }, [account]);
 
   const saveMut = useMutation({
     mutationFn: (newUrl: string | null) =>
       saveSettings({
         data: {
-          brand_title: (account as any)?.brand_title ?? "Igreja",
-          brand_empty_message: (account as any)?.brand_empty_message ?? "Sem celebrações.",
-          primary_color: (account as any)?.primary_color ?? "#467da5",
+          brand_title: account?.brand_title ?? "Igreja",
+          brand_empty_message: account?.brand_empty_message ?? "Sem celebrações.",
+          primary_color: account?.primary_color ?? "#467da5",
           donations_fixed_image_url: newUrl,
-        } as any,
+        },
       }),
     onSuccess: () => {
       toast.success("Imagem fixa salva");
       qc.invalidateQueries({ queryKey: ["my-account"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+    onError: (error) => toast.error(getErrorMessage(error, "Erro ao salvar")),
   });
 
   async function uploadFile(file: File) {

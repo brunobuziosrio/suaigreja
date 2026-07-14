@@ -53,4 +53,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
 Button.displayName = "Button";
 
+// eslint-disable-next-line react-refresh/only-export-components -- variante é parte da API do componente.
 export { Button, buttonVariants };

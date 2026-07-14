@@ -39,4 +39,5 @@ const Toggle = React.forwardRef<
 
 Toggle.displayName = TogglePrimitive.Root.displayName;
 
+// eslint-disable-next-line react-refresh/only-export-components -- variante é parte da API do componente.
 export { Toggle, toggleVariants };

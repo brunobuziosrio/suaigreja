@@ -44,9 +44,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMemo } from "react";
+import type { Database } from "@/integrations/supabase/types";
+
+type Member = Database["public"]["Tables"]["members"]["Row"];
+type Event = Database["public"]["Tables"]["events"]["Row"];
+type Campaign = Database["public"]["Tables"]["campaigns"]["Row"];
+type SystemUpdate = Database["public"]["Tables"]["system_updates"]["Row"];
+type DashboardDestination =
+  | "/agenda"
+  | "/ausencias"
+  | "/billing"
+  | "/campanhas"
+  | "/escalas"
+  | "/hub"
+  | "/locations"
+  | "/membros"
+  | "/types";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -74,9 +90,9 @@ function DashboardPage() {
     queryFn: () => fetchLocations(),
   });
   const { data: types = [] } = useQuery({ queryKey: ["types"], queryFn: () => fetchTypes() });
-  const { data: members = [] } = useQuery({
+  const { data: members = [] } = useQuery<Member[]>({
     queryKey: ["members"],
-    queryFn: () => fetchMembers(),
+    queryFn: async () => await fetchMembers() as Member[],
     enabled: canUseMembers,
   });
   const { data: campaigns = [] } = useQuery({
@@ -88,9 +104,9 @@ function DashboardPage() {
     queryFn: () => fetchUnconfirmedShifts(),
     enabled: canUseShifts,
   });
-  const { data: contribCampaigns = [] } = useQuery({
+  const { data: contribCampaigns = [] } = useQuery<Campaign[]>({
     queryKey: ["contribution-campaigns"],
-    queryFn: () => fetchContributionCampaigns(),
+    queryFn: async () => await fetchContributionCampaigns() as Campaign[],
     enabled: canUseContribCampaigns,
   });
   const { data: absentData } = useQuery({
@@ -106,17 +122,17 @@ function DashboardPage() {
     const last = `${lastDate.getFullYear()}-${pad(lastDate.getMonth() + 1)}-${pad(lastDate.getDate())}`;
     return { from: first, to: last };
   }, []);
-  const { data: events = [] } = useQuery({
+  const { data: events = [] } = useQuery<Event[]>({
     queryKey: ["events", range.from, range.to],
-    queryFn: () => fetchEvents({ data: range }),
+    queryFn: async () => await fetchEvents({ data: range }) as Event[],
   });
   const profile = account ? getProfile(account.religion_profile) : null;
   const terms = getReligionTerms(account?.religion_profile);
 
   const fetchUpdates = useServerFn(listSystemUpdates);
-  const { data: updates = [] } = useQuery({
+  const { data: updates = [] } = useQuery<SystemUpdate[]>({
     queryKey: ["system-updates"],
-    queryFn: () => fetchUpdates(),
+    queryFn: async () => await fetchUpdates() as SystemUpdate[],
   });
   const fetchFinancialEntries = useServerFn(listFinancialEntries);
   const { data: financialEntries = [] } = useQuery({
@@ -126,14 +142,14 @@ function DashboardPage() {
   });
 
   const currentMonth = new Date().getMonth() + 1;
-  const birthdays = (members as any[]).filter((m) => {
+  const birthdays = members.filter((m) => {
     if (!m.birth_date) return false;
     return new Date(m.birth_date + "T00:00:00").getMonth() + 1 === currentMonth;
   });
   const activeMembers = canUseMembers
-    ? (members as any[]).filter((m) => m.status === "ativo").length
+    ? members.filter((m) => m.status === "ativo").length
     : "Pro";
-  const activeCampaigns = (campaigns as any[]).filter((c) => c.active).length;
+  const activeCampaigns = campaigns.filter((campaign) => campaign.active).length;
 
   const todayKey = useMemo(() => {
     const d = new Date();
@@ -143,20 +159,20 @@ function DashboardPage() {
 
   const birthdaysToday = useMemo(() => {
     const now = new Date();
-    return birthdays.filter((m: any) => {
+    return birthdays.filter((m) => {
       const d = new Date(m.birth_date + "T00:00:00");
       return d.getDate() === now.getDate();
     });
   }, [birthdays]);
 
   const upcomingEvents = useMemo(
-    () => (events as any[]).filter((e) => (e.event_date ?? "") >= todayKey).slice(0, 5),
+    () => events.filter((e) => (e.event_date ?? "") >= todayKey).slice(0, 5),
     [events, todayKey],
   );
 
   const incompleteMembers = useMemo(() => {
     if (!canUseMembers) return 0;
-    return (members as any[]).filter((m) => memberCompleteness(m) < 80).length;
+    return members.filter((m) => memberCompleteness(m) < 80).length;
   }, [canUseMembers, members]);
 
   // Campanha "atrasada": já passou mais tempo do prazo do que arrecadou
@@ -165,7 +181,7 @@ function DashboardPage() {
   const campaignsBehindPace = useMemo(() => {
     if (!canUseContribCampaigns) return [];
     const now = Date.now();
-    return (contribCampaigns as any[]).filter((c) => {
+    return contribCampaigns.filter((c) => {
       if (!c.is_active || !c.start_date || !c.end_date || !c.goal_amount_cents) return false;
       const start = new Date(`${c.start_date}T00:00:00`).getTime();
       const end = new Date(`${c.end_date}T23:59:59`).getTime();
@@ -183,8 +199,7 @@ function DashboardPage() {
       tone: string;
       title: string;
       description: string;
-      href: string;
-      search?: Record<string, string>;
+      href: DashboardDestination;
     }> = [];
     if (birthdaysToday.length > 0) {
       list.push({
@@ -225,7 +240,6 @@ function DashboardPage() {
         title: "Nenhuma campanha Pix ativa",
         description: "Ative uma campanha para organizar a arrecadação.",
         href: "/hub",
-        search: { tab: "doacoes" },
       });
     }
     if (canUseShifts && unconfirmedShifts.length > 0) {
@@ -277,7 +291,7 @@ function DashboardPage() {
       {
         label: `Cadastrar o primeiro ${terms.person}`,
         description: "Base para carteirinha, aniversarios, relatorios e comunicacao.",
-        done: canUseMembers && (members as any[]).length > 0,
+        done: canUseMembers && members.length > 0,
         href: canUseMembers ? "/membros" : "/billing",
       },
       {
@@ -295,7 +309,7 @@ function DashboardPage() {
       {
         label: "Publicar o primeiro evento",
         description: "A agenda mostra movimento e facilita inscricoes e divulgacao.",
-        done: (events as any[]).length > 0,
+        done: events.length > 0,
         href: "/agenda",
       },
       {
@@ -303,7 +317,6 @@ function DashboardPage() {
         description: "Libera arrecadacao por campanha e melhora a leitura financeira.",
         done: activeCampaigns > 0,
         href: "/hub",
-        search: { tab: "doacoes" },
       },
     ],
     [
@@ -376,7 +389,7 @@ function DashboardPage() {
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {alerts.map((alert) => (
-                <Link key={alert.key} to={alert.href as any} search={(alert.search ?? {}) as any}>
+                <DashboardLink key={alert.key} to={alert.href}>
                   <div className="group flex h-full items-start gap-3 rounded-md border bg-card p-3 transition-colors hover:border-primary/60 hover:bg-muted/30">
                     <span className={`rounded-md p-2 ${alert.tone}`}>
                       <alert.icon className="h-4 w-4" />
@@ -389,7 +402,7 @@ function DashboardPage() {
                     </div>
                     <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                   </div>
-                </Link>
+                </DashboardLink>
               ))}
             </div>
           )}
@@ -420,7 +433,7 @@ function DashboardPage() {
           </div>
           <div className="grid gap-2 p-5 pt-4 md:grid-cols-2">
             {setupTasks.map((task) => (
-              <Link key={task.label} to={task.href as any} search={(task.search ?? {}) as any}>
+              <DashboardLink key={task.label} to={task.href}>
                 <div className="group flex h-full items-start gap-3 rounded-md border bg-card p-3 transition-colors hover:border-primary/60 hover:bg-muted/30">
                   {task.done ? (
                     <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
@@ -435,7 +448,7 @@ function DashboardPage() {
                   </div>
                   <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
                 </div>
-              </Link>
+              </DashboardLink>
             ))}
           </div>
         </Card>
@@ -600,7 +613,7 @@ function DashboardPage() {
               </div>
             </Card>
           </Link>
-          <Link to="/hub" search={{ tab: "doacoes" } as any}>
+          <Link to="/hub" search={{ tab: "doacoes" }}>
             <Card className="p-5 hover:border-primary transition-colors h-full">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-md bg-amber-500/10 text-amber-700">
@@ -624,7 +637,7 @@ function DashboardPage() {
             <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
               {birthdays
                 .sort((a, b) => new Date(a.birth_date).getDate() - new Date(b.birth_date).getDate())
-                .map((m: any) => {
+                .map((m) => {
                   const d = new Date(m.birth_date + "T00:00:00");
                   return (
                     <div
@@ -684,7 +697,7 @@ function DashboardPage() {
             </div>
           ) : (
             <ul className="divide-y">
-              {upcomingEvents.map((e: any) => (
+              {upcomingEvents.map((e) => (
                 <li key={e.id} className="flex items-center gap-3 py-2.5">
                   <div className="flex h-11 w-11 shrink-0 flex-col items-center justify-center rounded-md bg-primary/10 text-primary">
                     <span className="text-sm font-semibold leading-none">
@@ -715,7 +728,7 @@ function DashboardPage() {
         </Card>
 
         <div className="grid md:grid-cols-2 gap-4 mt-6">
-          <SystemUpdatesCard updates={updates as any[]} />
+          <SystemUpdatesCard updates={updates} />
           <SuggestionCard />
         </div>
       </div>
@@ -723,7 +736,19 @@ function DashboardPage() {
   );
 }
 
-function SystemUpdatesCard({ updates }: { updates: any[] }) {
+function DashboardLink({ to, children }: { to: DashboardDestination; children: ReactNode }) {
+  if (to === "/hub") {
+    return (
+      <Link to="/hub" search={{ tab: "doacoes" }}>
+        {children}
+      </Link>
+    );
+  }
+
+  return <Link to={to}>{children}</Link>;
+}
+
+function SystemUpdatesCard({ updates }: { updates: SystemUpdate[] }) {
   return (
     <Card className="p-6 h-full">
       <div className="flex items-center gap-2 mb-3">
@@ -777,7 +802,8 @@ function SuggestionCard() {
       setMessage("");
       qc.invalidateQueries({ queryKey: ["my-suggestions"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Não foi possível enviar."),
+    onError: (error) =>
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar."),
   });
 
   return (
@@ -821,7 +847,7 @@ function SuggestionCard() {
 
 // Campos relevantes para carteirinha, relatorios e comunicacao. Mantido em sincronia
 // com o indicador de completude exibido na tela de Membros.
-function memberCompleteness(member: any): number {
+function memberCompleteness(member: Member): number {
   const fields = [
     member.full_name,
     member.phone,

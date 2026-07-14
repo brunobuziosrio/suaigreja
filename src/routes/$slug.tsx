@@ -31,6 +31,17 @@ import { buildPixBrCode } from "@/lib/pix-brcode";
 import { PublicAgendaView } from "@/components/public-agenda-view";
 import { openWhatsAppShare } from "@/lib/whatsapp-share";
 import { stripSurroundingQuotes } from "@/lib/utils";
+import type { CSSProperties } from "react";
+import type { LucideIcon } from "lucide-react";
+
+type PublicHubData = NonNullable<Awaited<ReturnType<typeof getPublicHub>>>;
+type PublicAccount = PublicHubData["account"];
+type AgendaItem = PublicHubData["agenda"][number];
+type NewsItem = PublicHubData["news"][number];
+type EventItem = PublicHubData["events"][number];
+type LocationItem = NonNullable<PublicHubData["locations"]>[number];
+type InstagramPost = NonNullable<Awaited<ReturnType<typeof getPublicInstagramPosts>>>[number];
+type SocialLink = { href: string; Icon: LucideIcon; label: string; sub: string };
 
 // Lightweight scroll-reveal wrapper using IntersectionObserver
 function Reveal({
@@ -174,24 +185,24 @@ function BackToTop({ accent, offsetBottom = 20 }: { accent: string; offsetBottom
 }
 
 function HubPage() {
-  const { account, agenda, agendaTypes, events, news, location, locations: locationsRaw, prayers, donations, liveStatus, liveSchedule, youtubeVideos, audioEmbed, devotional } = Route.useLoaderData() as any;
-  const locations: any[] = Array.isArray(locationsRaw) && locationsRaw.length > 0
+  const { account, agenda, agendaTypes, events, news, location, locations: locationsRaw, prayers, donations, liveStatus, liveSchedule, youtubeVideos, audioEmbed, devotional } = Route.useLoaderData() as PublicHubData;
+  const locations: LocationItem[] = Array.isArray(locationsRaw) && locationsRaw.length > 0
     ? locationsRaw
     : (location && location.address ? [location] : []);
   const slug = account.custom_slug || account.site_id;
   const accent = account.primary_color || "#7d9b76";
   const cover = account.hub_cover_url || defaultCover;
-  const gallery: string[] = Array.isArray((account as any).gallery_urls)
-    ? ((account as any).gallery_urls as string[])
+  const gallery: string[] = Array.isArray(account.gallery_urls)
+    ? account.gallery_urls.filter((value): value is string => typeof value === "string")
     : [];
 
   const fetchIgPosts = useServerFn(getPublicInstagramPosts);
-  const { data: igPosts } = useQuery({
+  const { data: igPosts } = useQuery<InstagramPost[]>({
     queryKey: ["ig-posts", slug],
-    queryFn: () => fetchIgPosts({ data: { slug } }),
+    queryFn: async () => await fetchIgPosts({ data: { slug } }) as InstagramPost[],
     staleTime: 5 * 60 * 1000,
   });
-  const [igOpen, setIgOpen] = useState<any | null>(null);
+  const [igOpen, setIgOpen] = useState<InstagramPost | null>(null);
   useEffect(() => {
     if (!igOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -205,29 +216,29 @@ function HubPage() {
       document.body.style.overflow = prev;
     };
   }, [igOpen]);
-  const weeklyMessage = (account as any).weekly_message as string | null;
-  const weeklyVerseRaw = (account as any).weekly_verse as string | null;
+  const weeklyMessage = account.weekly_message;
+  const weeklyVerseRaw = account.weekly_verse;
   const weeklyVerse = weeklyVerseRaw ? stripSurroundingQuotes(weeklyVerseRaw) : weeklyVerseRaw;
-  const weeklyVerseRef = (account as any).weekly_verse_ref as string | null;
-  const rawSlides = Array.isArray((account as any).hub_slides)
-    ? ((account as any).hub_slides as Array<{
+  const weeklyVerseRef = account.weekly_verse_ref;
+  const rawSlides = Array.isArray(account.hub_slides)
+    ? (account.hub_slides as unknown as Array<{
         image_url: string; title?: string | null; subtitle?: string | null;
         cta_label?: string | null; cta_url?: string | null;
       }>)
     : [];
   const slides = rawSlides.filter((s) => s && s.image_url);
   const highlights: Array<{ icon: string; value: string; label: string; sublabel?: string | null }> =
-    Array.isArray((account as any).hub_highlights) ? (account as any).hub_highlights : [];
-  const showWa = (account as any).hub_show_whatsapp !== false;
-  const waRaw = ((account as any).hub_whatsapp || account.visitor_whatsapp || "") as string;
+    Array.isArray(account.hub_highlights) ? account.hub_highlights as unknown as Array<{ icon: string; value: string; label: string; sublabel?: string | null }> : [];
+  const showWa = account.hub_show_whatsapp !== false;
+  const waRaw = account.hub_whatsapp || account.visitor_whatsapp || "";
   const waNumber = showWa ? waRaw.replace(/\D/g, "") : "";
-  const socials: { href: string; Icon: any; label: string; sub: string }[] = [
+  const socials = [
     account.social_youtube && { href: account.social_youtube, Icon: Youtube, label: "YouTube", sub: "Inscreva-se no canal" },
     account.social_facebook && { href: account.social_facebook, Icon: Facebook, label: "Facebook", sub: "Curta nossa página" },
     account.social_instagram && { href: account.social_instagram, Icon: Instagram, label: "Instagram", sub: "Siga as publicações" },
     waNumber && { href: `https://wa.me/${waNumber}`, Icon: MessageCircle, label: "WhatsApp", sub: "Fale com a gente" },
     account.social_website && { href: account.social_website, Icon: Globe, label: "Site", sub: "Conheça mais" },
-  ].filter(Boolean) as any;
+  ].filter((item): item is SocialLink => Boolean(item));
 
   // Top nav menu — padronizado com HubChrome (mesmo em todas as páginas)
   const navItems: { label: string; href: string }[] = [
@@ -246,8 +257,8 @@ function HubPage() {
       style={{
         background: "linear-gradient(180deg, #faf8f5 0%, #f5f0e8 100%)",
         color: "#3a3a3a",
-        ["--accent" as any]: accent,
-      }}
+        ["--accent" as string]: accent,
+      } as CSSProperties}
     >
       {/* TOP NAVBAR */}
       <TopNav
@@ -270,7 +281,7 @@ function HubPage() {
           accent={accent}
           cover={cover}
           slug={slug}
-          nextEvent={(agenda as any[])[0]}
+          nextEvent={agenda[0]}
         />
       )}
 
@@ -312,7 +323,7 @@ function HubPage() {
         <LiveCombinedSection
           liveStatus={liveStatus}
           liveUrl={account.live_url}
-          nextEvent={(agenda as any[])[0]}
+          nextEvent={agenda[0]}
           schedule={Array.isArray(liveSchedule) ? liveSchedule : []}
           accent={accent}
         />
@@ -362,7 +373,7 @@ function HubPage() {
           const todayStr = ymd(today);
           const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
           const tomorrowStr = ymd(tomorrow);
-          const summary = (agenda as any[]).filter((e) => e.event_date === todayStr || e.event_date === tomorrowStr);
+          const summary = agenda.filter((event) => event.event_date === todayStr || event.event_date === tomorrowStr);
           return (
             <section id="agenda" className="mt-20 scroll-mt-24">
               <p className="text-center text-sm italic text-stone-600 max-w-xl mx-auto mb-6">
@@ -439,7 +450,7 @@ function HubPage() {
             </div>
 
             {(() => {
-              const [featured, ...rest] = news as any[];
+              const [featured, ...rest] = news;
               const sideItems = rest.slice(0, 2);
               const accountName = account?.display_name || "Notícias";
               const fmtDate = (d: string) =>
@@ -506,7 +517,7 @@ function HubPage() {
 
                   {/* SIDE LIST (horizontal cards) */}
                   <div className="flex flex-col gap-6 h-full">
-                    {sideItems.map((n: any, ni: number) => (
+                    {sideItems.map((n, ni) => (
                       <Reveal key={n.id} delay={150 + ni * 120} className="flex-1 flex">
                        <Link
                          to="/n/$slug/$postId"
@@ -864,8 +875,8 @@ function HubPage() {
               )}
             </div>
             {(() => {
-              const igCount = Math.max(3, Math.min(30, Number((account as any).instagram_post_count) || 9));
-              const igCols = Math.max(2, Math.min(6, Number((account as any).instagram_columns) || 3));
+              const igCount = Math.max(3, Math.min(30, account.instagram_post_count || 9));
+              const igCols = Math.max(2, Math.min(6, account.instagram_columns || 3));
               const colClass = ({
                 2: "sm:grid-cols-2",
                 3: "sm:grid-cols-3",
@@ -875,7 +886,7 @@ function HubPage() {
               } as Record<number, string>)[igCols] || "sm:grid-cols-3";
               return (
                 <div className={`grid grid-cols-2 ${colClass} gap-2 sm:gap-3`}>
-                  {igPosts.slice(0, igCount).map((post: any) => {
+                  {igPosts.slice(0, igCount).map((post) => {
                 const isVideo = post.media_type === "VIDEO";
                 const imgSrc = isVideo ? (post.thumbnail_url || post.media_url) : post.media_url;
                 return (
@@ -1041,7 +1052,7 @@ function HubPage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {prayers.map((p: any, idx: number) => (
+              {prayers.map((p, idx) => (
                 <Reveal key={p.id} delay={idx * 80}>
                   <article
                     className="relative h-full rounded-lg p-5 bg-white/70 backdrop-blur border border-stone-200 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition"
@@ -1083,9 +1094,9 @@ function HubPage() {
 
         {/* MAP — localizações (matriz + capelas) */}
         {locations.length > 0 && (() => {
-          const showAllLocs = (account as any).hub_show_all_locations === true;
-          const mainLoc = locations.find((l: any) => l.is_main) ?? locations[0];
-          const extras = locations.filter((l: any) => l !== mainLoc);
+          const showAllLocs = account.hub_show_all_locations === true;
+          const mainLoc = locations.find((location) => location.is_main) ?? locations[0];
+          const extras = locations.filter((location) => location !== mainLoc);
           const displayed = showAllLocs ? locations : [mainLoc];
           const isSingle = displayed.length === 1;
           return (
@@ -1115,7 +1126,7 @@ function HubPage() {
                     : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 }
               >
-                {displayed.map((loc: any) => (
+                {displayed.map((loc) => (
                   <LocationCard key={loc.id ?? loc.name} loc={loc} accent={accent} single={isSingle} />
                 ))}
               </div>
@@ -1156,7 +1167,7 @@ function HubPage() {
             </div>
 
             {(() => {
-              const [featured, ...rest] = events as any[];
+              const [featured, ...rest] = events;
               const sideItems = rest.slice(0, 2);
               const Tag = () => (
                 <span
@@ -1240,7 +1251,7 @@ function HubPage() {
 
                   {/* SIDE LIST */}
                   <div className="flex flex-col gap-6 h-full">
-                    {sideItems.map((e: any, ni: number) => (
+                    {sideItems.map((e, ni) => (
                       <Reveal key={e.id} delay={150 + ni * 120} className="flex-1 flex">
                          <Link
                            to="/e/$slug"
@@ -1339,14 +1350,14 @@ function QuickShortcuts({
 }: {
   accent: string;
   slug: string;
-  account: any;
+  account: PublicAccount;
   waNumber: string;
   hasEvents: boolean;
   hasNews: boolean;
   hasLive: boolean;
   locationCount: number;
 }) {
-  type Item = { label: string; href: string; Icon: any; external?: boolean };
+  type Item = { label: string; href: string; Icon: LucideIcon; external?: boolean };
   const items: Item[] = [];
   if (account.hub_show_agenda) items.push({ label: "Agenda", href: "#agenda", Icon: CalendarDays });
   if (hasLive) items.push({ label: "Transmissões", href: `/v/${slug}`, Icon: Radio });
@@ -1511,11 +1522,11 @@ function TopNav({
 function HeroEmotional({
   account, accent, cover, slug, nextEvent,
 }: {
-  account: any;
+  account: PublicAccount;
   accent: string;
   cover: string;
   slug: string;
-  nextEvent?: { event_date: string; start_time: string; type_name: string; location_name: string } | null;
+  nextEvent?: AgendaItem | null;
 }) {
   const headline = "Bem-vindo à nossa comunidade";
   const sub = "Eventos, transmissões e informações em um único lugar.";
@@ -1592,7 +1603,7 @@ function HeroEmotional({
 function NextEventPill({
   nextEvent, accent,
 }: {
-  nextEvent: { event_date: string; start_time: string; type_name: string; location_name: string };
+  nextEvent: AgendaItem;
   accent: string;
 }) {
   const [now, setNow] = useState(() => new Date());
@@ -1637,7 +1648,7 @@ function NextEventPill({
 function HeroSlider({
   slides, accent,
 }: {
-  slides: Array<{ image_url: string; title?: string | null; subtitle?: string | null; cta_label?: string | null; cta_url?: string | null }>;
+  slides: Array<{ image_url: string; title?: string | null; subtitle?: string | null; cta_label?: string | null; cta_url?: string | null; title_size?: string | null }>;
   accent: string;
 }) {
   const [idx, setIdx] = useState(0);
@@ -1673,7 +1684,7 @@ function HeroSlider({
                   lg: "text-4xl sm:text-6xl md:text-7xl",
                   xl: "text-5xl sm:text-7xl md:text-8xl",
                 };
-                const sizeKey = ((s as any).title_size as string) || "lg";
+                const sizeKey = s.title_size || "lg";
                 const titleSize = sizeMap[sizeKey] ?? sizeMap.lg;
                 return (
                 <div className="absolute inset-0 flex items-center">
@@ -1749,9 +1760,9 @@ function HeroSlider({
 function HubFooter({
   account, accent, navItems, socials,
 }: {
-  account: any; accent: string;
+  account: PublicAccount; accent: string;
   navItems: { label: string; href: string }[];
-  socials: { href: string; Icon: any; label: string }[];
+  socials: Array<Pick<SocialLink, "href" | "Icon" | "label">>;
 }) {
   const slug = account.custom_slug || account.site_id;
   const logoUrl: string | null =
@@ -1893,7 +1904,7 @@ function HubFooter({
   );
 }
 
-function SocialIcon({ href, Icon }: { href: string; Icon: any }) {
+function SocialIcon({ href, Icon }: { href: string; Icon: LucideIcon }) {
   return (
     <a
       href={href}
@@ -1903,113 +1914,6 @@ function SocialIcon({ href, Icon }: { href: string; Icon: any }) {
     >
       <Icon className="h-4 w-4" />
     </a>
-  );
-}
-
-function BigModule({
-  to, params, icon: Icon, eyebrow, title, accent, span,
-}: {
-  to: any; params: any; icon: any; eyebrow: string; title: string; accent: string; span?: string;
-}) {
-  return (
-    <Link
-      to={to}
-      params={params}
-      className={`group relative overflow-hidden rounded-sm p-8 min-h-[180px] flex flex-col justify-between transition ${span ?? ""}`}
-      style={{ background: "#3a3a3a", color: "#faf8f5" }}
-    >
-      <div
-        className="absolute -right-12 -top-12 h-48 w-48 rounded-full opacity-20 blur-3xl transition group-hover:opacity-40"
-        style={{ background: accent }}
-      />
-      <div className="relative flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.2em] opacity-70">{eyebrow}</span>
-        <Icon className="h-5 w-5 opacity-70" />
-      </div>
-      <div className="relative flex items-end justify-between">
-        <h3
-          className="text-2xl sm:text-3xl tracking-tight max-w-xs"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {title}
-        </h3>
-        <ArrowUpRight className="h-5 w-5 opacity-0 group-hover:opacity-100 transition" />
-      </div>
-    </Link>
-  );
-}
-
-function SmallModule({
-  to, params, icon: Icon, title, accent,
-}: {
-  to: any; params: any; icon: any; title: string; accent: string;
-}) {
-  return (
-    <Link
-      to={to}
-      params={params}
-      className="group relative overflow-hidden rounded-sm p-6 min-h-[180px] bg-white border border-stone-200 hover:border-stone-400 transition flex flex-col justify-between"
-    >
-      <div
-        className="h-10 w-10 rounded-full flex items-center justify-center"
-        style={{ background: `${accent}22`, color: accent }}
-      >
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="flex items-end justify-between">
-        <h3
-          className="text-xl tracking-tight text-stone-900"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {title}
-        </h3>
-        <ArrowUpRight className="h-4 w-4 text-stone-400 group-hover:text-stone-900 transition" />
-      </div>
-    </Link>
-  );
-}
-
-function ActionCard({
-  to, params, icon: Icon, eyebrow, title, subtitle, accent,
-}: {
-  to: any; params: any; icon: any;
-  eyebrow: string; title: string; subtitle: string; accent: string;
-}) {
-  return (
-    <Link
-      to={to}
-      params={params}
-      className="group relative overflow-hidden rounded-2xl p-6 min-h-[180px] bg-white border border-stone-200 hover:-translate-y-0.5 hover:shadow-lg transition flex flex-col justify-between"
-      style={{ boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}
-    >
-      <div
-        className="absolute -right-10 -top-10 h-32 w-32 rounded-full opacity-10 blur-2xl transition group-hover:opacity-25"
-        style={{ background: accent }}
-      />
-      <div className="relative flex items-start justify-between">
-        <div
-          className="h-12 w-12 rounded-2xl flex items-center justify-center"
-          style={{ background: `${accent}18`, color: accent }}
-        >
-          <Icon className="h-6 w-6" strokeWidth={1.75} />
-        </div>
-        <ArrowUpRight
-          className="h-4 w-4 text-stone-300 group-hover:text-stone-900 transition"
-        />
-      </div>
-      <div className="relative mt-6">
-        <p className="text-[10px] uppercase tracking-[0.2em] font-semibold" style={{ color: accent }}>
-          {eyebrow}
-        </p>
-        <h3
-          className="mt-1.5 text-xl sm:text-2xl tracking-tight text-stone-900 leading-tight"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
-          {title}
-        </h3>
-        <p className="mt-1.5 text-xs text-stone-500 leading-snug">{subtitle}</p>
-      </div>
-    </Link>
   );
 }
 
@@ -2202,7 +2106,7 @@ function PixModule({ pixKey, merchantName, accent }: { pixKey: string; merchantN
   );
 }
 
-const HIGHLIGHT_ICON_MAP: Record<string, any> = {
+const HIGHLIGHT_ICON_MAP: Record<string, LucideIcon> = {
 
   church: Church,
   users: Users,
@@ -2565,7 +2469,7 @@ function CountUp({ target, prefix = "", duration = 1600 }: { target: number; pre
 }
 
 // ===================== LocationCard (Onde estamos) =====================
-function LocationCard({ loc, accent, single }: { loc: any; accent: string; single: boolean }) {
+function LocationCard({ loc, accent, single }: { loc: LocationItem; accent: string; single: boolean }) {
   const address = loc.address as string;
   const lat = loc.latitude != null ? Number(loc.latitude) : NaN;
   const lng = loc.longitude != null ? Number(loc.longitude) : NaN;

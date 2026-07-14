@@ -29,6 +29,8 @@ import { validateImageFile } from "@/lib/file-validation";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database, Json } from "@/integrations/supabase/types";
+import type { LucideIcon } from "lucide-react";
 import {
   ExternalLink, Copy, Upload, Loader2, X, ImagePlus, Plus, Trash2, Pencil, GripVertical,
   Church, Users, HeartHandshake, Cross, Sparkles, Heart, CalendarHeart, CalendarDays,
@@ -90,7 +92,7 @@ const HIGHLIGHT_ICON_OPTIONS = [
   { value: "star", label: "Estrela", Icon: Star },
 ] as const;
 
-const HIGHLIGHT_ICON_MAP = Object.fromEntries(
+const HIGHLIGHT_ICON_MAP: Record<string, LucideIcon> = Object.fromEntries(
   HIGHLIGHT_ICON_OPTIONS.map((option) => [option.value, option.Icon]),
 );
 
@@ -115,7 +117,7 @@ export const Route = createFileRoute("/_authenticated/hub")({
   component: HubEditor,
 });
 
-const TAB_META: Record<HubTab, { label: string; Icon: any; desc: string }> = {
+const TAB_META: Record<HubTab, { label: string; Icon: LucideIcon; desc: string }> = {
   geral: { label: "Geral", Icon: SettingsIcon, desc: "Endereço público, status da página e WhatsApp." },
   aparencia: { label: "Galeria", Icon: ImageIcon, desc: "Fotos da comunidade." },
   slides: { label: "Slides", Icon: LayoutTemplate, desc: "Carrossel grande logo abaixo do menu." },
@@ -174,6 +176,47 @@ type HubForm = {
   instagram_columns: number;
 };
 
+type Account = Database["public"]["Tables"]["accounts"]["Row"];
+type HighlightSlot = (typeof HIGHLIGHT_SLOTS)[number];
+
+function isJsonRecord(value: Json): value is { [key: string]: Json | undefined } {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function stringArrayFromJson(value: Json): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function slidesFromJson(value: Json): SlideForm[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isJsonRecord).map((slide) => ({
+    image_url: typeof slide.image_url === "string" ? slide.image_url : "",
+    title: typeof slide.title === "string" ? slide.title : "",
+    subtitle: typeof slide.subtitle === "string" ? slide.subtitle : "",
+    cta_label: typeof slide.cta_label === "string" ? slide.cta_label : "",
+    cta_url: typeof slide.cta_url === "string" ? slide.cta_url : "",
+    title_size: ["sm", "md", "lg", "xl"].includes(String(slide.title_size))
+      ? String(slide.title_size) as SlideForm["title_size"]
+      : "lg",
+  }));
+}
+
+function highlightsFromJson(value: Json): HighlightForm[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isJsonRecord).map((highlight) => ({
+    icon: typeof highlight.icon === "string" ? highlight.icon : "church",
+    value: typeof highlight.value === "string" ? highlight.value : "",
+    label: typeof highlight.label === "string" ? highlight.label : "",
+    sublabel: typeof highlight.sublabel === "string" ? highlight.sublabel : "",
+  }));
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 function HubEditor() {
   const getAccount = useServerFn(getMyAccount);
   const saveHub = useServerFn(updateHubSettings);
@@ -194,9 +237,9 @@ function HubEditor() {
   const newsImageRef = useRef<HTMLInputElement>(null);
   const [uploadingNewsImg, setUploadingNewsImg] = useState(false);
 
-  const { data: account } = useQuery({
+  const { data: account } = useQuery<Account | null>({
     queryKey: ["my-account"],
-    queryFn: () => getAccount(),
+    queryFn: async () => await getAccount() as Account | null,
   });
 
   const { data: igConnection, refetch: refetchIg } = useQuery({
@@ -262,44 +305,26 @@ function HubEditor() {
       hub_show_events: account.hub_show_events ?? true,
       hub_show_prayer: account.hub_show_prayer ?? true,
       hub_show_visitor: account.hub_show_visitor ?? true,
-      hub_show_all_locations: (account as any).hub_show_all_locations ?? false,
-      hub_whatsapp: (account as any).hub_whatsapp ?? (account as any).visitor_whatsapp ?? "",
-      hub_show_whatsapp: (account as any).hub_show_whatsapp ?? true,
+      hub_show_all_locations: account.hub_show_all_locations ?? false,
+      hub_whatsapp: account.hub_whatsapp ?? account.visitor_whatsapp ?? "",
+      hub_show_whatsapp: account.hub_show_whatsapp ?? true,
       social_instagram: account.social_instagram ?? "",
       social_youtube: account.social_youtube ?? "",
       social_facebook: account.social_facebook ?? "",
       social_website: account.social_website ?? "",
       live_url: account.live_url ?? "",
-      weekly_message: (account as any).weekly_message ?? "",
-      weekly_verse: (account as any).weekly_verse ?? "",
-      weekly_verse_ref: (account as any).weekly_verse_ref ?? "",
-      gallery_urls: Array.isArray((account as any).gallery_urls)
-        ? ((account as any).gallery_urls as string[])
-        : [],
-      hub_slides: Array.isArray((account as any).hub_slides)
-        ? ((account as any).hub_slides as any[]).map((s) => ({
-            image_url: s.image_url ?? "",
-            title: s.title ?? "",
-            subtitle: s.subtitle ?? "",
-            cta_label: s.cta_label ?? "",
-            cta_url: s.cta_url ?? "",
-            title_size: (["sm","md","lg","xl"].includes(s.title_size) ? s.title_size : "lg") as SlideForm["title_size"],
-          }))
-        : [],
-      hub_highlights: Array.isArray((account as any).hub_highlights)
-        ? ((account as any).hub_highlights as any[]).map((h) => ({
-            icon: h.icon ?? "church",
-            value: h.value ?? "",
-            label: h.label ?? "",
-            sublabel: h.sublabel ?? "",
-          }))
-        : [],
-      media_youtube_url: (account as any).media_youtube_url ?? "",
-      media_audio_url: (account as any).media_audio_url ?? "",
-      media_show_youtube: (account as any).media_show_youtube ?? true,
-      media_show_audio: (account as any).media_show_audio ?? true,
-      instagram_post_count: (account as any).instagram_post_count ?? 9,
-      instagram_columns: (account as any).instagram_columns ?? 3,
+      weekly_message: account.weekly_message ?? "",
+      weekly_verse: account.weekly_verse ?? "",
+      weekly_verse_ref: account.weekly_verse_ref ?? "",
+      gallery_urls: stringArrayFromJson(account.gallery_urls),
+      hub_slides: slidesFromJson(account.hub_slides),
+      hub_highlights: highlightsFromJson(account.hub_highlights),
+      media_youtube_url: account.media_youtube_url ?? "",
+      media_audio_url: account.media_audio_url ?? "",
+      media_show_youtube: account.media_show_youtube ?? true,
+      media_show_audio: account.media_show_audio ?? true,
+      instagram_post_count: account.instagram_post_count ?? 9,
+      instagram_columns: account.instagram_columns ?? 3,
     });
   }, [account]);
 
@@ -336,8 +361,8 @@ function HubEditor() {
               cta_url: s.cta_url || null,
               title_size: s.title_size || "lg",
             })),
-          hub_highlights: (HIGHLIGHT_SLOTS as readonly any[])
-            .map((slot: any, idx: number) => {
+          hub_highlights: HIGHLIGHT_SLOTS
+            .map((slot: HighlightSlot, idx) => {
               const h = form.hub_highlights[idx];
               const num = (h?.value ?? "").trim();
               if (!num) return null;
@@ -372,9 +397,9 @@ function HubEditor() {
       const url = await uploadViaServer(file, "hub-cover");
       setForm((f) => ({ ...f, hub_cover_url: url }));
       toast.success("Capa enviada");
-    } catch (e: any) {
-      console.error("uploadCover failed", e);
-      toast.error(e?.message || "Falha no upload");
+    } catch (error) {
+      console.error("uploadCover failed", error);
+      toast.error(getErrorMessage(error, "Falha no upload"));
     } finally {
       setUploading(false);
     }
@@ -393,9 +418,9 @@ function HubEditor() {
       try {
         const url = await uploadViaServer(file, "gallery");
         newUrls.push(url);
-      } catch (e: any) {
-        console.error("uploadGallery failed for", file.name, e);
-        errors.push(`${file.name}: ${e?.message || "falha"}`);
+      } catch (error) {
+        console.error("uploadGallery failed for", file.name, error);
+        errors.push(`${file.name}: ${getErrorMessage(error, "falha")}`);
       }
     }
     if (newUrls.length) {
@@ -416,9 +441,9 @@ function HubEditor() {
         hub_slides: f.hub_slides.map((s, i) => (i === idx ? { ...s, image_url: url } : s)),
       }));
       toast.success("Imagem do slide enviada");
-    } catch (e: any) {
-      console.error("uploadSlideImage failed", e);
-      toast.error(e?.message || "Falha no upload");
+    } catch (error) {
+      console.error("uploadSlideImage failed", error);
+      toast.error(getErrorMessage(error, "Falha no upload"));
     } finally {
       setUploadingSlide(null);
     }
@@ -492,7 +517,7 @@ function HubEditor() {
   const setTab = (t: HubTab) =>
     navigate({
       to: "/hub",
-      search: { tab: t === "geral" ? undefined : t } as any,
+      search: { tab: t === "geral" ? undefined : t },
       replace: true,
     });
 
@@ -1107,8 +1132,8 @@ function NewsManager({
 }: {
   accountId: string | undefined;
   fetchNews: () => Promise<NewsRow[]>;
-  saveNews: (args: { data: NewsRow }) => Promise<any>;
-  removeNews: (args: { data: { id: string } }) => Promise<any>;
+  saveNews: (args: { data: NewsRow }) => Promise<{ ok: boolean }>;
+  removeNews: (args: { data: { id: string } }) => Promise<{ ok: boolean }>;
   uploadFile: (file: File, folder: "hub-cover" | "gallery" | "slide" | "news") => Promise<string>;
 }) {
   const qc = useQueryClient();
@@ -1149,9 +1174,9 @@ function NewsManager({
     try {
       const url = await uploadFile(file, "news");
       setEditing({ ...editing, image_url: url });
-    } catch (e: any) {
-      console.error("uploadNewsImage failed", e);
-      toast.error(e?.message || "Falha no upload");
+    } catch (error) {
+      console.error("uploadNewsImage failed", error);
+      toast.error(getErrorMessage(error, "Falha no upload"));
     } finally {
       setUploading(false);
     }

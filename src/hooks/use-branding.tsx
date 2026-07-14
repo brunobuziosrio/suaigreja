@@ -19,6 +19,7 @@ const DEFAULTS: PlatformBranding = {
   logo_height_px: 32,
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- o hook compartilha o módulo com suas configurações padrão.
 export function useBranding() {
   return useQuery({
     queryKey: ["platform-branding"],
