@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { verifyCronRequest } from "@/lib/cron-auth.server";
-import { recordWhatsappOptOut } from "@/lib/whatsapp-consent.server";
+import { recordWhatsappOptOut, type WhatsappConsentClient } from "@/lib/whatsapp-consent.server";
 
 const OptOutInput = z.object({
   account_id: z.string().uuid(),
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/public/whatsapp-opt-out")({
         }
 
         const result = await recordWhatsappOptOut({
-          supabase: supabaseAdmin as any,
+          supabase: supabaseAdmin as unknown as WhatsappConsentClient,
           accountId: parsed.data.account_id,
           phone: parsed.data.phone,
           memberId: parsed.data.member_id ?? null,

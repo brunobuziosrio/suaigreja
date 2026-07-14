@@ -95,8 +95,8 @@ export function buildRangeMessage(
 
 export function openWhatsAppShare(message: string) {
   // Try native share first (mobile & supported desktop browsers).
-  const nav = typeof navigator !== "undefined" ? (navigator as any) : null;
-  if (nav?.share) {
+  const nav = typeof navigator !== "undefined" ? navigator : null;
+  if (nav && "share" in nav && typeof nav.share === "function") {
     nav.share({ text: message }).catch(() => {
       fallbackCopy(message);
     });

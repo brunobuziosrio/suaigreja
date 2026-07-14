@@ -56,9 +56,21 @@ const empty: Form = {
   entry_date: today(), contributor_name: "", congregation_id: "", payment_method: "", notes: "",
 };
 
-const PAYMENT_LABELS: Record<string, string> = {
+const PAYMENT_METHODS = ["pix", "dinheiro", "cartao", "transferencia", "outro"] as const;
+type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+type TypeFilter = "todos" | "income" | "expense";
+
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   pix: "Pix", dinheiro: "Dinheiro", cartao: "Cartão", transferencia: "Transferência", outro: "Outro",
 };
+
+function normalizePaymentMethod(value: string): PaymentMethod | null {
+  return PAYMENT_METHODS.includes(value as PaymentMethod) ? (value as PaymentMethod) : null;
+}
+
+function isTypeFilter(value: string): value is TypeFilter {
+  return value === "todos" || value === "income" || value === "expense";
+}
 
 function fmt(cents: number) {
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -217,7 +229,7 @@ function FinancialEntriesPage() {
   const [importResult, setImportResult] = useState<{ created: number; errors: { row: number; message: string }[] } | null>(null);
   const csvFileInput = useRef<HTMLInputElement>(null);
 
-  const [typeFilter, setTypeFilter] = useState<"todos" | "income" | "expense">("todos");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("todos");
   const [categoryFilter, setCategoryFilter] = useState("todas");
   const [congregationFilter, setCongregationFilter] = useState("todas");
   const [search, setSearch] = useState("");
@@ -237,7 +249,7 @@ function FinancialEntriesPage() {
         entry_date: form.entry_date,
         contributor_name: form.contributor_name.trim() || null,
         congregation_id: form.congregation_id || null,
-        payment_method: (form.payment_method || null) as any,
+        payment_method: normalizePaymentMethod(form.payment_method),
         notes: form.notes.trim() || null,
       },
     }),
@@ -562,7 +574,7 @@ function FinancialEntriesPage() {
         <Card className="p-4 mb-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
             <Input placeholder="Buscar categoria, descrição, contribuinte…" value={search} onChange={(e) => setSearch(e.target.value)} className="lg:col-span-2" />
-            <Select value={typeFilter} onValueChange={(v: any) => setTypeFilter(v)}>
+            <Select value={typeFilter} onValueChange={(value) => isTypeFilter(value) && setTypeFilter(value)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os tipos</SelectItem>

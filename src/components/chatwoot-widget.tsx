@@ -3,6 +3,17 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouterState } from "@tanstack/react-router";
 
+type ChatwootAccount = {
+  current_plan?: string | null;
+  subscription_status?: string | null;
+  site_id?: string | null;
+  brand_title?: string | null;
+  religion_profile?: string | null;
+  onboarded?: boolean | null;
+  trial_ends_at?: string | null;
+  subscription_ends_at?: string | null;
+};
+
 declare global {
   interface Window {
     chatwootSDK?: {
@@ -48,7 +59,7 @@ export function ChatwootWidget() {
     DEFAULT_WEBSITE_TOKEN;
   const { user } = useAuth();
   const qc = useQueryClient();
-  const account = qc.getQueryData<Record<string, any>>(["account", user?.id]);
+  const account = qc.getQueryData<ChatwootAccount>(["account", user?.id]);
 
   useEffect(() => {
     if (isPublicHub) {
@@ -113,7 +124,7 @@ export function ChatwootWidget() {
       window.addEventListener("chatwoot:ready", handler);
       return () => window.removeEventListener("chatwoot:ready", handler);
     }
-  }, [user, account]);
+  }, [user, account, isPublicHub]);
 
   return null;
 }

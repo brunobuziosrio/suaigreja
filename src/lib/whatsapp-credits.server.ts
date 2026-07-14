@@ -1,5 +1,8 @@
-type SupabaseRpcClient = {
-  rpc: any;
+export type SupabaseRpcClient = {
+  rpc(
+    fn: "reserve_whatsapp_credits" | "refund_whatsapp_message_credits",
+    args: Record<string, unknown>,
+  ): Promise<{ data: unknown; error: { message: string } | null }>;
 };
 
 type CreditResult = {

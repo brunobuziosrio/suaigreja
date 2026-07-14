@@ -19,6 +19,23 @@ type AccountAccess = {
   trial_ends_at?: string | null;
 } | null | undefined;
 
+type AccountPlanRow = NonNullable<AccountAccess>;
+
+type SupabaseResult<T> = {
+  data: T | null;
+  error: { message: string } | null;
+};
+
+type SupabasePlanClient = {
+  from(table: "accounts"): {
+    select(columns: string): {
+      eq(column: "id", value: string): {
+        maybeSingle(): Promise<SupabaseResult<AccountPlanRow>>;
+      };
+    };
+  };
+};
+
 const TIER_RANK: Record<PlanTier, number> = {
   essential: 0,
   pro: 1,
@@ -136,7 +153,7 @@ export type PlanTierCheck = {
 
 export async function requirePlanTier(
   context: {
-    supabase: any;
+    supabase: SupabasePlanClient;
     userId: string;
   },
   minimumTier: PlanTier,
@@ -168,7 +185,7 @@ export async function requirePlanTier(
 
 export async function requireModuleAccess(
   context: {
-    supabase: any;
+    supabase: SupabasePlanClient;
     userId: string;
   },
   pathname: string,

@@ -1,5 +1,34 @@
 const OPT_OUT_NOTICE = "Responda SAIR para cancelar.";
 
+type SupabaseResult<T> = {
+  data: T | null;
+  error: { message: string } | null;
+};
+
+export type WhatsappConsentClient = {
+  from(table: "whatsapp_opt_outs"): {
+    select(columns: string): {
+      eq(column: "account_id", value: string): {
+        eq(column: "phone_normalized", value: string): {
+          maybeSingle(): Promise<SupabaseResult<{ id: string }>>;
+        };
+      };
+    };
+  };
+  rpc(
+    fn: "record_whatsapp_opt_out",
+    args: {
+      p_account_id: string;
+      p_phone: string;
+      p_member_id: string | null;
+      p_message_id: string | null;
+      p_source: string;
+      p_reason: string | null;
+      p_metadata: Record<string, unknown>;
+    },
+  ): Promise<SupabaseResult<unknown>>;
+};
+
 export function normalizeWhatsappPhone(phone: string) {
   const digits = String(phone ?? "").replace(/\D/g, "");
   if (!digits) return "";
@@ -17,7 +46,7 @@ export async function hasWhatsappOptedOut({
   accountId,
   phone,
 }: {
-  supabase: any;
+  supabase: WhatsappConsentClient;
   accountId: string;
   phone: string;
 }) {
@@ -44,7 +73,7 @@ export async function recordWhatsappOptOut({
   reason,
   metadata,
 }: {
-  supabase: any;
+  supabase: WhatsappConsentClient;
   accountId: string;
   phone: string;
   memberId?: string | null;
