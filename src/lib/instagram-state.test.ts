@@ -26,12 +26,12 @@ afterEach(() => {
 
 describe("verifyState", () => {
   it("aceita state assinado com Web Crypto", async () => {
-    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-secret-for-instagram-state";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-secret";
     await expect(verifyState(await signedState("account-123", "nonce-456"))).resolves.toBe("account-123");
   });
 
   it("rejeita assinatura adulterada", async () => {
-    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-secret-for-instagram-state";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-secret";
     await expect(verifyState("account-123.nonce-456.00000000000000000000000000000000")).resolves.toBeNull();
   });
 });

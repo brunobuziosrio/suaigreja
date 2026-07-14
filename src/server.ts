@@ -166,6 +166,15 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const url = new URL(request.url);
+      if (url.pathname === "/health") {
+        const { error } = await supabaseAdmin.from("accounts").select("id").limit(1);
+        const healthy = !error;
+        return Response.json({ status: healthy ? "ok" : "degraded", database: healthy ? "ok" : "unavailable", timestamp: new Date().toISOString() }, {
+          status: healthy ? 200 : 503,
+          headers: { "cache-control": "no-store" },
+        });
+      }
       const handler = await getServerEntry();
       const routedRequest = await rewriteCustomDomainRequest(request);
       const response = await handler.fetch(routedRequest, env, ctx);
