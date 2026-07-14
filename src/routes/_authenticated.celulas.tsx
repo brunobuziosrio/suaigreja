@@ -105,19 +105,23 @@ function CelulasPage() {
             onSubmit={(e) => {
               e.preventDefault();
               const f = new FormData(e.currentTarget);
-              const wd = f.get("weekday") as string;
+              const getText = (name: string) => {
+                const value = f.get(name);
+                return typeof value === "string" ? value : "";
+              };
+              const wd = getText("weekday");
               save.mutate({
                 id: editing?.id,
-                name: f.get("name"),
-                leader_name: f.get("leader_name") || null,
-                leader_phone: f.get("leader_phone") || null,
+                name: getText("name"),
+                leader_name: getText("leader_name") || null,
+                leader_phone: getText("leader_phone") || null,
                 weekday: wd ? Number(wd) : null,
-                start_time: f.get("start_time") || null,
-                address: f.get("address") || null,
-                neighborhood: f.get("neighborhood") || null,
-                description: f.get("description") || null,
-                capacity: f.get("capacity") ? Number(f.get("capacity")) : null,
-                active: f.get("active") === "on",
+                start_time: getText("start_time") || null,
+                address: getText("address") || null,
+                neighborhood: getText("neighborhood") || null,
+                description: getText("description") || null,
+                capacity: getText("capacity") ? Number(getText("capacity")) : null,
+                active: getText("active") === "on",
               });
             }}
             className="space-y-3"
@@ -165,10 +169,11 @@ function GroupMembersDialog({ group, onClose }: { group: SmallGroupRow | null; o
   const add = useServerFn(addSmallGroupMember);
   const setRole = useServerFn(setSmallGroupMemberRole);
   const removeMember = useServerFn(removeSmallGroupMember);
+  const groupId = group?.id ?? "";
 
   const { data: roster = [], isLoading } = useQuery({
-    queryKey: ["small-group-members", group?.id],
-    queryFn: () => fetchRoster({ data: { group_id: group.id } }),
+    queryKey: ["small-group-members", groupId],
+    queryFn: () => (groupId ? fetchRoster({ data: { group_id: groupId } }) : Promise.resolve([])),
     enabled: !!group,
   });
   const { data: allMembers = [] } = useQuery<MemberOption[]>({
@@ -179,10 +184,10 @@ function GroupMembersDialog({ group, onClose }: { group: SmallGroupRow | null; o
 
   const [memberId, setMemberId] = useState("");
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ["small-group-members", group?.id] });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["small-group-members", groupId] });
 
   const addMut = useMutation({
-    mutationFn: () => add({ data: { group_id: group.id, member_id: memberId, role: "membro" } }),
+    mutationFn: () => add({ data: { group_id: groupId, member_id: memberId, role: "membro" } }),
     onSuccess: () => { invalidate(); toast.success("Adicionado à célula"); setMemberId(""); },
     onError: (e: Error) => toast.error(e.message),
   });
