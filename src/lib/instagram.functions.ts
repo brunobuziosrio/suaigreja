@@ -12,26 +12,49 @@ const SCOPES = [
   "instagram_business_manage_insights",
 ].join(",");
 
+async function hmacState(payload: string): Promise<string> {
+  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) {
+    throw new Error("SUPABASE_SERVICE_ROLE_KEY não está configurada");
+  }
+  const key = await globalThis.crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await globalThis.crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(payload),
+  );
+  return Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 32);
+}
+
+function signaturesMatch(expected: string, received: string): boolean {
+  if (expected.length !== received.length) return false;
+  let difference = 0;
+  for (let index = 0; index < expected.length; index += 1) {
+    difference |= expected.charCodeAt(index) ^ received.charCodeAt(index);
+  }
+  return difference === 0;
+}
+
 async function signState(accountId: string): Promise<string> {
-  const { createHmac } = await import("node:crypto");
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || "fallback-secret";
   const nonce = Math.random().toString(36).slice(2, 12);
   const payload = `${accountId}.${nonce}`;
-  const sig = createHmac("sha256", secret).update(payload).digest("hex").slice(0, 32);
-  return `${payload}.${sig}`;
+  return `${payload}.${await hmacState(payload)}`;
 }
 
 export async function verifyState(state: string): Promise<string | null> {
-  const { createHmac } = await import("node:crypto");
   const parts = state.split(".");
   if (parts.length !== 3) return null;
   const [accountId, nonce, sig] = parts;
-  const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || "fallback-secret";
-  const expected = createHmac("sha256", secret)
-    .update(`${accountId}.${nonce}`)
-    .digest("hex")
-    .slice(0, 32);
-  return expected === sig ? accountId : null;
+  const expected = await hmacState(`${accountId}.${nonce}`);
+  return signaturesMatch(expected, sig) ? accountId : null;
 }
 
 /** Returns the Instagram OAuth authorization URL for the current user to connect their IG. */

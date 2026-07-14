@@ -1,6 +1,6 @@
-FROM oven/bun:1.1-debian AS build
+FROM oven/bun:1.3.14-debian AS build
 WORKDIR /app
-COPY package.json bun.lockb* ./
+COPY package.json bun.lockb* bun.lock* ./
 RUN bun install --frozen-lockfile || bun install
 COPY . .
 ARG VITE_SUPABASE_URL
@@ -11,7 +11,7 @@ ENV VITE_SUPABASE_PUBLISHABLE_KEY=$VITE_SUPABASE_PUBLISHABLE_KEY
 ENV VITE_SUPABASE_PROJECT_ID=$VITE_SUPABASE_PROJECT_ID
 RUN bun run build
 
-FROM oven/bun:1.1-debian
+FROM oven/bun:1.3.14-debian
 WORKDIR /app
 COPY --from=build /app /app
 EXPOSE 3000 3001
