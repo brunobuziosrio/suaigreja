@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Instagram, Youtube, Facebook, Globe, MessageCircle,
   Menu, X as XIcon, Heart,
+  type LucideIcon,
 } from "lucide-react";
 
 export type HubChromeAccount = {
@@ -47,7 +48,7 @@ function socialsFrom(account: HubChromeAccount) {
     account.social_facebook && { href: account.social_facebook, Icon: Facebook, label: "Facebook" },
     wa && { href: `https://wa.me/${wa}`, Icon: MessageCircle, label: "WhatsApp" },
     account.social_website && { href: account.social_website, Icon: Globe, label: "Site" },
-  ].filter(Boolean) as { href: string; Icon: any; label: string }[];
+  ].filter(Boolean) as { href: string; Icon: LucideIcon; label: string }[];
 }
 
 export function HubChrome({
@@ -67,7 +68,7 @@ export function HubChrome({
   return (
     <div
       className="min-h-screen flex flex-col bg-[#faf8f5] text-stone-800"
-      style={{ ["--accent" as any]: accent }}
+      style={{ "--accent": accent } as CSSProperties}
     >
       <HubTopNav
         brandTitle={account.brand_title}
@@ -195,7 +196,7 @@ function HubFooter({
 }: {
   account: HubChromeAccount; accent: string;
   nav: { label: string; href: string }[];
-  socials: { href: string; Icon: any; label: string }[];
+  socials: { href: string; Icon: LucideIcon; label: string }[];
   slug: string;
 }) {
   return (

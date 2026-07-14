@@ -39,6 +39,11 @@ type Form = {
   notes: string;
 };
 
+type LocationOption = {
+  id: string;
+  name: string;
+};
+
 const empty: Form = { location_id: "", title: "", requester_name: "", requester_phone: "", start_at: "", end_at: "", notes: "" };
 
 const STATUS_META: Record<string, { label: string; variant: "warning" | "success" | "error" | "neutral" }> = {
@@ -130,7 +135,7 @@ function ReservationsPage() {
                   <Select value={form.location_id} onValueChange={(v) => setForm({ ...form, location_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Selecione o ambiente…" /></SelectTrigger>
                     <SelectContent>
-                      {locations.map((l: any) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
+                      {(locations as LocationOption[]).map((l) => <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

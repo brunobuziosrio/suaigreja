@@ -72,6 +72,8 @@ const getMembersWithDonations = createServerFn({
     return data ?? [];
   });
 
+type DonationStatusFilter = "all" | "paid" | "pending" | "failed";
+
 function FinancesPage() {
   const fetchDonations = useServerFn(getDonations);
   const { data: donations, isLoading } = useQuery({
@@ -79,7 +81,7 @@ function FinancesPage() {
     queryFn: () => fetchDonations(),
   });
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending" | "failed">("all");
+  const [statusFilter, setStatusFilter] = useState<DonationStatusFilter>("all");
   const [searchDonor, setSearchDonor] = useState("");
 
   const filtered = useMemo(() => {
@@ -192,7 +194,7 @@ function FinancesPage() {
               onChange={(e) => setSearchDonor(e.target.value)}
               className="flex-1"
             />
-            <Select value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)}>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as DonationStatusFilter)}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue />
               </SelectTrigger>

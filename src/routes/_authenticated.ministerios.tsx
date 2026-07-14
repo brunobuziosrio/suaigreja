@@ -44,6 +44,11 @@ type Form = {
   start_date: string;
 };
 
+type MemberOption = {
+  id: string;
+  full_name: string;
+};
+
 const empty: Form = { member_id: "", ministry: "", role: "", start_date: new Date().toISOString().slice(0, 10) };
 
 function MinistriesPage() {
@@ -129,7 +134,7 @@ function MinistriesPage() {
                   <Select value={form.member_id} onValueChange={(v) => setForm({ ...form, member_id: v })}>
                     <SelectTrigger><SelectValue placeholder="Selecione o membro…" /></SelectTrigger>
                     <SelectContent>
-                      {members.map((m: any) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                      {(members as MemberOption[]).map((m) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

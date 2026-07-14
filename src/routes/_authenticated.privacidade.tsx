@@ -32,6 +32,8 @@ const CONSENT_LABELS: Record<string, string> = {
 };
 
 const CONSENT_TYPES = Object.keys(CONSENT_LABELS) as (keyof typeof CONSENT_LABELS)[];
+type ConsentType = (typeof CONSENT_TYPES)[number];
+type ConsentStatus = Partial<Record<ConsentType, boolean>>;
 
 function PrivacyPage() {
   const fetchStatus = useServerFn(getConsentStatus);
@@ -45,8 +47,8 @@ function PrivacyPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const consentMut = useMutation({
-    mutationFn: (v: { consent_type: string; accepted: boolean }) =>
-      saveConsent({ data: v as any }),
+    mutationFn: (v: { consent_type: ConsentType; accepted: boolean }) =>
+      saveConsent({ data: v }),
     onSuccess: () => refetch(),
     onError: (e: Error) => toast.error(e.message),
   });
@@ -98,7 +100,7 @@ function PrivacyPage() {
                 </Label>
                 <Switch
                   id={type}
-                  checked={!!(consents as any)[type]}
+                  checked={!!(consents as ConsentStatus)[type]}
                   onCheckedChange={(checked) => consentMut.mutate({ consent_type: type, accepted: checked })}
                 />
               </div>

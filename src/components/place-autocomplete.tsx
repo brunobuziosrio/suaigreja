@@ -15,16 +15,63 @@ export type PickedPlace = {
   country: string | null;
 };
 
+type GoogleAddressComponent = {
+  longText?: string;
+  shortText?: string;
+  types?: string[];
+};
+
+type NormalizedAddressComponent = {
+  long_name: string | undefined;
+  short_name: string | undefined;
+  types: string[];
+};
+
+type GooglePlace = {
+  id: string;
+  formattedAddress?: string;
+  location?: {
+    lat: () => number;
+    lng: () => number;
+  };
+  addressComponents?: GoogleAddressComponent[];
+  fetchFields: (options: { fields: string[] }) => Promise<void>;
+};
+
+type GooglePlacePrediction = {
+  toPlace: () => GooglePlace;
+};
+
+type GooglePlaceSelectEvent = Event & {
+  placePrediction: GooglePlacePrediction;
+};
+
+type PlaceAutocompleteElement = HTMLElement & {
+  value?: string;
+};
+
+type GoogleMapsWindow = Window & {
+  google?: {
+    maps?: {
+      places?: unknown;
+      importLibrary: (library: "places") => Promise<{
+        PlaceAutocompleteElement: new () => PlaceAutocompleteElement;
+      }>;
+    };
+  };
+  __gmapsReadyLov?: () => void;
+};
+
 let loadingPromise: Promise<void> | null = null;
 function loadMaps(): Promise<void> {
   if (typeof window === "undefined") return Promise.reject(new Error("no window"));
-  const w = window as any;
+  const w = window as GoogleMapsWindow;
   if (w.google?.maps?.places) return Promise.resolve();
   if (loadingPromise) return loadingPromise;
   if (!BROWSER_KEY) return Promise.reject(new Error("Chave do Google Maps ausente"));
   loadingPromise = new Promise<void>((resolve, reject) => {
     const cbName = "__gmapsReadyLov";
-    (window as any)[cbName] = () => resolve();
+    w[cbName] = () => resolve();
     const s = document.createElement("script");
     const channel = TRACKING_ID ? `&channel=${TRACKING_ID}` : "";
     s.src = `https://maps.googleapis.com/maps/api/js?key=${BROWSER_KEY}&libraries=places,marker&loading=async&callback=${cbName}${channel}`;
@@ -36,7 +83,7 @@ function loadMaps(): Promise<void> {
   return loadingPromise;
 }
 
-function extractComponents(components: any[]): Omit<PickedPlace, "formatted_address" | "latitude" | "longitude" | "place_id"> {
+function extractComponents(components: NormalizedAddressComponent[]): Omit<PickedPlace, "formatted_address" | "latitude" | "longitude" | "place_id"> {
   const get = (type: string) =>
     components.find((c) => (c.types || []).includes(type))?.long_name ?? null;
   return {
@@ -63,21 +110,25 @@ export function PlaceAutocomplete({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    let element: any = null;
+    let element: PlaceAutocompleteElement | null = null;
+    let mountedContainer: HTMLDivElement | null = null;
     let cancelled = false;
     loadMaps()
       .then(async () => {
-        if (cancelled || !containerRef.current) return;
-        const g = (window as any).google;
+        const container = containerRef.current;
+        if (cancelled || !container) return;
+        mountedContainer = container;
+        const g = (window as GoogleMapsWindow).google;
+        if (!g?.maps) throw new Error("Google Maps indisponível");
         const { PlaceAutocompleteElement } = await g.maps.importLibrary("places");
         element = new PlaceAutocompleteElement();
         element.style.width = "100%";
         if (value) element.value = value;
-        containerRef.current.innerHTML = "";
-        containerRef.current.appendChild(element);
-        element.addEventListener("gmp-select", async (ev: any) => {
+        container.innerHTML = "";
+        container.appendChild(element);
+        element.addEventListener("gmp-select", async (ev) => {
           try {
-            const placePrediction = ev.placePrediction;
+            const { placePrediction } = ev as GooglePlaceSelectEvent;
             const place = placePrediction.toPlace();
             await place.fetchFields({
               fields: ["id", "formattedAddress", "location", "addressComponents"],
@@ -85,10 +136,10 @@ export function PlaceAutocomplete({
             const lat = place.location?.lat();
             const lng = place.location?.lng();
             if (typeof lat !== "number" || typeof lng !== "number") return;
-            const comps = (place.addressComponents || []).map((c: any) => ({
+            const comps = (place.addressComponents || []).map((c) => ({
               long_name: c.longText,
               short_name: c.shortText,
-              types: c.types,
+              types: c.types ?? [],
             }));
             const extracted = extractComponents(comps);
             const picked: PickedPlace = {
@@ -100,8 +151,8 @@ export function PlaceAutocomplete({
             };
             onPick(picked);
             onTextChange?.(picked.formatted_address);
-          } catch (e: any) {
-            setErr(e?.message ?? "Erro ao ler endereço");
+          } catch (e) {
+            setErr(e instanceof Error ? e.message : "Erro ao ler endereço");
           }
         });
         element.addEventListener("input", () => {
@@ -111,8 +162,8 @@ export function PlaceAutocomplete({
       .catch((e) => setErr(e.message));
     return () => {
       cancelled = true;
-      if (element && containerRef.current?.contains(element)) {
-        containerRef.current.removeChild(element);
+      if (element && mountedContainer?.contains(element)) {
+        mountedContainer.removeChild(element);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

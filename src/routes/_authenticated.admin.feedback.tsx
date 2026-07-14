@@ -22,6 +22,23 @@ export const Route = createFileRoute("/_authenticated/admin/feedback")({
   component: AdminFeedbackPage,
 });
 
+type SystemUpdate = {
+  id: string;
+  title: string;
+  content: string;
+  version: string | null;
+  created_at: string;
+};
+
+type CustomerSuggestion = {
+  id: string;
+  title: string;
+  message: string;
+  account_name: string | null;
+  email: string | null;
+  created_at: string;
+};
+
 function AdminFeedbackPage() {
   const qc = useQueryClient();
   const checkAdmin = useServerFn(getIsAdmin);
@@ -60,7 +77,7 @@ function AdminFeedbackPage() {
       setTitle(""); setContent(""); setVersion("");
       qc.invalidateQueries({ queryKey: ["system-updates"] });
     },
-    onError: (e: any) => toast.error(e?.message || "Erro"),
+    onError: (e: Error) => toast.error(e.message || "Erro"),
   });
 
   const delUpdateMut = useMutation({
@@ -149,7 +166,7 @@ function AdminFeedbackPage() {
                 <p className="text-sm text-muted-foreground">Nenhuma atualização publicada ainda.</p>
               ) : (
                 <ul className="space-y-2 max-h-96 overflow-auto pr-1">
-                  {(updates as any[]).map((u) => (
+                  {(updates as SystemUpdate[]).map((u) => (
                     <li key={u.id} className="border rounded p-2 flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -188,7 +205,7 @@ function AdminFeedbackPage() {
               <p className="text-sm text-muted-foreground">Nenhuma sugestão recebida ainda.</p>
             ) : (
               <ul className="space-y-2 max-h-[600px] overflow-auto pr-1">
-                {(suggestions as any[]).map((s) => (
+                {(suggestions as CustomerSuggestion[]).map((s) => (
                   <li key={s.id} className="border rounded p-3 flex items-start gap-2">
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">{s.title}</p>
