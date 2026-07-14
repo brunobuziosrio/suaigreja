@@ -3,7 +3,13 @@ import { AppShell } from "@/components/app-shell";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { listSmallGroups, upsertSmallGroup, deleteSmallGroup } from "@/lib/small-groups.functions";
+import {
+  listSmallGroups,
+  upsertSmallGroup,
+  deleteSmallGroup,
+  type SmallGroupRow,
+  type SmallGroupUpsertPayload,
+} from "@/lib/small-groups.functions";
 import {
   listSmallGroupMembers,
   addSmallGroupMember,
@@ -21,6 +27,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Plus, Pencil, Trash2, Users2, MapPin, Clock, UserPlus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/celulas")({
   component: CelulasPage,
@@ -28,6 +35,11 @@ export const Route = createFileRoute("/_authenticated/celulas")({
 });
 
 const WEEKDAYS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+type MemberOption = Pick<Database["public"]["Tables"]["members"]["Row"], "id" | "full_name">;
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Não foi possível concluir a operação.";
+}
 
 function CelulasPage() {
   const list = useServerFn(listSmallGroups);
@@ -36,13 +48,13 @@ function CelulasPage() {
   const qc = useQueryClient();
   const { data: groups = [], isLoading } = useQuery({ queryKey: ["small_groups"], queryFn: () => list() });
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<any>(null);
-  const [membersGroup, setMembersGroup] = useState<any>(null);
+  const [editing, setEditing] = useState<SmallGroupRow | null>(null);
+  const [membersGroup, setMembersGroup] = useState<SmallGroupRow | null>(null);
 
   const save = useMutation({
-    mutationFn: (payload: any) => upsert({ data: payload }),
+    mutationFn: (payload: SmallGroupUpsertPayload) => upsert({ data: payload }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["small_groups"] }); setOpen(false); toast.success("Salvo"); },
-    onError: (e: any) => toast.error(e.message),
+    onError: (error) => toast.error(errorMessage(error)),
   });
   const remove = useMutation({
     mutationFn: (id: string) => del({ data: { id } }),
@@ -62,7 +74,7 @@ function CelulasPage() {
 
       {isLoading ? <p className="text-sm text-muted-foreground">Carregando…</p> : (
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {groups.map((g: any) => (
+          {groups.map((g) => (
             <Card key={g.id} className="p-4 space-y-2">
               <div className="flex items-start justify-between gap-2">
                 <div>
@@ -146,7 +158,7 @@ function CelulasPage() {
   );
 }
 
-function GroupMembersDialog({ group, onClose }: { group: any; onClose: () => void }) {
+function GroupMembersDialog({ group, onClose }: { group: SmallGroupRow | null; onClose: () => void }) {
   const qc = useQueryClient();
   const fetchRoster = useServerFn(listSmallGroupMembers);
   const fetchMembers = useServerFn(listMembers);
@@ -159,7 +171,11 @@ function GroupMembersDialog({ group, onClose }: { group: any; onClose: () => voi
     queryFn: () => fetchRoster({ data: { group_id: group.id } }),
     enabled: !!group,
   });
-  const { data: allMembers = [] } = useQuery({ queryKey: ["members"], queryFn: () => fetchMembers(), enabled: !!group });
+  const { data: allMembers = [] } = useQuery<MemberOption[]>({
+    queryKey: ["members"],
+    queryFn: () => fetchMembers() as Promise<MemberOption[]>,
+    enabled: !!group,
+  });
 
   const [memberId, setMemberId] = useState("");
 
@@ -181,7 +197,7 @@ function GroupMembersDialog({ group, onClose }: { group: any; onClose: () => voi
     onSuccess: () => { invalidate(); toast.success("Removido da célula"); },
   });
 
-  const availableMembers = allMembers.filter((m: any) => !roster.some((r) => r.member_id === m.id));
+  const availableMembers = allMembers.filter((member) => !roster.some((rosterMember) => rosterMember.member_id === member.id));
 
   return (
     <Dialog open={!!group} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -192,7 +208,7 @@ function GroupMembersDialog({ group, onClose }: { group: any; onClose: () => voi
             <Select value={memberId} onValueChange={setMemberId}>
               <SelectTrigger className="flex-1"><SelectValue placeholder="Adicionar membro…" /></SelectTrigger>
               <SelectContent>
-                {availableMembers.map((m: any) => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
+                {availableMembers.map((member) => <SelectItem key={member.id} value={member.id}>{member.full_name}</SelectItem>)}
               </SelectContent>
             </Select>
             <Button size="sm" disabled={!memberId || addMut.isPending} onClick={() => addMut.mutate()}>

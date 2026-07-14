@@ -3,6 +3,9 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
+import type { Database } from "@/integrations/supabase/types";
+
+export type SmallGroupRow = Database["public"]["Tables"]["small_groups"]["Row"];
 
 export const listSmallGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -33,6 +36,8 @@ const upsertSchema = z.object({
   capacity: z.number().int().min(0).max(9999).optional().nullable(),
   active: z.boolean().default(true),
 });
+
+export type SmallGroupUpsertPayload = z.infer<typeof upsertSchema>;
 
 export const upsertSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
