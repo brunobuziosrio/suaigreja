@@ -413,7 +413,7 @@ function SettingsDialog({
 }) {
   const [form, setForm] = useState(initial);
   const initialKey = useMemo(() => JSON.stringify(initial), [initial]);
-  useEffect(() => setForm(initial), [initialKey]);
+  useEffect(() => setForm(JSON.parse(initialKey)), [initialKey]);
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
