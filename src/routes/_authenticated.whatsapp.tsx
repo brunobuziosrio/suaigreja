@@ -69,6 +69,10 @@ const DELIVERY_LABELS: Record<string, string> = {
   unknown: "status recebido",
 };
 
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
 const KIND_LABELS: Record<string, string> = {
   birthday: "Aniversário",
   welcome: "Boas-vindas",
@@ -100,6 +104,15 @@ type Settings = {
   newsletter_enabled: boolean;
   newsletter_template: string;
 };
+type MessageKind = keyof typeof KIND_LABELS;
+type RecentMessage = {
+  id: string; kind: string; phone: string; recipient_name: string | null; content: string; status: string;
+  error_message: string | null; provider_delivery_status: string | null; provider_status_at: string | null; created_at: string;
+};
+type CreditPackage = { id: string; name: string; description: string; message_count: number; price_cents: number };
+type CreditPurchase = { id: string; message_count: number; amount_cents: number; status: string; paid_at: string | null; created_at: string };
+type CreditPayment = { package_name: string; message_count: number; qr_code: string | null; copy_paste: string | null };
+type WhatsappData = { settings: (Partial<Settings> & { credits_balance?: number }) | null; packages: CreditPackage[]; purchases: CreditPurchase[]; recent: RecentMessage[]; totals: Record<string, number>; analytics: { total: number; reservedCredits: number; netCredits: number; byStatus: Record<string, number>; byKind: Record<string, number>; byDelivery: Record<string, number> } };
 
 const DEFAULTS: Settings = {
   enabled: false,
@@ -128,7 +141,7 @@ const DEFAULTS: Settings = {
     "Olá, {nome}! Confira as novidades desta semana na {igreja}: {conteudo}",
 };
 
-function settingsFromData(data: any): Settings {
+function settingsFromData(data: Pick<WhatsappData, "settings">): Settings {
   const s = data?.settings;
   if (!s) return DEFAULTS;
   return {
@@ -159,9 +172,9 @@ function WhatsappPage() {
   const enqueue = useServerFn(enqueueWhatsappMessage);
   const createCreditPix = useServerFn(createWhatsappCreditPixPayment);
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, refetch } = useQuery<WhatsappData>({
     queryKey: ["whatsapp-data"],
-    queryFn: () => fetchData(),
+    queryFn: async () => await fetchData() as WhatsappData,
   });
 
   const [cfg, setCfg] = useState<Settings>(DEFAULTS);
@@ -182,8 +195,8 @@ function WhatsappPage() {
       await saveSettings({ data: cfg });
       toast.success("Configurações salvas");
       refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao salvar");
+    } catch (error) {
+      toast.error(errorMessage(error, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }
@@ -194,8 +207,8 @@ function WhatsappPage() {
       await deleteMsg({ data: { id } });
       toast.success("Mensagem removida da fila");
       refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro");
+    } catch (error) {
+      toast.error(errorMessage(error, "Erro"));
     }
   }
 
@@ -216,9 +229,9 @@ function WhatsappPage() {
     byKind: Record<string, number>;
     byDelivery: Record<string, number>;
   };
-  const recent = (data?.recent ?? []) as any[];
+  const recent = data?.recent ?? [];
   const filtered =
-    histKind === "all" ? recent : recent.filter((m: any) => m.kind === histKind);
+    histKind === "all" ? recent : recent.filter((message) => message.kind === histKind);
 
   return (
     <AppShell>
@@ -473,7 +486,7 @@ function WhatsappPage() {
                     >
                       <option value="all">Todos ({recent.length})</option>
                       {Object.entries(KIND_LABELS).map(([v, label]) => {
-                        const count = recent.filter((m: any) => m.kind === v).length;
+                        const count = recent.filter((message) => message.kind === v).length;
                         return count > 0 ? (
                           <option key={v} value={v}>
                             {label} ({count})
@@ -491,7 +504,7 @@ function WhatsappPage() {
                   <p className="text-sm text-muted-foreground">Nenhuma mensagem ainda.</p>
                 ) : (
                   <div className="space-y-2">
-                    {filtered.map((m: any) => (
+                    {filtered.map((m) => (
                       <div
                         key={m.id}
                         className="flex items-start gap-3 rounded-md border p-3 text-sm"
@@ -676,27 +689,14 @@ function CreditPackages({
   createCreditPix,
   refetch,
 }: {
-  data: any;
+  data: WhatsappData | undefined;
   createCreditPix: ReturnType<typeof useServerFn<typeof createWhatsappCreditPixPayment>>;
   refetch: () => void;
 }) {
-  const [payment, setPayment] = useState<any>(null);
+  const [payment, setPayment] = useState<CreditPayment | null>(null);
   const [creating, setCreating] = useState<string | null>(null);
-  const packages = (data?.packages ?? []) as Array<{
-    id: string;
-    name: string;
-    description: string;
-    message_count: number;
-    price_cents: number;
-  }>;
-  const purchases = (data?.purchases ?? []) as Array<{
-    id: string;
-    message_count: number;
-    amount_cents: number;
-    status: string;
-    paid_at: string | null;
-    created_at: string;
-  }>;
+  const packages = data?.packages ?? [];
+  const purchases = data?.purchases ?? [];
 
   async function buy(packageId: string) {
     setCreating(packageId);
@@ -705,8 +705,8 @@ function CreditPackages({
       setPayment(result);
       toast.success("PIX de créditos gerado");
       refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao gerar PIX");
+    } catch (error) {
+      toast.error(errorMessage(error, "Erro ao gerar PIX"));
     } finally {
       setCreating(null);
     }
@@ -840,7 +840,7 @@ function ManualSendForm({
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
-  const [kind, setKind] = useState("manual");
+  const [kind, setKind] = useState<MessageKind>("manual");
   const [sending, setSending] = useState(false);
 
   async function handleSend() {
@@ -852,7 +852,7 @@ function ManualSendForm({
           phone: phone.trim(),
           recipient_name: name.trim() || null,
           content: content.trim(),
-          kind: kind as any,
+          kind,
           member_id: null,
         },
       });
@@ -861,8 +861,8 @@ function ManualSendForm({
       setName("");
       setContent("");
       refetch();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao enfileirar mensagem");
+    } catch (error) {
+      toast.error(errorMessage(error, "Erro ao enfileirar mensagem"));
     } finally {
       setSending(false);
     }
