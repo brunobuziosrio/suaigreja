@@ -23,6 +23,7 @@ import {
 import { Plus, Pencil, Trash2, MapPin, Loader2, Star } from "lucide-react";
 import { toast } from "sonner";
 import { PlaceAutocomplete, MapPreview, type PickedPlace } from "@/components/place-autocomplete";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/_authenticated/locations")({
   component: LocationsPage,
@@ -50,6 +51,7 @@ type LocationForm = {
   postal_code: string | null;
   country: string | null;
 };
+type Location = Database["public"]["Tables"]["locations"]["Row"];
 const empty: LocationForm = {
   name: "",
   address: "",
@@ -80,9 +82,9 @@ function LocationsPage() {
   const remove = useServerFn(deleteLocation);
 
   const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
-  const { data: items = [], isLoading } = useQuery({
+  const { data: items = [], isLoading } = useQuery<Location[]>({
     queryKey: ["locations"],
-    queryFn: () => fetchList(),
+    queryFn: async () => await fetchList() as Location[],
   });
 
   const profile = account ? getProfile(account.religion_profile) : null;
@@ -341,7 +343,7 @@ function LocationsPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <p className="font-medium truncate">{l.name}</p>
-                    {(l as any).is_main && (
+                    {l.is_main && (
                       <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full uppercase tracking-wider">
                         Matriz
                       </span>
@@ -364,22 +366,22 @@ function LocationsPage() {
                         name: l.name,
                         address: l.address ?? "",
                         active: l.active,
-                        is_main: (l as any).is_main ?? false,
-                        phone: (l as any).phone ?? "",
-                        whatsapp: (l as any).whatsapp ?? "",
-                        office_hours: (l as any).office_hours ?? "",
-                        transport_info: (l as any).transport_info ?? "",
-                        maps_url: (l as any).maps_url ?? "",
-                        waze_url: (l as any).waze_url ?? "",
-                        uber_url: (l as any).uber_url ?? "",
-                        latitude: (l as any).latitude ?? null,
-                        longitude: (l as any).longitude ?? null,
-                        place_id: (l as any).place_id ?? null,
-                        neighborhood: (l as any).neighborhood ?? null,
-                        city: (l as any).city ?? null,
-                        state: (l as any).state ?? null,
-                        postal_code: (l as any).postal_code ?? null,
-                        country: (l as any).country ?? null,
+                        is_main: l.is_main,
+                        phone: l.phone ?? "",
+                        whatsapp: l.whatsapp ?? "",
+                        office_hours: l.office_hours ?? "",
+                        transport_info: l.transport_info ?? "",
+                        maps_url: l.maps_url ?? "",
+                        waze_url: l.waze_url ?? "",
+                        uber_url: l.uber_url ?? "",
+                        latitude: l.latitude,
+                        longitude: l.longitude,
+                        place_id: l.place_id,
+                        neighborhood: l.neighborhood,
+                        city: l.city,
+                        state: l.state,
+                        postal_code: l.postal_code,
+                        country: l.country,
                       });
                       setOpen(true);
                     }}
