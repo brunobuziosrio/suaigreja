@@ -85,18 +85,12 @@ function PlatformBrandingSection() {
     mercadopagoAccessToken: "",
   });
 
-  useEffect(() => {
-    if (paymentSettings) {
-      setPaymentForm({
-        mercadopagoAccessToken: paymentSettings.mercadopagoAccessToken,
-      });
-    }
-  }, [paymentSettings]);
-
   const savePaymentMut = useMutation({
-    mutationFn: () => savePaymentSettings({ data: paymentForm }),
+    mutationFn: (data: { mercadopagoAccessToken?: string; clearMercadoPagoAccessToken?: boolean }) =>
+      savePaymentSettings({ data }),
     onSuccess: () => {
       toast.success("Configurações de pagamento atualizadas");
+      setPaymentForm({ mercadopagoAccessToken: "" });
       qc.invalidateQueries({ queryKey: ["platform-payment-settings"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -350,17 +344,40 @@ function PlatformBrandingSection() {
             Mercado Pago recebe assinaturas das igrejas, produtos do marketplace,
             inscrições pagas e compras de créditos WhatsApp.
           </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            {paymentSettings?.hasMercadoPagoAccessToken
+              ? "Um token está configurado. Por segurança ele não é exibido; informe outro apenas para substituí-lo."
+              : "Nenhum token configurado."}
+          </p>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">Mercado Pago — Access Token da empresa</Label>
+          <Label className="text-xs">Novo Access Token do Mercado Pago</Label>
           <Input
             type="password"
             value={paymentForm.mercadopagoAccessToken}
             onChange={(e) => setPaymentForm({ ...paymentForm, mercadopagoAccessToken: e.target.value })}
+            placeholder={paymentSettings?.hasMercadoPagoAccessToken ? "Deixe em branco para manter o token atual" : undefined}
+            autoComplete="new-password"
           />
         </div>
-        <div className="flex justify-end border-t pt-3">
-          <Button onClick={() => savePaymentMut.mutate()} disabled={savePaymentMut.isPending}>
+        <div className="flex items-center justify-between gap-3 border-t pt-3">
+          {paymentSettings?.hasMercadoPagoAccessToken ? (
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (window.confirm("Remover o token do Mercado Pago? Os pagamentos da plataforma deixarão de funcionar até que um novo token seja salvo.")) {
+                  savePaymentMut.mutate({ clearMercadoPagoAccessToken: true });
+                }
+              }}
+              disabled={savePaymentMut.isPending}
+            >
+              Remover token
+            </Button>
+          ) : <span />}
+          <Button
+            onClick={() => savePaymentMut.mutate(paymentForm.mercadopagoAccessToken.trim() ? paymentForm : {})}
+            disabled={savePaymentMut.isPending || !paymentForm.mercadopagoAccessToken.trim()}
+          >
             {savePaymentMut.isPending ? "Salvando…" : "Salvar gateway"}
           </Button>
         </div>

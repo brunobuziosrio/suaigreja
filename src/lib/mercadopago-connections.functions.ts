@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 import { z } from "zod";
 
 export const getMyMercadoPagoConnection = createServerFn({ method: "GET" })
@@ -8,6 +9,7 @@ export const getMyMercadoPagoConnection = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { data, error } = await supabase
       .from("mercadopago_connections")
       .select("public_key, connected_at")
@@ -32,6 +34,7 @@ export const saveMercadoPagoConnection = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { error } = await supabase.from("mercadopago_connections").upsert(
       {
         account_id: accountId,
@@ -49,6 +52,7 @@ export const disconnectMercadoPago = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { error } = await supabase
       .from("mercadopago_connections")
       .delete()

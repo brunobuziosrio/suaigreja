@@ -455,7 +455,7 @@ export const getPublicMemberCard = createServerFn({ method: "GET" })
     const { data: m, error } = await supabaseAdmin
       .from("members")
       .select(
-        "id, full_name, photo_url, role, member_since, birth_date, status, account_id, cpf, congregation",
+        "id, full_name, photo_url, role, member_since, status, account_id, congregation",
       )
       .eq("id", data.id)
       .maybeSingle();
@@ -477,8 +477,6 @@ export const getPublicMemberCard = createServerFn({ method: "GET" })
       status: m.status,
       account_id: m.account_id,
       congregation: m.congregation,
-      cpf: m.cpf,
-      birth_date: m.birth_date,
     };
     return {
       member: safeMember,

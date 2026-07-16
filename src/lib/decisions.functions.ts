@@ -11,6 +11,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const DECISION_KINDS = [
   "aceitar_jesus",
@@ -25,6 +26,7 @@ export const listDecisions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "pastoral_care", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("decisions" as never)
@@ -47,6 +49,7 @@ export const updateDecisionStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "pastoral_care", "edit");
     const { supabase } = context;
     const { error } = await supabase
       .from("decisions" as never)
@@ -62,6 +65,7 @@ export const updateDecisionNote = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid(), note: z.string().max(1000) }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "pastoral_care", "edit");
     const { supabase } = context;
     const { error } = await supabase
       .from("decisions" as never)
@@ -77,6 +81,7 @@ export const deleteDecision = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "pastoral_care", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("decisions" as never)
@@ -138,6 +143,8 @@ export const getPublicDecisionForm = createServerFn({ method: "GET" })
 
 const SubmitInput = z.object({
   siteId: z.string().min(1).max(64),
+  website: z.string().max(200),
+  formStartedAt: z.number().int().positive(),
   kind: z.enum(DECISION_KINDS),
   name: z.string().min(2).max(120),
   phone: z.string().max(30).optional().or(z.literal("")),
@@ -145,9 +152,17 @@ const SubmitInput = z.object({
   message: z.string().max(1000).optional(),
 });
 
+function assertHumanSubmission(website: string, formStartedAt: number) {
+  const elapsed = Date.now() - formStartedAt;
+  if (website.trim() || elapsed < 1200 || elapsed > 60 * 60 * 1000) {
+    throw new Error("Não foi possível enviar sua mensagem. Tente novamente.");
+  }
+}
+
 export const submitDecision = createServerFn({ method: "POST" })
   .validator((i) => SubmitInput.parse(i))
   .handler(async ({ data }) => {
+    assertHumanSubmission(data.website, data.formStartedAt);
     const accountId = await resolveAccountId(data.siteId);
     if (!accountId) throw new Error("Comunidade não encontrada.");
     const { error } = await supabaseAdmin.from("decisions" as never).insert({

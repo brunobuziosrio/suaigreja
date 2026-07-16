@@ -10,6 +10,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { stripSurroundingQuotes } from "@/lib/utils";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -34,6 +35,7 @@ function isBirthdayInRange(birthDate: string, from: Date, days: number): boolean
 export const getWeeklyBulletin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePermission(context, "pastoral_care", "view");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
 

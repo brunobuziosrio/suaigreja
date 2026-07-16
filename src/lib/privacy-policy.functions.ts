@@ -12,6 +12,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export type PrivacyPolicyRow = {
   id: string;
@@ -27,6 +28,7 @@ export const listPrivacyPolicyVersions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("privacy_policies" as never)
@@ -49,6 +51,7 @@ export const createPrivacyPolicyVersion = createServerFn({ method: "POST" })
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { supabase } = context;
 
     if (data.make_current) {
@@ -75,6 +78,7 @@ export const setCurrentPrivacyPolicyVersion = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { supabase } = context;
     const { error: clearErr } = await supabase
       .from("privacy_policies" as never)
@@ -95,6 +99,7 @@ export const deletePrivacyPolicyVersion = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { supabase } = context;
     const { error } = await supabase
       .from("privacy_policies" as never)

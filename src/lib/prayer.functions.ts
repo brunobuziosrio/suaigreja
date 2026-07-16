@@ -3,10 +3,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listPrayerRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePermission(context, "pastoral_care", "view");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
@@ -29,6 +31,7 @@ export const updatePrayerStatus = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "pastoral_care", "edit");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
@@ -44,6 +47,7 @@ export const deletePrayerRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "pastoral_care", "delete");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
@@ -106,6 +110,8 @@ export const getPublicPrayers = createServerFn({ method: "GET" })
 
 const SubmitInput = z.object({
   siteId: z.string().min(1).max(64),
+  website: z.string().max(200),
+  formStartedAt: z.number().int().positive(),
   name: z.string().min(2).max(120),
   email: z.string().email().max(160).optional().or(z.literal("")),
   phone: z.string().max(30).optional(),
@@ -113,9 +119,19 @@ const SubmitInput = z.object({
   is_anonymous: z.boolean().default(false),
 });
 
+function assertHumanSubmission(website: string, formStartedAt: number) {
+  // Campo-isca e tempo mínimo barram os bots mais comuns sem adicionar atrito
+  // a quem busca ajuda. A mensagem genérica não ensina como contornar a regra.
+  const elapsed = Date.now() - formStartedAt;
+  if (website.trim() || elapsed < 1200 || elapsed > 60 * 60 * 1000) {
+    throw new Error("Não foi possível enviar seu pedido. Tente novamente.");
+  }
+}
+
 export const submitPrayerRequest = createServerFn({ method: "POST" })
   .validator((i) => SubmitInput.parse(i))
   .handler(async ({ data }) => {
+    assertHumanSubmission(data.website, data.formStartedAt);
     const accountId = await resolveAccountId(data.siteId);
     if (!accountId) throw new Error("Comunidade não encontrada.");
     const { error } = await supabaseAdmin.from("prayer_requests").insert({

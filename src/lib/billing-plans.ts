@@ -1,6 +1,9 @@
 export type PlanTier = "essential" | "pro" | "premium";
 export type BillingCycle = "monthly" | "annual";
 
+// Fonte única da promessa comercial. A migration cria trials com esta duração.
+export const TRIAL_DAYS = 14;
+
 const TIER_LABELS: Record<PlanTier, string> = {
   essential: "Essencial",
   pro: "Pro",

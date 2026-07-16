@@ -103,12 +103,13 @@ function ReportsPage() {
 
 function EbdReport({ year, month }: { year: number; month: number }) {
   const fn = useServerFn(getEbdMonthly);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["ebd-monthly", year, month],
     queryFn: () => fn({ data: { year, month } }),
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (isError) return <ReportLoadError onRetry={() => refetch()} />;
   if (!data || data.classes.length === 0)
     return <p className="text-sm text-muted-foreground">Sem registros de frequência neste mês.</p>;
 
@@ -175,12 +176,13 @@ function EbdReport({ year, month }: { year: number; month: number }) {
 
 function CheckinReport({ year, month }: { year: number; month: number }) {
   const fn = useServerFn(getCheckinMonthly);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["checkin-monthly", year, month],
     queryFn: () => fn({ data: { year, month } }),
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (isError) return <ReportLoadError onRetry={() => refetch()} />;
   if (!data || data.sessions.length === 0)
     return <p className="text-sm text-muted-foreground">Sem sessões de check-in neste mês.</p>;
 
@@ -235,12 +237,13 @@ function CheckinReport({ year, month }: { year: number; month: number }) {
 
 function SmallGroupsReport() {
   const fn = useServerFn(getSmallGroupsReport);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["sg-report"],
     queryFn: () => fn(),
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (isError) return <ReportLoadError onRetry={() => refetch()} />;
   if (!data || data.groups.length === 0)
     return <p className="text-sm text-muted-foreground">Nenhuma célula cadastrada.</p>;
 
@@ -327,12 +330,13 @@ const MONTH_NAMES = Array.from({ length: 12 }, (_, i) =>
 
 function DonationsReport({ year }: { year: number }) {
   const fn = useServerFn(getDonationsMonthlyReport);
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["donations-monthly", year],
     queryFn: () => fn({ data: { year } }),
   });
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (isError) return <ReportLoadError onRetry={() => refetch()} />;
   if (!data || data.rows.length === 0)
     return <p className="text-sm text-muted-foreground">Nenhuma doação confirmada neste ano.</p>;
 
@@ -396,6 +400,18 @@ function KpiCard({ label, value, icon }: { label: string; value: string | number
         </div>
         <p className="text-2xl font-bold mt-1">{value}</p>
       </CardContent>
+    </Card>
+  );
+}
+
+function ReportLoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Card className="p-8 text-center" role="alert">
+      <p className="font-medium">Não foi possível carregar este relatório</p>
+      <p className="mt-1 text-sm text-muted-foreground">Verifique sua conexão e tente novamente.</p>
+      <Button className="mt-4" size="sm" variant="outline" onClick={onRetry}>
+        Tentar novamente
+      </Button>
     </Card>
   );
 }

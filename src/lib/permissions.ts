@@ -53,6 +53,9 @@ export const PERMISSION_MODULES: PermissionModule[] = [
   { id: "volunteer_shifts", label: "Escalas de voluntarios", description: "Escalas e substituicoes" },
   { id: "documents", label: "Documentos", description: "Emissao de documentos" },
   { id: "reports", label: "Relatorios", description: "Indicadores e exportacoes" },
+  { id: "assets", label: "Patrimonio e manutencao", description: "Bens, emprestimos e manutencao" },
+  { id: "social_assistance", label: "Acao social", description: "Familias atendidas e entregas" },
+  { id: "pastoral_care", label: "Cuidado pastoral", description: "Oracoes, decisoes, devocionais e boletim" },
   { id: "team", label: "Equipe e permissoes", description: "Usuarios, cargos e acessos" },
   { id: "settings", label: "Configuracoes da conta", description: "Identidade, plano e integracoes" },
 ];
@@ -86,7 +89,7 @@ export const ROLE_CATALOG: RoleDefinition[] = [
       members: ALL, visitors: ALL, events: ALL, checkin: ALL, campaigns: ALL,
       finances: ["view", "create", "edit", "manage"], secretaria: ALL, whatsapp: ALL,
       small_groups: ALL, education: ALL, volunteer_shifts: ALL, documents: ALL,
-      reports: VIEW, team: VIEW, settings: VIEW,
+      reports: VIEW, assets: ALL, social_assistance: ALL, pastoral_care: ALL, team: VIEW, settings: VIEW,
     }),
   },
   {
@@ -98,6 +101,7 @@ export const ROLE_CATALOG: RoleDefinition[] = [
       members: OPERATE, visitors: OPERATE, events: OPERATE, checkin: VIEW,
       secretaria: OPERATE, whatsapp: OPERATE, small_groups: ALL,
       education: OPERATE, volunteer_shifts: VIEW, documents: VIEW, reports: VIEW,
+      assets: VIEW_EDIT, social_assistance: ALL, pastoral_care: ALL,
     }),
   },
   {
@@ -109,6 +113,7 @@ export const ROLE_CATALOG: RoleDefinition[] = [
       members: ALL, visitors: OPERATE, events: ALL, checkin: OPERATE,
       secretaria: ALL, whatsapp: OPERATE, small_groups: VIEW_EDIT,
       education: OPERATE, volunteer_shifts: OPERATE, documents: ALL, reports: VIEW,
+      assets: ALL, social_assistance: ALL, pastoral_care: ALL,
     }),
   },
   {
@@ -118,7 +123,8 @@ export const ROLE_CATALOG: RoleDefinition[] = [
     system: true,
     defaults: build({
       members: OPERATE, visitors: OPERATE, events: VIEW_EDIT, checkin: OPERATE,
-      secretaria: OPERATE, documents: OPERATE,
+      secretaria: OPERATE, documents: OPERATE, assets: VIEW_EDIT, social_assistance: OPERATE,
+      pastoral_care: VIEW_EDIT,
     }),
   },
   {
@@ -155,7 +161,7 @@ export const ROLE_CATALOG: RoleDefinition[] = [
     system: true,
     defaults: build({
       members: VIEW, small_groups: OPERATE, volunteer_shifts: OPERATE,
-      events: VIEW, checkin: VIEW,
+      events: VIEW, checkin: VIEW, assets: VIEW_EDIT,
     }),
   },
   {

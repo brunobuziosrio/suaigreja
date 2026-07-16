@@ -2,10 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listTypes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
@@ -33,6 +35,7 @@ export const upsertType = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "events", data.id ? "edit" : "create");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     if (data.id) {
@@ -64,6 +67,7 @@ export const deleteType = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "events", "delete");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase

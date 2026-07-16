@@ -52,10 +52,12 @@ export function MemberCard({
   member,
   church,
   qrValue,
+  showIdentityFields = true,
 }: {
   member: MemberCardData;
   church: ChurchCardData;
   qrValue?: string;
+  showIdentityFields?: boolean;
 }) {
   const primary = church.primary_color || "#0c2340";
   const accent = church.card_accent_color || "#c8102e";
@@ -194,9 +196,15 @@ export function MemberCard({
 
           {/* === CAMPOS — começam em x=45 (mesma margem esquerda) === */}
           <Field x={45} y={245} w={700} label="NOME" value={member.full_name} />
-          <Field x={45} y={350} w={225} label="CPF" value={fmtCpf(member.cpf)} />
-          <Field x={283} y={350} w={225} label="DATA NASC." value={fmtDate(member.birth_date)} />
-          <Field x={521} y={350} w={224} label="CADASTRO" value={fmtDate(member.member_since)} />
+          {showIdentityFields ? (
+            <>
+              <Field x={45} y={350} w={225} label="CPF" value={fmtCpf(member.cpf)} />
+              <Field x={283} y={350} w={225} label="DATA NASC." value={fmtDate(member.birth_date)} />
+              <Field x={521} y={350} w={224} label="CADASTRO" value={fmtDate(member.member_since)} />
+            </>
+          ) : (
+            <Field x={45} y={350} w={700} label="CADASTRO" value={fmtDate(member.member_since)} />
+          )}
           <Field
             x={45}
             y={455}

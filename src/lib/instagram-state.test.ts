@@ -3,8 +3,8 @@ import { verifyState } from "./instagram.functions";
 
 const originalSecret = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-async function signedState(accountId: string, nonce: string): Promise<string> {
-  const payload = `${accountId}.${nonce}`;
+async function signedState(accountId: string, nonce: string, issuedAt = Date.now()): Promise<string> {
+  const payload = `${accountId}.${nonce}.${issuedAt}`;
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(process.env.SUPABASE_SERVICE_ROLE_KEY),
@@ -32,6 +32,11 @@ describe("verifyState", () => {
 
   it("rejeita assinatura adulterada", async () => {
     process.env.SUPABASE_SERVICE_ROLE_KEY = "test-secret";
-    await expect(verifyState("account-123.nonce-456.00000000000000000000000000000000")).resolves.toBeNull();
+    await expect(verifyState("account-123.nonce-456.123.00000000000000000000000000000000")).resolves.toBeNull();
+  });
+
+  it("rejeita state expirado", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "test-secret";
+    await expect(verifyState(await signedState("account-123", "nonce-456", Date.now() - 10 * 60 * 1000 - 1))).resolves.toBeNull();
   });
 });

@@ -10,7 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UpdatePasswordRouteImport } from './routes/update-password'
+import { Route as TermosDeUsoRouteImport } from './routes/termos-de-uso'
+import { Route as PrivacidadePlataformaRouteImport } from './routes/privacidade-plataforma'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as FestejoRouteImport } from './routes/festejo'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as IndexRouteImport } from './routes/index'
@@ -50,6 +53,7 @@ import { Route as AuthenticatedLivroCaixaRouteImport } from './routes/_authentic
 import { Route as AuthenticatedJornadaEspiritualRouteImport } from './routes/_authenticated.jornada-espiritual'
 import { Route as AuthenticatedHubRouteImport } from './routes/_authenticated.hub'
 import { Route as AuthenticatedFinancesRouteImport } from './routes/_authenticated.finances'
+import { Route as AuthenticatedFestinhasRouteImport } from './routes/_authenticated.festinhas'
 import { Route as AuthenticatedFamiliasRouteImport } from './routes/_authenticated.familias'
 import { Route as AuthenticatedEventosRouteImport } from './routes/_authenticated.eventos'
 import { Route as AuthenticatedEscalasRouteImport } from './routes/_authenticated.escalas'
@@ -81,6 +85,7 @@ import { Route as AuthenticatedMarketplaceSlugRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminWhatsappRouteImport } from './routes/_authenticated.admin.whatsapp'
 import { Route as AuthenticatedAdminTestDataRouteImport } from './routes/_authenticated.admin.test-data'
 import { Route as AuthenticatedAdminProductsRouteImport } from './routes/_authenticated.admin.products'
+import { Route as AuthenticatedAdminPlanosRouteImport } from './routes/_authenticated.admin.planos'
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated.admin.payments'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated.admin.feedback'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated.admin.domains'
@@ -95,9 +100,24 @@ const UpdatePasswordRoute = UpdatePasswordRouteImport.update({
   path: '/update-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TermosDeUsoRoute = TermosDeUsoRouteImport.update({
+  id: '/termos-de-uso',
+  path: '/termos-de-uso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacidadePlataformaRoute = PrivacidadePlataformaRouteImport.update({
+  id: '/privacidade-plataforma',
+  path: '/privacidade-plataforma',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FestejoRoute = FestejoRouteImport.update({
+  id: '/festejo',
+  path: '/festejo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRoute = AuthenticatedRouteImport.update({
@@ -300,6 +320,11 @@ const AuthenticatedFinancesRoute = AuthenticatedFinancesRouteImport.update({
   path: '/finances',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedFestinhasRoute = AuthenticatedFestinhasRouteImport.update({
+  id: '/festinhas',
+  path: '/festinhas',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedFamiliasRoute = AuthenticatedFamiliasRouteImport.update({
   id: '/familias',
   path: '/familias',
@@ -464,6 +489,12 @@ const AuthenticatedAdminProductsRoute =
     path: '/admin/products',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminPlanosRoute =
+  AuthenticatedAdminPlanosRouteImport.update({
+    id: '/admin/planos',
+    path: '/admin/planos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAdminPaymentsRoute =
   AuthenticatedAdminPaymentsRouteImport.update({
     id: '/admin/payments',
@@ -515,7 +546,10 @@ const ApiPublicAgendaSiteIdRoute = ApiPublicAgendaSiteIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/festejo': typeof FestejoRoute
   '/login': typeof LoginRoute
+  '/privacidade-plataforma': typeof PrivacidadePlataformaRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/update-password': typeof UpdatePasswordRoute
   '/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/agenda': typeof AuthenticatedAgendaRoute
@@ -538,6 +572,7 @@ export interface FileRoutesByFullPath {
   '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
   '/familias': typeof AuthenticatedFamiliasRoute
+  '/festinhas': typeof AuthenticatedFestinhasRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
@@ -577,6 +612,7 @@ export interface FileRoutesByFullPath {
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/planos': typeof AuthenticatedAdminPlanosRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
@@ -596,7 +632,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
+  '/festejo': typeof FestejoRoute
   '/login': typeof LoginRoute
+  '/privacidade-plataforma': typeof PrivacidadePlataformaRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/update-password': typeof UpdatePasswordRoute
   '/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/agenda': typeof AuthenticatedAgendaRoute
@@ -619,6 +658,7 @@ export interface FileRoutesByTo {
   '/escalas': typeof AuthenticatedEscalasRoute
   '/eventos': typeof AuthenticatedEventosRoute
   '/familias': typeof AuthenticatedFamiliasRoute
+  '/festinhas': typeof AuthenticatedFestinhasRoute
   '/finances': typeof AuthenticatedFinancesRoute
   '/hub': typeof AuthenticatedHubRoute
   '/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
@@ -658,6 +698,7 @@ export interface FileRoutesByTo {
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/admin/planos': typeof AuthenticatedAdminPlanosRoute
   '/admin/products': typeof AuthenticatedAdminProductsRoute
   '/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
@@ -679,7 +720,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/festejo': typeof FestejoRoute
   '/login': typeof LoginRoute
+  '/privacidade-plataforma': typeof PrivacidadePlataformaRoute
+  '/termos-de-uso': typeof TermosDeUsoRoute
   '/update-password': typeof UpdatePasswordRoute
   '/_authenticated/acao-social': typeof AuthenticatedAcaoSocialRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
@@ -702,6 +746,7 @@ export interface FileRoutesById {
   '/_authenticated/escalas': typeof AuthenticatedEscalasRoute
   '/_authenticated/eventos': typeof AuthenticatedEventosRoute
   '/_authenticated/familias': typeof AuthenticatedFamiliasRoute
+  '/_authenticated/festinhas': typeof AuthenticatedFestinhasRoute
   '/_authenticated/finances': typeof AuthenticatedFinancesRoute
   '/_authenticated/hub': typeof AuthenticatedHubRoute
   '/_authenticated/jornada-espiritual': typeof AuthenticatedJornadaEspiritualRoute
@@ -741,6 +786,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
+  '/_authenticated/admin/planos': typeof AuthenticatedAdminPlanosRoute
   '/_authenticated/admin/products': typeof AuthenticatedAdminProductsRoute
   '/_authenticated/admin/test-data': typeof AuthenticatedAdminTestDataRoute
   '/_authenticated/admin/whatsapp': typeof AuthenticatedAdminWhatsappRoute
@@ -762,7 +808,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/$slug'
+    | '/festejo'
     | '/login'
+    | '/privacidade-plataforma'
+    | '/termos-de-uso'
     | '/update-password'
     | '/acao-social'
     | '/agenda'
@@ -785,6 +834,7 @@ export interface FileRouteTypes {
     | '/escalas'
     | '/eventos'
     | '/familias'
+    | '/festinhas'
     | '/finances'
     | '/hub'
     | '/jornada-espiritual'
@@ -824,6 +874,7 @@ export interface FileRouteTypes {
     | '/admin/domains'
     | '/admin/feedback'
     | '/admin/payments'
+    | '/admin/planos'
     | '/admin/products'
     | '/admin/test-data'
     | '/admin/whatsapp'
@@ -843,7 +894,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/$slug'
+    | '/festejo'
     | '/login'
+    | '/privacidade-plataforma'
+    | '/termos-de-uso'
     | '/update-password'
     | '/acao-social'
     | '/agenda'
@@ -866,6 +920,7 @@ export interface FileRouteTypes {
     | '/escalas'
     | '/eventos'
     | '/familias'
+    | '/festinhas'
     | '/finances'
     | '/hub'
     | '/jornada-espiritual'
@@ -905,6 +960,7 @@ export interface FileRouteTypes {
     | '/admin/domains'
     | '/admin/feedback'
     | '/admin/payments'
+    | '/admin/planos'
     | '/admin/products'
     | '/admin/test-data'
     | '/admin/whatsapp'
@@ -925,7 +981,10 @@ export interface FileRouteTypes {
     | '/'
     | '/$slug'
     | '/_authenticated'
+    | '/festejo'
     | '/login'
+    | '/privacidade-plataforma'
+    | '/termos-de-uso'
     | '/update-password'
     | '/_authenticated/acao-social'
     | '/_authenticated/agenda'
@@ -948,6 +1007,7 @@ export interface FileRouteTypes {
     | '/_authenticated/escalas'
     | '/_authenticated/eventos'
     | '/_authenticated/familias'
+    | '/_authenticated/festinhas'
     | '/_authenticated/finances'
     | '/_authenticated/hub'
     | '/_authenticated/jornada-espiritual'
@@ -987,6 +1047,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/payments'
+    | '/_authenticated/admin/planos'
     | '/_authenticated/admin/products'
     | '/_authenticated/admin/test-data'
     | '/_authenticated/admin/whatsapp'
@@ -1008,7 +1069,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SlugRoute: typeof SlugRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  FestejoRoute: typeof FestejoRoute
   LoginRoute: typeof LoginRoute
+  PrivacidadePlataformaRoute: typeof PrivacidadePlataformaRoute
+  TermosDeUsoRoute: typeof TermosDeUsoRoute
   UpdatePasswordRoute: typeof UpdatePasswordRoute
   ASiteIdRoute: typeof ASiteIdRoute
   CMemberIdRoute: typeof CMemberIdRoute
@@ -1045,11 +1109,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UpdatePasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/termos-de-uso': {
+      id: '/termos-de-uso'
+      path: '/termos-de-uso'
+      fullPath: '/termos-de-uso'
+      preLoaderRoute: typeof TermosDeUsoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacidade-plataforma': {
+      id: '/privacidade-plataforma'
+      path: '/privacidade-plataforma'
+      fullPath: '/privacidade-plataforma'
+      preLoaderRoute: typeof PrivacidadePlataformaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/festejo': {
+      id: '/festejo'
+      path: '/festejo'
+      fullPath: '/festejo'
+      preLoaderRoute: typeof FestejoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -1325,6 +1410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancesRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/festinhas': {
+      id: '/_authenticated/festinhas'
+      path: '/festinhas'
+      fullPath: '/festinhas'
+      preLoaderRoute: typeof AuthenticatedFestinhasRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/familias': {
       id: '/_authenticated/familias'
       path: '/familias'
@@ -1542,6 +1634,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminProductsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/planos': {
+      id: '/_authenticated/admin/planos'
+      path: '/admin/planos'
+      fullPath: '/admin/planos'
+      preLoaderRoute: typeof AuthenticatedAdminPlanosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/admin/payments': {
       id: '/_authenticated/admin/payments'
       path: '/admin/payments'
@@ -1637,6 +1736,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedEscalasRoute: typeof AuthenticatedEscalasRoute
   AuthenticatedEventosRoute: typeof AuthenticatedEventosRoute
   AuthenticatedFamiliasRoute: typeof AuthenticatedFamiliasRoute
+  AuthenticatedFestinhasRoute: typeof AuthenticatedFestinhasRoute
   AuthenticatedFinancesRoute: typeof AuthenticatedFinancesRoute
   AuthenticatedHubRoute: typeof AuthenticatedHubRoute
   AuthenticatedJornadaEspiritualRoute: typeof AuthenticatedJornadaEspiritualRoute
@@ -1661,6 +1761,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
+  AuthenticatedAdminPlanosRoute: typeof AuthenticatedAdminPlanosRoute
   AuthenticatedAdminProductsRoute: typeof AuthenticatedAdminProductsRoute
   AuthenticatedAdminTestDataRoute: typeof AuthenticatedAdminTestDataRoute
   AuthenticatedAdminWhatsappRoute: typeof AuthenticatedAdminWhatsappRoute
@@ -1689,6 +1790,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedEscalasRoute: AuthenticatedEscalasRoute,
   AuthenticatedEventosRoute: AuthenticatedEventosRoute,
   AuthenticatedFamiliasRoute: AuthenticatedFamiliasRoute,
+  AuthenticatedFestinhasRoute: AuthenticatedFestinhasRoute,
   AuthenticatedFinancesRoute: AuthenticatedFinancesRoute,
   AuthenticatedHubRoute: AuthenticatedHubRoute,
   AuthenticatedJornadaEspiritualRoute: AuthenticatedJornadaEspiritualRoute,
@@ -1713,6 +1815,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,
+  AuthenticatedAdminPlanosRoute: AuthenticatedAdminPlanosRoute,
   AuthenticatedAdminProductsRoute: AuthenticatedAdminProductsRoute,
   AuthenticatedAdminTestDataRoute: AuthenticatedAdminTestDataRoute,
   AuthenticatedAdminWhatsappRoute: AuthenticatedAdminWhatsappRoute,
@@ -1737,7 +1840,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SlugRoute: SlugRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  FestejoRoute: FestejoRoute,
   LoginRoute: LoginRoute,
+  PrivacidadePlataformaRoute: PrivacidadePlataformaRoute,
+  TermosDeUsoRoute: TermosDeUsoRoute,
   UpdatePasswordRoute: UpdatePasswordRoute,
   ASiteIdRoute: ASiteIdRoute,
   CMemberIdRoute: CMemberIdRoute,

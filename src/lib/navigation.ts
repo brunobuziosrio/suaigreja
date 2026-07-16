@@ -14,6 +14,7 @@ import {
   CalendarClock,
   CalendarDays,
   CalendarHeart,
+  CookingPot,
   Code2,
   CircleDollarSign,
   FileText,
@@ -119,6 +120,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       items: [
         { title: "Agenda", url: "/agenda", icon: CalendarDays },
         { title: "Eventos", url: "/eventos", icon: CalendarHeart },
+        { title: "Festinhas e barracas", url: "/festinhas", icon: CookingPot },
         { title: "Check-in", url: "/checkin", icon: QrCode },
         { title: "Check-in Infantil", url: "/checkin-infantil", icon: ShieldCheck },
         { title: "Escalas de Voluntários", url: "/escalas", icon: UserCheck },

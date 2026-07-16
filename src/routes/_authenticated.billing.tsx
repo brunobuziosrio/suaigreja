@@ -97,6 +97,7 @@ function BillingPage() {
   const account = setup?.account;
 
   const [upgradeContext, setUpgradeContext] = useState<{ label: string; minimumTier: string } | null>(null);
+  const [selectedPlanId, setSelectedPlanId] = useState<BillingPlanId | null>(null);
   useEffect(() => {
     const raw = sessionStorage.getItem("upgrade_context");
     if (raw) {
@@ -106,6 +107,14 @@ function BillingPage() {
         // ignora contexto corrompido
       }
       sessionStorage.removeItem("upgrade_context");
+    }
+  }, []);
+
+  useEffect(() => {
+    const planned = sessionStorage.getItem("onboarding_plan");
+    if (planned && PURCHASABLE_PLAN_IDS.includes(planned as (typeof PURCHASABLE_PLAN_IDS)[number])) {
+      setSelectedPlanId(planned as BillingPlanId);
+      sessionStorage.removeItem("onboarding_plan");
     }
   }, []);
 
@@ -174,12 +183,17 @@ function BillingPage() {
             return (
               <Card
                 key={plan.id}
-                className={plan.tier === "pro" ? "space-y-5 border-primary/40 p-6 shadow-sm" : "space-y-5 p-6"}
+                className={selectedPlanId === planId
+                  ? "space-y-5 border-primary p-6 shadow-md ring-2 ring-primary/20"
+                  : plan.tier === "pro" ? "space-y-5 border-primary/40 p-6 shadow-sm" : "space-y-5 p-6"}
               >
                 <div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Plano {plan.tierLabel}</h2>
-                    {plan.cycle === "annual" && <Badge variant="neutral">2 meses grátis</Badge>}
+                    <div className="flex items-center gap-2">
+                      {selectedPlanId === planId && <Badge>Sua escolha</Badge>}
+                      {plan.cycle === "annual" && <Badge variant="neutral">2 meses grátis</Badge>}
+                    </div>
                   </div>
                   <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Ciclo {plan.cycleLabel.toLowerCase()}
@@ -198,9 +212,12 @@ function BillingPage() {
                   className="w-full"
                   variant={plan.tier === "pro" ? "default" : "outline"}
                   disabled={!setup?.hasMercadoPagoAccessToken || mut.isPending}
-                  onClick={() => mut.mutate(planId)}
+                  onClick={() => {
+                    setSelectedPlanId(planId);
+                    mut.mutate(planId);
+                  }}
                 >
-                  {mut.isPending ? "Gerando…" : "Gerar PIX"}
+                  {mut.isPending ? "Gerando…" : selectedPlanId === planId ? "Gerar PIX do plano escolhido" : "Escolher este plano"}
                 </Button>
               </Card>
             );

@@ -52,7 +52,7 @@ function SocialAssistancePage() {
   const setStatus = useServerFn(setSocialFamilyStatus);
   const remove = useServerFn(deleteSocialFamily);
 
-  const { data: families = [], isLoading } = useQuery({ queryKey: ["social-families"], queryFn: () => fetchFamilies() });
+  const { data: families = [], isLoading, isError, refetch } = useQuery({ queryKey: ["social-families"], queryFn: () => fetchFamilies() });
   const { data: monthCount = 0 } = useQuery({ queryKey: ["social-deliveries-month"], queryFn: () => fetchMonthCount() });
 
   const [open, setOpen] = useState(false);
@@ -168,6 +168,12 @@ function SocialAssistancePage() {
 
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
+        ) : isError ? (
+          <Card className="p-8 text-center" role="alert">
+            <h3 className="font-semibold">Não foi possível carregar os acompanhamentos</h3>
+            <p className="mt-1 text-sm text-muted-foreground">Verifique sua conexão e tente novamente.</p>
+            <Button className="mt-4" variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+          </Card>
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <HeartHandshake className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

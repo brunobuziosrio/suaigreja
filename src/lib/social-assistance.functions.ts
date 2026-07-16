@@ -9,6 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export type SocialFamilyRow = {
   id: string;
@@ -40,6 +41,7 @@ export const listSocialFamilies = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("social_families" as never)
@@ -66,6 +68,7 @@ export const upsertSocialFamily = createServerFn({ method: "POST" })
   .validator((i) => familySchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
       family_name: data.family_name.trim(),
@@ -101,6 +104,7 @@ export const setSocialFamilyStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "edit");
     const { supabase } = context;
     const { error } = await supabase
       .from("social_families" as never)
@@ -116,6 +120,7 @@ export const deleteSocialFamily = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("social_families" as never)
@@ -131,6 +136,7 @@ export const listSocialDeliveries = createServerFn({ method: "POST" })
   .validator((i) => z.object({ family_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase
       .from("social_deliveries" as never)
@@ -146,6 +152,7 @@ export const listSocialDeliveriesThisMonth = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "view");
     const { supabase } = context;
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
@@ -171,6 +178,7 @@ export const addSocialDelivery = createServerFn({ method: "POST" })
   .validator((i) => deliverySchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "create");
     const { supabase } = context;
     const { data: family, error: famErr } = await supabase
       .from("social_families" as never)
@@ -198,6 +206,7 @@ export const deleteSocialDelivery = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "social_assistance", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("social_deliveries" as never)

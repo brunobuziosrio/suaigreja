@@ -53,7 +53,7 @@ function DecisionPublic() {
   const submit = useServerFn(submitDecision);
 
   const [kind, setKind] = useState<(typeof DECISION_KINDS)[number] | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", message: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", message: "", website: "", formStartedAt: Date.now() });
   const [done, setDone] = useState(false);
 
   const mut = useMutation({
@@ -66,6 +66,8 @@ function DecisionPublic() {
           phone: form.phone || undefined,
           email: form.email || undefined,
           message: form.message || undefined,
+          website: form.website,
+          formStartedAt: form.formStartedAt,
         },
       }),
     onSuccess: () => setDone(true),
@@ -130,6 +132,10 @@ function DecisionPublic() {
               }}
               className="space-y-3"
             >
+              <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+                <Label htmlFor="decision-website">Website</Label>
+                <Input id="decision-website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
+              </div>
               <div>
                 <Label htmlFor="name">Seu nome *</Label>
                 <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />

@@ -13,6 +13,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { getRoleDefinition, sanitizePermissions, type RolePermissions } from "@/lib/permissions";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 type MemberRow = {
   id: string;
@@ -26,6 +27,7 @@ type MemberRow = {
 export const getTeamAndPermissions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePermission(context, "team", "view");
     const { accountId, role: myRole } = await resolveAccountContext(context.userId);
 
     const [membersRes, permsRes] = await Promise.all([

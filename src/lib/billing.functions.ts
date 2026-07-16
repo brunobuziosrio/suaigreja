@@ -8,6 +8,7 @@ import {
   resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import { z } from "zod";
 
@@ -57,6 +58,7 @@ export const listMyPayments = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { data, error } = await supabase
       .from("payment_transactions")
       .select(
@@ -74,6 +76,7 @@ export const getBillingSetup = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { data, error } = await supabase
       .from("accounts")
       .select("current_plan, plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
@@ -102,6 +105,7 @@ export const createPixPayment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { claims } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const plan = data.plan as BillingPlanId;
     const planInfo = BILLING_PLANS[plan];
 

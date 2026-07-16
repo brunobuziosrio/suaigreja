@@ -214,7 +214,7 @@ function MembersPage() {
   const fetchCongregations = useServerFn(listCongregations);
   const save = useServerFn(upsertMember);
   const remove = useServerFn(deleteMember);
-  const { data: items = [], isLoading } = useQuery<MemberListItem[]>({
+  const { data: items = [], isLoading, isError, refetch } = useQuery<MemberListItem[]>({
     queryKey: ["members"],
     queryFn: async () => (await fetchList()) as MemberListItem[],
   });
@@ -233,6 +233,7 @@ function MembersPage() {
   const [uploading, setUploading] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const formCompleteness = getMemberCompleteness(form);
 
   const [importOpen, setImportOpen] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -479,6 +480,38 @@ function MembersPage() {
                   </DialogTitle>
                 </DialogHeader>
                 <div className="max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="mb-4 rounded-md border bg-muted/30 p-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">Qualidade do cadastro</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Ajuda a manter carteirinha, relatórios e comunicação prontos para uso.
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-sm font-semibold text-primary">
+                        {formCompleteness.percent}%
+                      </span>
+                    </div>
+                    <div
+                      className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted"
+                      role="progressbar"
+                      aria-label="Qualidade do cadastro"
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-valuenow={formCompleteness.percent}
+                    >
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-200"
+                        style={{ width: `${formCompleteness.percent}%` }}
+                      />
+                    </div>
+                    {formCompleteness.missing.length > 0 && (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        Faltam: {formCompleteness.missing.slice(0, 4).join(", ")}
+                        {formCompleteness.missing.length > 4 ? " e outros campos" : ""}.
+                      </p>
+                    )}
+                  </div>
                   <div className="flex items-start gap-4">
                     <div className="shrink-0">
                       {form.photo_url ? (
@@ -523,7 +556,9 @@ function MembersPage() {
                     </div>
                     <div className="flex-1 space-y-3">
                       <div className="space-y-2">
-                        <Label>Nome completo</Label>
+                        <Label>
+                          Nome completo <span className="text-destructive">*</span>
+                        </Label>
                         <Input
                           value={form.full_name}
                           onChange={(e) => setForm({ ...form, full_name: e.target.value })}
@@ -867,6 +902,16 @@ function MembersPage() {
           <div className="flex justify-center py-12">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
+        ) : isError ? (
+          <Card className="p-8 text-center" role="alert">
+            <h3 className="font-semibold">Não foi possível carregar os cadastros</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Verifique sua conexão e tente novamente antes de alterar os dados.
+            </p>
+            <Button className="mt-4" variant="outline" onClick={() => refetch()}>
+              Tentar novamente
+            </Button>
+          </Card>
         ) : filtered.length === 0 ? (
           <Card className="p-12 text-center">
             <Users className="h-10 w-10 mx-auto text-muted-foreground mb-3" />

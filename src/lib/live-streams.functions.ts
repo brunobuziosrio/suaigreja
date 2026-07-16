@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 const upsertSchema = z.object({
   id: z.string().uuid().optional(),
@@ -23,6 +24,7 @@ const upsertSchema = z.object({
 export const listLiveStreams = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const [{ data: streams, error }, { data: overrides, error: ovErr }] = await Promise.all([
@@ -48,6 +50,7 @@ export const upsertLiveStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "events", data.id ? "edit" : "create");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const payload = {
@@ -81,6 +84,7 @@ export const deleteLiveStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "events", "delete");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase
@@ -103,6 +107,7 @@ export const upsertLiveStreamOverride = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => overrideSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "events", "edit");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     // If both default state (no url + not cancelled) delete the row

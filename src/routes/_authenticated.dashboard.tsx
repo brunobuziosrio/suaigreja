@@ -78,24 +78,55 @@ function DashboardPage() {
   const fetchUnconfirmedShifts = useServerFn(listUpcomingUnconfirmedShifts);
   const fetchContributionCampaigns = useServerFn(listCampaigns);
   const fetchAbsentMembers = useServerFn(listAbsentMembers);
-  const { data: account } = useQuery({ queryKey: ["account"], queryFn: () => fetchAccount() });
+  const {
+    data: account,
+    isLoading: accountLoading,
+    isError: accountError,
+    refetch: refetchAccount,
+  } = useQuery({
+    queryKey: ["account"],
+    queryFn: () => fetchAccount(),
+  });
   const planTier = resolvePlanTier(account);
   const canUseMembers = !!account && canAccessPath(planTier, "/membros");
   const canUseEbd = !!account && canAccessPath(planTier, "/ebd");
   const canUseShifts = !!account && canAccessPath(planTier, "/escalas");
   const canUseContribCampaigns = !!account && canAccessPath(planTier, "/campanhas");
   const canUseFinances = !!account && canAccessPath(planTier, "/livro-caixa");
-  const { data: locations = [] } = useQuery({
+  const {
+    data: locations = [],
+    isLoading: locationsLoading,
+    isError: locationsError,
+    refetch: refetchLocations,
+  } = useQuery({
     queryKey: ["locations"],
     queryFn: () => fetchLocations(),
   });
-  const { data: types = [] } = useQuery({ queryKey: ["types"], queryFn: () => fetchTypes() });
-  const { data: members = [] } = useQuery<Member[]>({
+  const {
+    data: types = [],
+    isLoading: typesLoading,
+    isError: typesError,
+    refetch: refetchTypes,
+  } = useQuery({
+    queryKey: ["types"],
+    queryFn: () => fetchTypes(),
+  });
+  const {
+    data: members = [],
+    isLoading: membersLoading,
+    isError: membersError,
+    refetch: refetchMembers,
+  } = useQuery<Member[]>({
     queryKey: ["members"],
     queryFn: async () => await fetchMembers() as Member[],
     enabled: canUseMembers,
   });
-  const { data: campaigns = [] } = useQuery({
+  const {
+    data: campaigns = [],
+    isLoading: campaignsLoading,
+    isError: campaignsError,
+    refetch: refetchCampaigns,
+  } = useQuery({
     queryKey: ["my-donations"],
     queryFn: () => fetchCampaigns(),
   });
@@ -122,7 +153,12 @@ function DashboardPage() {
     const last = `${lastDate.getFullYear()}-${pad(lastDate.getMonth() + 1)}-${pad(lastDate.getDate())}`;
     return { from: first, to: last };
   }, []);
-  const { data: events = [] } = useQuery<Event[]>({
+  const {
+    data: events = [],
+    isLoading: eventsLoading,
+    isError: eventsError,
+    refetch: refetchEvents,
+  } = useQuery<Event[]>({
     queryKey: ["events", range.from, range.to],
     queryFn: async () => await fetchEvents({ data: range }) as Event[],
   });
@@ -332,6 +368,32 @@ function DashboardPage() {
   );
   const completedSetupTasks = setupTasks.filter((task) => task.done).length;
   const setupProgress = Math.round((completedSetupTasks / setupTasks.length) * 100);
+  const nextSetupTask = setupTasks.find((task) => !task.done);
+  const remainingSetupTasks = setupTasks.filter((task) => !task.done);
+  const completedSetupSteps = setupTasks.filter((task) => task.done);
+  const setupLoading =
+    accountLoading ||
+    locationsLoading ||
+    typesLoading ||
+    eventsLoading ||
+    campaignsLoading ||
+    (canUseMembers && membersLoading);
+  const hasDashboardDataError =
+    accountError ||
+    locationsError ||
+    typesError ||
+    eventsError ||
+    campaignsError ||
+    (canUseMembers && membersError);
+  const retryDashboardData = () => {
+    void refetchAccount();
+    void refetchLocations();
+    void refetchTypes();
+    void refetchEvents();
+    void refetchCampaigns();
+    if (canUseMembers) void refetchMembers();
+  };
+  const [showCompletedSetupSteps, setShowCompletedSetupSteps] = useState(false);
   const financialSnapshot = useMemo(() => {
     if (!canUseFinances) return null;
     const now = new Date();
@@ -373,6 +435,25 @@ function DashboardPage() {
             Perfil: {profile?.label} - Plano trial ({trialDays} dias restantes)
           </p>
         </div>
+
+        {hasDashboardDataError && (
+          <Card className="mb-6 border-amber-500/40 bg-amber-500/5 p-4" role="alert">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+                <div>
+                  <p className="text-sm font-medium">Não foi possível atualizar todos os dados</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Alguns indicadores podem estar desatualizados. Tente carregar novamente.
+                  </p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={retryDashboardData}>
+                Tentar novamente
+              </Button>
+            </div>
+          </Card>
+        )}
 
         <Card className="mb-6 p-5">
           <div className="mb-3 flex items-center gap-2">
@@ -416,40 +497,117 @@ function DashboardPage() {
                 <h2 className="font-semibold">Configure sua {terms.institution}</h2>
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {setupProgress}% concluido - {setupTasks.length - completedSetupTasks} passo(s)
-                restante(s)
+                {setupLoading
+                  ? "Carregando o andamento da sua implantação..."
+                  : setupProgress === 100
+                    ? `Sua ${terms.institution} já está pronta para operar.`
+                    : `${setupProgress}% concluído - ${remainingSetupTasks.length} passo(s) restante(s)`}
               </p>
             </div>
             <div className="min-w-32 rounded-md bg-primary/10 px-3 py-2 text-right">
               <p className="text-xs font-medium text-primary">Implantacao</p>
-              <p className="text-2xl font-semibold">{setupProgress}%</p>
+              <p className="text-2xl font-semibold">{setupLoading ? "..." : `${setupProgress}%`}</p>
             </div>
           </div>
-          <div className="h-2 bg-muted">
+          <div
+            className="h-2 bg-muted"
+            role="progressbar"
+            aria-label="Progresso da implantação"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={setupLoading ? undefined : setupProgress}
+          >
             <div
               className="h-full bg-primary transition-all"
-              style={{ width: `${setupProgress}%` }}
+              style={{ width: `${setupLoading ? 0 : setupProgress}%` }}
             />
           </div>
-          <div className="grid gap-2 p-5 pt-4 md:grid-cols-2">
-            {setupTasks.map((task) => (
-              <DashboardLink key={task.label} to={task.href}>
-                <div className="group flex h-full items-start gap-3 rounded-md border bg-card p-3 transition-colors hover:border-primary/60 hover:bg-muted/30">
-                  {task.done ? (
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
-                  ) : (
-                    <Circle className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-5">{task.label}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
-                      {task.description}
-                    </p>
+          <div className="p-5 pt-4">
+            {setupLoading ? (
+              <div className="flex items-center gap-2 rounded-md bg-muted/40 p-4 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Preparando suas próximas etapas.
+              </div>
+            ) : nextSetupTask ? (
+              <>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-primary">
+                  Próximo passo recomendado
+                </p>
+                <DashboardLink to={nextSetupTask.href}>
+                  <div className="group flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-4 transition-colors hover:border-primary hover:bg-primary/10">
+                    <span className="rounded-md bg-primary p-2 text-primary-foreground">
+                      <Circle className="h-5 w-5" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium">{nextSetupTask.label}</p>
+                      <p className="mt-0.5 text-sm text-muted-foreground">{nextSetupTask.description}</p>
+                    </div>
+                    <ArrowRight className="h-5 w-5 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
                   </div>
-                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" />
+                </DashboardLink>
+
+                {remainingSetupTasks.length > 1 && (
+                  <div className="mt-4">
+                    <p className="mb-2 text-xs font-medium text-muted-foreground">Depois disso</p>
+                    <div className="grid gap-2 md:grid-cols-2">
+                      {remainingSetupTasks.slice(1).map((task) => (
+                        <DashboardLink key={task.label} to={task.href}>
+                          <div className="group flex h-full items-start gap-3 rounded-md border bg-card p-3 transition-colors hover:border-primary/60 hover:bg-muted/30">
+                            <Circle className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium leading-5">{task.label}</p>
+                              <p className="mt-0.5 text-xs leading-5 text-muted-foreground">
+                                {task.description}
+                              </p>
+                            </div>
+                          </div>
+                        </DashboardLink>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-start gap-3 rounded-lg bg-emerald-500/10 p-4">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                <div>
+                  <p className="font-medium text-emerald-800">Base de implantação concluída</p>
+                  <p className="mt-0.5 text-sm text-muted-foreground">
+                    Agora acompanhe sua agenda, pessoas e campanhas a partir desta visão geral.
+                  </p>
                 </div>
-              </DashboardLink>
-            ))}
+              </div>
+            )}
+
+            {!setupLoading && completedSetupSteps.length > 0 && (
+              <div className="mt-4 border-t pt-3">
+                <button
+                  type="button"
+                  className="text-xs font-medium text-muted-foreground hover:text-primary hover:underline"
+                  onClick={() => setShowCompletedSetupSteps((show) => !show)}
+                  aria-expanded={showCompletedSetupSteps}
+                >
+                  {showCompletedSetupSteps
+                    ? "Ocultar etapas concluídas"
+                    : `Ver ${completedSetupSteps.length} etapa(s) concluída(s)`}
+                </button>
+                {showCompletedSetupSteps && (
+                  <div className="mt-3 grid gap-2 md:grid-cols-2">
+                    {completedSetupSteps.map((task) => (
+                      <DashboardLink key={task.label} to={task.href}>
+                        <div className="group flex h-full items-start gap-3 rounded-md border bg-muted/20 p-3 transition-colors hover:border-primary/60 hover:bg-muted/40">
+                          <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium leading-5">{task.label}</p>
+                            <p className="mt-0.5 text-xs leading-5 text-muted-foreground">Concluído</p>
+                          </div>
+                        </div>
+                      </DashboardLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </Card>
 

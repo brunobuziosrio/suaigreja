@@ -28,6 +28,7 @@ import heroBg from "@/assets/landing-hero-cathedral.jpg";
 import appMockup from "@/assets/landing-app-mockup.jpg";
 import community from "@/assets/landing-community.jpg";
 import { MARKETING_TIERS } from "@/lib/marketing-tiers";
+import { TRIAL_DAYS } from "@/lib/billing-plans";
 import { WhatsAppFab } from "@/components/whatsapp-fab";
 
 export const Route = createFileRoute("/")({
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Agenda, eventos, pedidos de oração, visitantes e site próprio para a sua igreja. Tudo em um só lugar, em minutos. 7 dias grátis, sem cartão.",
+          `Agenda, eventos, pedidos de oração, visitantes e site próprio para a sua igreja. Tudo em um só lugar, em minutos. ${TRIAL_DAYS} dias grátis, sem cartão.`,
       },
       { property: "og:title", content: "suaigreja — a plataforma da sua comunidade" },
       {
@@ -98,7 +99,7 @@ function Index() {
               <Link to="/login">Entrar</Link>
             </Button>
             <Button asChild size="sm" style={{ backgroundColor: '#C4A747', color: '#2D2D2D' }} className="hover:bg-gold-soft shadow-[0_4px_20px_-4px_oklch(0.82_0.13_82_/_0.5)]">
-              <Link to="/login">Começar 7 dias grátis <ArrowRight className="h-3.5 w-3.5" /></Link>
+              <Link to="/login">Começar {TRIAL_DAYS} dias grátis <ArrowRight className="h-3.5 w-3.5" /></Link>
             </Button>
           </div>
         </div>
@@ -143,7 +144,7 @@ function Index() {
                 style={{ backgroundColor: '#C4A747', color: '#2D2D2D' }}
                 className="h-12 px-7 text-base hover:bg-gold-soft shadow-[0_10px_40px_-10px_oklch(0.82_0.13_82_/_0.6)] transition-all hover:translate-y-[-1px]"
               >
-                <Link to="/login">Começar 7 dias grátis <ArrowRight className="h-4 w-4" /></Link>
+                <Link to="/login">Começar {TRIAL_DAYS} dias grátis <ArrowRight className="h-4 w-4" /></Link>
               </Button>
               <Button
                 asChild
@@ -446,7 +447,7 @@ function Index() {
             Escolha como sua igreja <br />
             quer estar <span className="italic text-gold">presente</span>.
           </h2>
-          <p className="mt-5 text-ink/60 font-light text-lg">7 dias grátis. Sem cartão. Sem compromisso.</p>
+          <p className="mt-5 text-ink/60 font-light text-lg">{TRIAL_DAYS} dias grátis. Sem cartão. Sem compromisso.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-5 max-w-6xl mx-auto">
@@ -491,7 +492,7 @@ function Index() {
                       : "mt-7 h-11 bg-ink/10 text-ink hover:bg-ink/15 border border-ink/10"
                   }
                 >
-                  <Link to="/login">Começar 7 dias grátis</Link>
+                  <Link to="/login">Começar {TRIAL_DAYS} dias grátis</Link>
                 </Button>
               </div>
             );
@@ -617,7 +618,7 @@ function Index() {
       {/* Widget flutuante de WhatsApp */}
       <WhatsAppFab />
 
-      {/* Pop-up de saída — oferta de 7 dias grátis */}
+      {/* Pop-up de saída — oferta de teste grátis */}
       {showExitOffer && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center px-4 bg-ink/60 backdrop-blur-sm animate-[fade-in_0.2s_ease-out]">
           <div className="relative max-w-md w-full rounded-3xl border border-gold/30 bg-[oklch(0.98_0.012_85)] p-8 sm:p-10 text-center shadow-[0_40px_120px_-20px_rgba(0,0,0,0.4)]">
@@ -632,7 +633,7 @@ function Index() {
               <Heart className="h-3 w-3" /> espere um momento
             </div>
             <h3 className="font-display text-2xl sm:text-3xl font-light text-ink leading-tight">
-              Antes de sair, <span className="italic text-gold">experimente 7 dias grátis</span>.
+              Antes de sair, <span className="italic text-gold">experimente {TRIAL_DAYS} dias grátis</span>.
             </h3>
             <p className="mt-4 text-ink/65 font-light text-sm leading-relaxed">
               Sem cartão, sem compromisso. Veja em minutos como sua igreja pode ficar
@@ -644,7 +645,7 @@ function Index() {
               className="mt-7 w-full h-12 bg-gold text-ink hover:bg-gold-soft shadow-[0_10px_40px_-10px_oklch(0.82_0.13_82_/_0.6)]"
               onClick={() => { setShowExitOffer(false); setExitDismissed(true); }}
             >
-              <Link to="/login">Quero meus 7 dias grátis <ArrowRight className="h-4 w-4" /></Link>
+              <Link to="/login">Quero meus {TRIAL_DAYS} dias grátis <ArrowRight className="h-4 w-4" /></Link>
             </Button>
             <button
               onClick={() => { setShowExitOffer(false); setExitDismissed(true); }}

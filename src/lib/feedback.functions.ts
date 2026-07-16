@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { resolveAccountContext } from "@/lib/account-context.server";
 import { z } from "zod";
 
 async function isAdmin(userId: string) {
@@ -69,15 +70,17 @@ export const createSuggestion = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => suggestionSchema.parse(input))
   .handler(async ({ data, context }) => {
-    // try to attach account_id if exists
-    const { data: acc } = await supabaseAdmin
-      .from("accounts")
-      .select("id")
-      .eq("id", context.userId)
-      .maybeSingle();
+    // user_id e account_id são domínios diferentes. Vincula a sugestão à conta
+    // ativa quando ela existir, sem impedir usuários ainda sem conta.
+    let accountId: string | null = null;
+    try {
+      accountId = (await resolveAccountContext(context.userId)).accountId;
+    } catch {
+      // Sugestões da plataforma também podem vir de usuários sem conta ativa.
+    }
     const { error } = await supabaseAdmin.from("feature_suggestions").insert({
       user_id: context.userId,
-      account_id: acc?.id ?? null,
+      account_id: accountId,
       title: data.title,
       message: data.message,
     });

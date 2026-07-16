@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 import { z } from "zod";
 
 const REDIRECT_URI = "https://suaigreja.top/api/public/instagram/callback";
@@ -11,6 +12,7 @@ const SCOPES = [
   "instagram_business_content_publish",
   "instagram_business_manage_insights",
 ].join(",");
+const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 async function hmacState(payload: string): Promise<string> {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,16 +46,23 @@ function signaturesMatch(expected: string, received: string): boolean {
 }
 
 async function signState(accountId: string): Promise<string> {
-  const nonce = Math.random().toString(36).slice(2, 12);
-  const payload = `${accountId}.${nonce}`;
+  const random = new Uint8Array(16);
+  globalThis.crypto.getRandomValues(random);
+  const nonce = Array.from(random, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const issuedAt = Date.now().toString();
+  const payload = `${accountId}.${nonce}.${issuedAt}`;
   return `${payload}.${await hmacState(payload)}`;
 }
 
 export async function verifyState(state: string): Promise<string | null> {
   const parts = state.split(".");
-  if (parts.length !== 3) return null;
-  const [accountId, nonce, sig] = parts;
-  const expected = await hmacState(`${accountId}.${nonce}`);
+  if (parts.length !== 4) return null;
+  const [accountId, nonce, issuedAtRaw, sig] = parts;
+  const issuedAt = Number(issuedAtRaw);
+  if (!Number.isSafeInteger(issuedAt) || issuedAt > Date.now() || Date.now() - issuedAt > OAUTH_STATE_TTL_MS) {
+    return null;
+  }
+  const expected = await hmacState(`${accountId}.${nonce}.${issuedAtRaw}`);
   return signaturesMatch(expected, sig) ? accountId : null;
 }
 
@@ -62,6 +71,7 @@ export const startInstagramConnect = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const appId = process.env.INSTAGRAM_APP_ID;
     if (!appId) throw new Error("INSTAGRAM_APP_ID não está configurado");
     const state = await signState(accountId);
@@ -81,6 +91,7 @@ export const getInstagramConnection = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { data } = await supabaseAdmin
       .from("instagram_connections")
       .select("ig_user_id, username, connected_at, token_expires_at")
@@ -95,6 +106,7 @@ export const disconnectInstagram = createServerFn({ method: "POST" })
   .handler(async ({ context }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     await supabaseAdmin.from("instagram_connections").delete().eq("account_id", accountId);
     return { ok: true };
   });

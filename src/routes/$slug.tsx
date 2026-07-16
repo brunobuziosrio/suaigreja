@@ -1919,13 +1919,13 @@ function SocialIcon({ href, Icon }: { href: string; Icon: LucideIcon }) {
 
 function InlinePrayerForm({ siteId, accent }: { siteId: string; accent: string }) {
   const submit = useServerFn(submitPrayerRequest);
-  const [form, setForm] = useState({ name: "", message: "", is_anonymous: false });
+  const [form, setForm] = useState({ name: "", message: "", is_anonymous: false, website: "", formStartedAt: Date.now() });
   const [sent, setSent] = useState(false);
   const mut = useMutation({
-    mutationFn: () => submit({ data: { siteId, name: form.name, message: form.message, is_anonymous: form.is_anonymous, email: "", phone: "" } }),
+    mutationFn: () => submit({ data: { siteId, name: form.name, message: form.message, is_anonymous: form.is_anonymous, email: "", phone: "", website: form.website, formStartedAt: form.formStartedAt } }),
     onSuccess: () => {
       setSent(true);
-      setForm({ name: "", message: "", is_anonymous: false });
+      setForm({ name: "", message: "", is_anonymous: false, website: "", formStartedAt: Date.now() });
       toast.success("Pedido enviado. Será publicado após aprovação.");
     },
     onError: (e: Error) => toast.error(e.message),
@@ -1978,6 +1978,10 @@ function InlinePrayerForm({ siteId, accent }: { siteId: string; accent: string }
           </div>
         ) : (
           <form onSubmit={(e) => { e.preventDefault(); if (!mut.isPending) mut.mutate(); }} className="space-y-3 flex-1 flex flex-col">
+            <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+              <Label htmlFor="inline-prayer-website">Website</Label>
+              <Input id="inline-prayer-website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
+            </div>
             <div>
               <Label htmlFor="pr-name" className="text-[11px] uppercase tracking-widest font-semibold text-stone-500">Seu nome</Label>
               <Input

@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { completeOnboarding } from "@/lib/account.functions";
 import { RELIGION_PROFILES, type ReligionProfile } from "@/lib/religion-profiles";
-import { BILLING_PLANS, PLAN_FEATURES, type PlanTier } from "@/lib/billing-plans";
+import { BILLING_PLANS, PLAN_FEATURES, TRIAL_DAYS, type PlanTier } from "@/lib/billing-plans";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,6 +49,9 @@ function OnboardingPage() {
         },
       });
       await queryClient.invalidateQueries({ queryKey: ["account"] });
+      if (selectedTier) {
+        sessionStorage.setItem("onboarding_plan", `${selectedTier}_monthly`);
+      }
       toast.success("Tudo pronto! Vamos começar.");
       navigate({ to: selectedTier ? "/billing" : "/dashboard" });
     } catch (err) {
@@ -167,7 +170,7 @@ function OnboardingPage() {
           <Card className="p-6">
             <h2 className="font-semibold text-lg mb-1">Escolha um plano</h2>
             <p className="text-sm text-muted-foreground mb-5">
-              Você começa com 14 dias de teste grátis em qualquer plano. Pode assinar agora ou decidir depois em Assinatura.
+              Você começa com {TRIAL_DAYS} dias de teste grátis em qualquer plano. A escolha abaixo será levada para a assinatura.
             </p>
             <div className="grid sm:grid-cols-3 gap-3">
               {PLAN_TIER_ORDER.map((tier) => {

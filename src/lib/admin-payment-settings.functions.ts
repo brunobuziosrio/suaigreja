@@ -24,13 +24,14 @@ export const getPlatformPaymentSettings = createServerFn({ method: "GET" })
       .eq("id", true)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return {
-      mercadopagoAccessToken: data?.mercadopago_access_token ?? "",
-    };
+    // Segredos de gateway nunca devem ser serializados para o navegador, nem
+    // mesmo para administradores. A tela só precisa saber se há configuração.
+    return { hasMercadoPagoAccessToken: Boolean(data?.mercadopago_access_token) };
   });
 
 const paymentSettingsSchema = z.object({
-  mercadopagoAccessToken: z.string().max(500).optional().default(""),
+  mercadopagoAccessToken: z.string().trim().max(500).optional(),
+  clearMercadoPagoAccessToken: z.boolean().optional().default(false),
 });
 
 export const updatePlatformPaymentSettings = createServerFn({ method: "POST" })
@@ -38,13 +39,22 @@ export const updatePlatformPaymentSettings = createServerFn({ method: "POST" })
   .validator((input) => paymentSettingsSchema.parse(input))
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
+    const token = data.mercadopagoAccessToken?.trim();
+
+    // Um formulário sem token não pode desativar pagamentos por acidente.
+    // A remoção só ocorre quando a ação explícita é enviada pela interface.
+    if (!data.clearMercadoPagoAccessToken && !token) {
+      return { ok: true, unchanged: true };
+    }
+
     const { error } = await supabaseAdmin
       .from("platform_payment_settings")
       .update({
-        mercadopago_access_token: data.mercadopagoAccessToken || null,
+        mercadopago_access_token: data.clearMercadoPagoAccessToken ? null : token,
       })
       .eq("id", true);
     if (error) throw new Error(error.message);
+    cachedMercadoPagoAccessToken = null;
     return { ok: true };
   });
 

@@ -8,6 +8,35 @@ import {
 
 const ProviderInput = z.enum(["meta_cloud", "uazapi"]);
 
+async function verifyMetaSignature(request: Request, rawBody: string): Promise<boolean> {
+  const secret = process.env.WHATSAPP_WEBHOOK_APP_SECRET;
+  const received = request.headers.get("x-hub-signature-256");
+  if (!secret || !received) return false;
+
+  const key = await globalThis.crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const signature = await globalThis.crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(rawBody),
+  );
+  const expected = `sha256=${Array.from(new Uint8Array(signature), (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+  const expectedBytes = new TextEncoder().encode(expected);
+  const receivedBytes = new TextEncoder().encode(received);
+  if (expectedBytes.length !== receivedBytes.length) return false;
+
+  let difference = 0;
+  for (let index = 0; index < expectedBytes.length; index++) {
+    difference |= expectedBytes[index] ^ receivedBytes[index];
+  }
+  return difference === 0;
+}
+
 function verifyMetaChallenge(request: Request) {
   const url = new URL(request.url);
   const mode = url.searchParams.get("hub.mode");
@@ -27,16 +56,32 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
     handlers: {
       GET: async ({ request }) => verifyMetaChallenge(request),
       POST: async ({ request }) => {
-        const unauthorized = verifyCronRequest(request);
-        if (unauthorized) return unauthorized;
-
         const url = new URL(request.url);
         const provider = ProviderInput.safeParse(url.searchParams.get("provider") ?? "meta_cloud");
         if (!provider.success) {
           return Response.json({ ok: false, error: "Provedor inválido." }, { status: 400 });
         }
 
-        const raw = await request.json().catch(() => null);
+        // A assinatura da Meta protege o corpo bruto. Quando o segredo ainda
+        // não foi configurado, mantém-se o segredo interno para não interromper
+        // integrações existentes durante a migração.
+        const rawBody = await request.text();
+        const hasMetaSecret = Boolean(process.env.WHATSAPP_WEBHOOK_APP_SECRET);
+        const signedByMeta = provider.data === "meta_cloud" && hasMetaSecret
+          ? await verifyMetaSignature(request, rawBody)
+          : false;
+        if (!signedByMeta) {
+          const unauthorized = verifyCronRequest(request);
+          if (unauthorized) return unauthorized;
+        }
+
+        const raw = (() => {
+          try {
+            return JSON.parse(rawBody) as unknown;
+          } catch {
+            return null;
+          }
+        })();
         if (!raw) return Response.json({ ok: false, error: "Payload inválido." }, { status: 400 });
 
         const events = parseWhatsappDeliveryWebhook(provider.data, raw);

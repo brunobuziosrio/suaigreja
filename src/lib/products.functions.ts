@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 import { z } from "zod";
 
 async function getMercadoPagoAccessToken() {
@@ -37,6 +38,7 @@ export const getProductBySlug = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { data: product, error } = await supabase
       .from("products")
       .select("*")
@@ -61,6 +63,7 @@ export const listMyPurchases = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
     const { data, error } = await supabase
       .from("product_purchases")
       .select(
@@ -78,6 +81,7 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { claims } = context;
     const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
     const { data: product, error: pErr } = await supabaseAdmin
       .from("products")
       .select("id, name, price_cents, active")

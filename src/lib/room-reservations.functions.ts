@@ -9,6 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export type RoomReservationRow = {
   id: string;
@@ -58,6 +59,7 @@ export const listRoomReservations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("room_reservations" as never)
@@ -112,6 +114,7 @@ export const upsertRoomReservation = createServerFn({ method: "POST" })
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", data.id ? "edit" : "create");
     const { supabase } = context;
 
     if (new Date(data.end_at).getTime() <= new Date(data.start_at).getTime()) {
@@ -175,6 +178,7 @@ export const updateRoomReservationStatus = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "edit");
     const { supabase } = context;
 
     if (data.status === "approved") {
@@ -217,6 +221,7 @@ export const deleteRoomReservation = createServerFn({ method: "POST" })
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "events", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("room_reservations" as never)

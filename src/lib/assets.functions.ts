@@ -9,6 +9,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { requirePlanTier } from "@/lib/plan-access";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const ASSET_CATEGORIES = [
   "instrumento",
@@ -44,6 +45,7 @@ export const listAssets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "assets", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("assets" as never)
@@ -73,6 +75,7 @@ export const upsertAsset = createServerFn({ method: "POST" })
   .validator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "assets", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
       name: data.name.trim(),
@@ -107,6 +110,7 @@ export const deleteAsset = createServerFn({ method: "POST" })
   .validator((input) => assetIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "assets", "delete");
     const { supabase } = context;
     const { error } = await supabase
       .from("assets" as never)
@@ -127,6 +131,7 @@ export const loanAsset = createServerFn({ method: "POST" })
   .validator((input) => loanSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "assets", "edit");
     const { supabase } = context;
     const { error } = await supabase
       .from("assets" as never)
@@ -146,6 +151,7 @@ export const returnAsset = createServerFn({ method: "POST" })
   .validator((input) => assetIdSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "assets", "edit");
     const { supabase } = context;
     const { error } = await supabase
       .from("assets" as never)
@@ -165,6 +171,7 @@ export const setAssetMaintenance = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { accountId } = await requirePlanTier(context, "pro");
+    await requirePermission(context, "assets", "edit");
     const { supabase } = context;
     const payload = { status: data.status, holder_member_id: null, loaned_at: null };
     const { error } = await supabase

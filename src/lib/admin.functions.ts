@@ -54,6 +54,35 @@ export const getIsAdmin = createServerFn({ method: "GET" })
     return { isAdmin: !!data };
   });
 
+const featureFlagSchema = z.object({
+  feature_id: z.string().min(1).max(80),
+  plan_tier: z.enum(["essential", "pro", "premium"]),
+  enabled: z.boolean(),
+});
+
+export const listPlanFeatureFlags = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("plan_feature_flags" as never)
+      .select("feature_id, plan_tier, enabled" as never);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const updatePlanFeatureFlag = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => featureFlagSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("plan_feature_flags" as never)
+      .upsert(data as never, { onConflict: "feature_id,plan_tier" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 export const listAllAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

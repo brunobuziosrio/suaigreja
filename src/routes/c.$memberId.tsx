@@ -92,8 +92,8 @@ function MemberCardPage() {
             role: member.role,
             status: member.status,
             member_since: member.member_since,
-            birth_date: member.birth_date,
-            cpf: member.cpf,
+            birth_date: null,
+            cpf: null,
             congregation: member.congregation,
           }}
           church={{
@@ -108,6 +108,7 @@ function MemberCardPage() {
             card_field_size_px: cardChurch?.card_field_size_px ?? null,
             card_label_size_px: cardChurch?.card_label_size_px ?? null,
           }}
+          showIdentityFields={false}
         />
       </div>
       <div className="mt-4 print:hidden">

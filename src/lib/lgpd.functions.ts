@@ -13,6 +13,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 type ConsentRecord = {
   consent_type: string;
@@ -217,6 +218,7 @@ export const getAuditLog = createServerFn({ method: "GET" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
+    await requirePermission(context, "settings", "manage");
     const sinceDate = new Date();
     sinceDate.setDate(sinceDate.getDate() - data.days);
 
@@ -244,6 +246,7 @@ export const anonymizeData = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     const { accountId } = await resolveAccountContext(userId);
+    await requirePermission(context, "settings", "manage");
 
     if (!data.confirm) throw new Error("Deve confirmar anonimização");
 

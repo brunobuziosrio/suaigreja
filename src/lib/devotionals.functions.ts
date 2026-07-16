@@ -3,10 +3,12 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listDevotionals = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
+    await requirePermission(context, "pastoral_care", "view");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { data, error } = await supabase
@@ -32,6 +34,7 @@ export const upsertDevotional = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "pastoral_care", data.id ? "edit" : "create");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
@@ -57,6 +60,7 @@ export const deleteDevotional = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
+    await requirePermission(context, "pastoral_care", "delete");
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     const { error } = await supabase

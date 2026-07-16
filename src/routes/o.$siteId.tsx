@@ -60,7 +60,7 @@ function PublicPrayers() {
     initialData: { account: data.account, accountId: data.accountId, prayers: data.prayers },
   });
 
-  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", is_anonymous: false });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", message: "", is_anonymous: false, website: "", formStartedAt: Date.now() });
   const [sent, setSent] = useState(false);
 
   const sendMut = useMutation({
@@ -68,7 +68,7 @@ function PublicPrayers() {
     onSuccess: () => {
       setSent(true);
       toast.success("Pedido enviado! Será publicado após aprovação.");
-      setForm({ name: "", email: "", phone: "", message: "", is_anonymous: false });
+      setForm({ name: "", email: "", phone: "", message: "", is_anonymous: false, website: "", formStartedAt: Date.now() });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -109,6 +109,10 @@ function PublicPrayers() {
             </div>
           ) : (
             <form onSubmit={(e) => { e.preventDefault(); sendMut.mutate(); }} className="space-y-3">
+              <div className="absolute -left-[10000px] h-px w-px overflow-hidden" aria-hidden="true">
+                <Label htmlFor="prayer-website">Website</Label>
+                <Input id="prayer-website" tabIndex={-1} autoComplete="off" value={form.website} onChange={(e) => setForm({ ...form, website: e.target.value })} />
+              </div>
               <div>
                 <Label htmlFor="name">Seu nome</Label>
                 <Input id="name" required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
