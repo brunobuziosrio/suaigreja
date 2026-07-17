@@ -12,6 +12,7 @@ import {
 import { fetchYoutubeVideos, buildAudioEmbed } from "@/lib/media.server";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { requirePermission } from "@/lib/permission-guard.server";
+import { getReligionTerms } from "@/lib/religion-profiles";
 
 const RESERVED = new Set([
   "a",
@@ -450,6 +451,43 @@ export const updateHubSettings = createServerFn({ method: "POST" })
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
     const { error } = await supabase.from("accounts").update(data).eq("id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Modelo inicial compartilhado: configura dados leves e editáveis, sem copiar
+// imagens para o storage de cada cliente.
+export const applyHubStarterTemplate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase } = context;
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
+    const { data: account, error: readError } = await supabase
+      .from("accounts")
+      .select("brand_title, religion_profile")
+      .eq("id", accountId)
+      .single();
+    if (readError) throw new Error(readError.message);
+    const name = account.brand_title || "Nossa comunidade";
+    const gathering = getReligionTerms(account.religion_profile).mainGathering;
+    const { error } = await supabase.from("accounts").update({
+      hub_enabled: true,
+      hub_bio: `Bem-vindo à ${name}. Um lugar para caminhar em comunidade, participar e encontrar esperança.`,
+      hub_show_agenda: true,
+      hub_show_events: true,
+      hub_show_prayer: true,
+      hub_show_visitor: true,
+      hub_show_all_locations: false,
+      weekly_message: `Participe do nosso próximo ${gathering} e conheça nossa comunidade.`,
+      weekly_verse: "Tudo o que fizerdes, fazei-o de todo o coração.",
+      weekly_verse_ref: "Colossenses 3:23",
+      hub_highlights: [
+        { icon: "CalendarDays", value: "Agenda", label: "Programação atualizada", sublabel: null },
+        { icon: "Heart", value: "Cuidado", label: "Pedidos e acompanhamento", sublabel: null },
+        { icon: "Users", value: "Comunidade", label: "Todos são bem-vindos", sublabel: null },
+      ],
+    } as never).eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

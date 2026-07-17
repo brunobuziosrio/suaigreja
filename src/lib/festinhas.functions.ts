@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/permission-guard.server";
 const eventInput = z.object({ name: z.string().trim().min(2).max(120), starts_at: z.string().datetime().nullable().optional() });
 const stallInput = z.object({ festa_event_id: z.string().uuid(), name: z.string().trim().min(2).max(100), responsible_name: z.string().trim().max(120).nullable().optional() });
 const productInput = z.object({ festa_stall_id: z.string().uuid(), name: z.string().trim().min(2).max(120), price_cents: z.number().int().min(0), stock_quantity: z.number().int().min(0).nullable().optional() });
+const saleInput = z.object({ festa_stall_id: z.string().uuid(), payment_method: z.enum(["pix", "card", "cash"]), items: z.array(z.object({ product_id: z.string().uuid(), quantity: z.number().int().min(1).max(99) })).min(1).max(30) });
 
 type FestaEvent = { id: string; name: string; status: "draft" | "open" | "closed" | "archived"; starts_at: string | null; created_at: string };
 type FestaStall = { id: string; festa_event_id: string; name: string; responsible_name: string | null; active: boolean; sort_order: number };
@@ -51,4 +52,12 @@ export const createFestaProduct = createServerFn({ method: "POST" }).middleware(
   const { error } = await context.supabase.from("festa_products" as never).insert({ ...data, stock_quantity: data.stock_quantity ?? null } as never);
   if (error) throw new Error(error.message);
   return { ok: true };
+});
+
+export const recordFestaSale = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((input) => saleInput.parse(input)).handler(async ({ data, context }) => {
+  await requireModuleAccess(context, "/festinhas"); await requirePermission(context, "events", "create");
+  const client = context.supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: Array<{ order_id: string; order_code: string; total_cents: number }> | null; error: { message: string } | null }> };
+  const { data: result, error } = await client.rpc("record_festa_sale", { p_stall_id: data.festa_stall_id, p_payment_method: data.payment_method, p_items: data.items });
+  if (error) throw new Error(error.message);
+  return result?.[0] ?? null;
 });

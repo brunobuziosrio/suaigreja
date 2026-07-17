@@ -107,3 +107,37 @@ O produto recém-criado continua válido para qualquer instituição: feira bene
 - IA sugere; pessoa responsável revisa e decide. Não classificar, pontuar ou deduzir crença/condição espiritual de indivíduos.
 - A configuração de rótulos não pode alterar permissões, regras financeiras ou integridade de dados; ela é uma camada de apresentação.
 - Qualquer expansão de perfil deve adicionar traduções, templates, testes de interface e validação de fluxos, não condicionais espalhadas pelo código.
+
+## Oportunidade futura — Atendente IA no WhatsApp
+
+### Evidência e premissa
+
+Já existe conexão por conta em `whatsapp_provider_connections`, crédito de mensagens e webhook com assinatura para eventos de entrega. O webhook atual registra apenas status de mensagens enviadas; ele ainda não interpreta mensagens recebidas. Isto é a base certa para um atendente, mas o recebimento deve ser implementado como fluxo separado e idempotente.
+
+### Produto recomendado
+
+- **Assistente da instituição**, um add-on mensal que atende no número WhatsApp conectado por cada conta.
+- Base de conhecimento isolada por `account_id`: páginas, agenda, eventos, documentos e respostas aprovadas pela equipe.
+- Começar em modo assistido: responder perguntas factuais aprovadas; se não houver evidência, criar atendimento para um humano. Nunca inventar horários, orientações ou informações pastorais.
+- A equipe pode pausar a IA por conversa, assumir o atendimento e revisar respostas/feedbacks.
+
+### Arquitetura e segurança
+
+1. Receber mensagens inbound e resolver a conta exclusivamente pelo `phone_number_id`/`instance_id` da conexão, nunca por dado enviado pelo usuário.
+2. Persistir conversa, mensagem recebida, decisão (IA/humano), fontes consultadas e resposta em tabelas com `account_id` e RLS.
+3. Recuperar conteúdo somente da base daquela conta; separar índice, histórico e cache por instituição.
+4. Filtrar/encaminhar imediatamente temas sensíveis: crise, saúde, denúncias, aconselhamento, pedidos privados e dados de menores.
+5. Aplicar opt-out, limites por contato, auditoria e retenção configurável; não usar conversas para treinar respostas de outra instituição.
+
+### Modelo de cobrança
+
+- Add-on mensal pelo painel e créditos de IA pré-pagos, independentes dos créditos de envio WhatsApp.
+- Cobrar por unidades de atendimento ponderadas por entrada, saída, contexto e anexos; incluir margem configurável antes de vender pacotes.
+- Reservar saldo antes da geração, registrar custo real depois, alertar saldo baixo e interromper respostas automáticas quando o teto mensal for atingido.
+
+### Entrega em fases
+
+1. Inbox interno + mensagens recebidas + humano assume.
+2. Base de conhecimento e respostas somente com fonte aprovada.
+3. Créditos/custos, limites, analytics e recarga.
+4. IA para automações de boas-vindas, eventos e qualificação, sempre com regras de consentimento do WhatsApp.

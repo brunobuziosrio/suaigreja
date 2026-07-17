@@ -18,7 +18,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
-import { updateHubSettings, listMyNews, upsertNews, deleteNews, uploadHubAsset } from "@/lib/hub.functions";
+import { updateHubSettings, listMyNews, upsertNews, deleteNews, uploadHubAsset, applyHubStarterTemplate } from "@/lib/hub.functions";
 import {
   startInstagramConnect,
   getInstagramConnection,
@@ -220,6 +220,7 @@ function getErrorMessage(error: unknown, fallback: string) {
 function HubEditor() {
   const getAccount = useServerFn(getMyAccount);
   const saveHub = useServerFn(updateHubSettings);
+  const applyTemplate = useServerFn(applyHubStarterTemplate);
   const fetchNews = useServerFn(listMyNews);
   const saveNews = useServerFn(upsertNews);
   const removeNews = useServerFn(deleteNews);
@@ -240,6 +241,11 @@ function HubEditor() {
   const { data: account } = useQuery<Account | null>({
     queryKey: ["my-account"],
     queryFn: async () => await getAccount() as Account | null,
+  });
+  const templateMut = useMutation({
+    mutationFn: () => applyTemplate(),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["my-account"] }); toast.success("Modelo aplicado. Personalize os textos e publique quando quiser."); },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const { data: igConnection, refetch: refetchIg } = useQuery({
@@ -548,6 +554,13 @@ function HubEditor() {
             <a href={hubUrl} target="_blank" rel="noopener">
               <Button size="sm" variant="outline"><ExternalLink className="h-3 w-3" /></Button>
             </a>
+          </Card>
+        )}
+
+        {tab === "geral" && (
+          <Card className="border-amber-200 bg-amber-50 p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div><p className="font-medium flex items-center gap-2"><LayoutTemplate className="h-4 w-4 text-amber-700" />Começar com uma página pronta</p><p className="mt-1 text-xs text-muted-foreground">Aplica textos e seções de exemplo. Nada já preenchido por você será apagado sem confirmação.</p></div>
+            <Button size="sm" variant="outline" disabled={templateMut.isPending} onClick={() => { if (confirm("Aplicar o modelo inicial? Você poderá editar tudo depois.")) templateMut.mutate(); }}>{templateMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Usar modelo"}</Button>
           </Card>
         )}
 
