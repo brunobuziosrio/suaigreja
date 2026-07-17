@@ -65,6 +65,12 @@ const moduleRolloutSchema = z.object({
   status: z.enum(["hidden", "internal", "beta", "live"]),
 });
 
+const accountFeatureOverrideSchema = z.object({
+  account_id: z.string().uuid(),
+  feature_id: z.string().min(1).max(80),
+  enabled: z.boolean(),
+});
+
 export const listPlanFeatureFlags = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -107,6 +113,29 @@ export const updateModuleRollout = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("module_rollouts" as never)
       .upsert({ ...data, updated_at: new Date().toISOString() } as never, { onConflict: "feature_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listAccountFeatureOverrides = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("account_feature_overrides" as never)
+      .select("account_id, feature_id, enabled, updated_at" as never);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const updateAccountFeatureOverride = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => accountFeatureOverrideSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("account_feature_overrides" as never)
+      .upsert({ ...data, updated_at: new Date().toISOString() } as never, { onConflict: "account_id,feature_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
