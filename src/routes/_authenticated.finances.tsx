@@ -20,7 +20,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createServerFn, useServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { useMemo, useState } from "react";
 import {
@@ -41,7 +41,7 @@ const getDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/finances");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -59,7 +59,7 @@ const getMembersWithDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/finances");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase

@@ -6,7 +6,7 @@ import {
   buildMercadoPagoPlatformNotificationUrl,
   resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import { z } from "zod";
@@ -43,7 +43,7 @@ const EventPageInput = z.object({
 export const listEventPages = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/eventos");
     await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -75,7 +75,7 @@ export const saveEventPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => EventPageInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/eventos");
     await requirePermission(context, "events", data.id ? "edit" : "create");
     const { supabase } = context;
 
@@ -144,7 +144,7 @@ export const deleteEventPage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/eventos");
     await requirePermission(context, "events", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -160,7 +160,7 @@ export const listEventRegistrations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input) => z.object({ eventPageId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/eventos");
     await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data: regs, error } = await supabase
@@ -179,7 +179,7 @@ export const getRegistrationPayment = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input) => z.object({ registrationId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/eventos");
     await requirePermission(context, "events", "view");
     const { supabase } = context;
     const { data: reg } = await supabase
