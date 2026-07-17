@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 export type CongregationRow = {
@@ -38,7 +38,7 @@ const schema = z.object({
 export const listCongregations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/congregacoes");
     await requirePermission(context, "members", "view");
     const { data, error } = await context.supabase
       .from("congregations" as never)
@@ -57,7 +57,7 @@ export const upsertCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => schema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/congregacoes");
     await requirePermission(context, "members", data.id ? "edit" : "create");
     const clean = (v?: string | null) => v?.trim() || null;
     const payload = {
@@ -90,7 +90,7 @@ export const deleteCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/congregacoes");
     await requirePermission(context, "members", "delete");
     const { error } = await context.supabase
       .from("congregations" as never)

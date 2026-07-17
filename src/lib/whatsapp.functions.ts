@@ -8,7 +8,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -102,7 +102,7 @@ function normalizeStatus(status: unknown) {
 export const getWhatsappData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
     await requirePermission(context, "whatsapp", "view");
     const { supabase } = context;
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -187,7 +187,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => CreditPackageInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
     await requirePermission(context, "whatsapp", "manage");
     const { claims } = context;
 
@@ -285,7 +285,7 @@ export const upsertWhatsappSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => SettingsInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
     await requirePermission(context, "whatsapp", "manage");
     const { supabase } = context;
     const { error } = await supabase
@@ -299,7 +299,7 @@ export const deleteQueuedWhatsappMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => DeleteQueuedMessageInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
     await requirePermission(context, "whatsapp", "delete");
     const { supabase } = context;
     const { data: message } = await supabase
@@ -337,7 +337,7 @@ export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => EnqueueMessageInput.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
     await requirePermission(context, "whatsapp", "create");
     const { supabase } = context;
 

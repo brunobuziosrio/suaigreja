@@ -13,7 +13,7 @@ import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 const REQUEST_TYPES = [
@@ -56,7 +56,7 @@ async function assertMemberBelongsToAccount(
 export const listSecretariaRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export const listSecretariaRequests = createServerFn({ method: "GET" })
 export const getSecretariaStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -134,7 +134,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", data.id ? "edit" : "create");
     const { supabase: client } = context;
     await assertMemberBelongsToAccount(client, accountId, data.member_id);
@@ -178,7 +178,7 @@ export const updateSecretariaStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => statusSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "edit");
     const { supabase: client } = context;
     const { data: updated, error } = await client
@@ -197,7 +197,7 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
@@ -224,7 +224,7 @@ export const listSecretariaAttachments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => requestIdSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
@@ -257,7 +257,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => attachmentSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "edit");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
@@ -305,7 +305,7 @@ export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "P
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: attachment, error } = await supabase
@@ -331,7 +331,7 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "delete");
     const { supabase } = context;
     const { data: attachment, error: fetchError } = await supabase
@@ -390,7 +390,7 @@ export const deleteSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/secretaria");
     await requirePermission(context, "secretaria", "delete");
     const { supabase: client } = context;
     const { data: deleted, error } = await client

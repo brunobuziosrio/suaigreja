@@ -8,7 +8,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 // String vazia ("") vinda do formulário de registro novo nao e nem
@@ -23,7 +23,7 @@ const optionalUuid = z.preprocess(
 export const listVolunteerSchedules = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -48,7 +48,7 @@ export const upsertVolunteerSchedule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => scheduleSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload = {
@@ -80,7 +80,7 @@ export const deleteVolunteerSchedule = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "delete");
     const { supabase: client } = context;
     const { error } = await client
@@ -96,7 +96,7 @@ export const listVolunteerShifts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ scheduleId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "view");
     const { supabase } = context;
     const { data: shifts, error } = await supabase
@@ -174,7 +174,7 @@ export const upsertVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => shiftSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", data.id ? "edit" : "create");
     const { supabase: client } = context;
     await assertMemberAvailable(
@@ -215,7 +215,7 @@ export const deleteVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "delete");
     const { supabase: client } = context;
     const { error } = await client
@@ -231,7 +231,7 @@ export const confirmVolunteerShift = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "edit");
     const { supabase: client } = context;
     const { error } = await client
@@ -257,7 +257,7 @@ export const requestVolunteerReplacement = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "edit");
     const { supabase: client } = context;
     const { error } = await client
@@ -287,7 +287,7 @@ export type VolunteerUnavailabilityRow = {
 export const listVolunteerUnavailability = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -310,7 +310,7 @@ export const addVolunteerUnavailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => unavailabilitySchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "create");
     const { supabase } = context;
     if (new Date(data.end_date).getTime() < new Date(data.start_date).getTime()) {
@@ -331,7 +331,7 @@ export const deleteVolunteerUnavailability = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -349,7 +349,7 @@ export const deleteVolunteerUnavailability = createServerFn({ method: "POST" })
 export const listUpcomingUnconfirmedShifts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/escalas");
     await requirePermission(context, "volunteer_shifts", "view");
     const { supabase } = context;
     const today = new Date();

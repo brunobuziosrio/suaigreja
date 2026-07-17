@@ -9,7 +9,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 export type BankAccountRow = {
@@ -34,7 +34,7 @@ export type BankAccountRow = {
 export const listBankAccounts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/contas-bancarias");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -65,7 +65,7 @@ export const upsertBankAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => bankAccountSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/contas-bancarias");
     await requirePermission(context, "finances", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
@@ -105,7 +105,7 @@ export const setPrimaryBankAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/contas-bancarias");
     await requirePermission(context, "finances", "edit");
     const { supabase } = context;
     const { error: unsetErr } = await supabase
@@ -127,7 +127,7 @@ export const setBankAccountActive = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid(), active: z.boolean() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/contas-bancarias");
     await requirePermission(context, "finances", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -143,7 +143,7 @@ export const deleteBankAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/contas-bancarias");
     await requirePermission(context, "finances", "delete");
     const { supabase } = context;
     const { error } = await supabase

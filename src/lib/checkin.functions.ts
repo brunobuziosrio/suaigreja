@@ -2,13 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listCheckinSessions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/checkin");
     await requirePermission(context, "checkin", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -24,7 +24,7 @@ export const listCheckinEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i: { session_id: string }) => z.object({ session_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/checkin");
     await requirePermission(context, "checkin", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -50,7 +50,7 @@ export const upsertCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/checkin");
     await requirePermission(context, "checkin", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
@@ -76,7 +76,7 @@ export const deleteCheckinSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/checkin");
     await requirePermission(context, "checkin", "delete");
     const { supabase } = context;
     const { error } = await supabase

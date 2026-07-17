@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 const monthSchema = z.object({
@@ -43,7 +43,7 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/relatorios");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
     const { from, to } = monthBounds(data.year, data.month);
@@ -118,7 +118,7 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/relatorios");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
     const { from, to } = monthBounds(data.year, data.month);
@@ -168,7 +168,7 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
 export const getSmallGroupsReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/relatorios");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
     const [{ data: groups, error: groupsError }, { data: memberships, error: membershipsError }] =

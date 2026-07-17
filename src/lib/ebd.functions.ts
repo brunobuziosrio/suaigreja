@@ -1,13 +1,13 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listEbdClasses = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -60,7 +60,7 @@ export const upsertEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => classSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
@@ -94,7 +94,7 @@ export const deleteEbdClass = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -110,7 +110,7 @@ export const listEnrollments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input) => classIdSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -126,7 +126,7 @@ export const setEnrollment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => enrollmentSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "edit");
     const { supabase } = context;
     if (data.enroll) {
@@ -152,7 +152,7 @@ export const recordAttendance = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => attendanceSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "edit");
     const { supabase } = context;
     // upsert each entry
@@ -179,7 +179,7 @@ export const recordAttendance = createServerFn({ method: "POST" })
 export const getAttendanceStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "view");
     const { supabase } = context;
     const since = new Date();
@@ -204,7 +204,7 @@ export const getAttendanceForDate = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((input) => attendanceDateSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/ebd");
     await requirePermission(context, "education", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase

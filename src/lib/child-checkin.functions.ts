@@ -2,7 +2,7 @@ import { createHash, randomInt } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 const hash = (code: string) => createHash("sha256").update(code).digest("hex");
@@ -18,7 +18,7 @@ const childSchema = z.object({
   active: z.boolean().default(true),
 });
 
-type ChildCheckinContext = Parameters<typeof requirePlanTier>[0];
+type ChildCheckinContext = Parameters<typeof requireModuleAccess>[0];
 
 type ChildCheckinListResponse = {
   children: unknown[];
@@ -26,7 +26,7 @@ type ChildCheckinListResponse = {
 };
 
 async function access(context: ChildCheckinContext, action: "view" | "create" | "edit") {
-  const result = await requirePlanTier(context, "premium");
+  const result = await requireModuleAccess(context, "/checkin-infantil");
   await requirePermission(context, "checkin", action);
   return result;
 }

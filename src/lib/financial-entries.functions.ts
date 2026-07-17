@@ -10,7 +10,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { parseCsv, normalizeHeader } from "@/lib/csv";
 
@@ -39,7 +39,7 @@ export const ENTRY_CATEGORIES = {
 export const listFinancialEntries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/finances");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -71,7 +71,7 @@ export const upsertFinancialEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => entrySchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/finances");
     await requirePermission(context, "finances", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
@@ -107,7 +107,7 @@ export const deleteFinancialEntry = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/finances");
     await requirePermission(context, "finances", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -164,7 +164,7 @@ export const importFinancialEntriesCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => importSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "premium");
+    const { accountId } = await requireModuleAccess(context, "/finances");
     await requirePermission(context, "finances", "create");
     const { supabase } = context;
 

@@ -2,13 +2,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { requirePlanTier } from "@/lib/plan-access";
+import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 export const listVisitors = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requirePlanTier(context, "pro");
+    await requireModuleAccess(context, "/visitantes");
     await requirePermission(context, "visitors", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -30,7 +30,7 @@ export const updateVisitorStatus = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
+    await requireModuleAccess(context, "/visitantes");
     await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -45,7 +45,7 @@ export const updateVisitorNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid(), notes: z.string().max(2000) }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
+    await requireModuleAccess(context, "/visitantes");
     await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -60,7 +60,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requirePlanTier(context, "pro");
+    await requireModuleAccess(context, "/visitantes");
     await requirePermission(context, "visitors", "delete");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").delete().eq("id", data.id);
@@ -71,7 +71,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
 export const getVisitorSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/visitantes");
     await requirePermission(context, "visitors", "view");
     const { supabase } = context;
     const { data } = await supabase
@@ -95,7 +95,7 @@ export const saveVisitorSettings = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requireModuleAccess(context, "/visitantes");
     await requirePermission(context, "visitors", "manage");
     const { supabase } = context;
     const { error } = await supabase
