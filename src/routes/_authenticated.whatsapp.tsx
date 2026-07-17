@@ -8,7 +8,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/app-shell";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   getWhatsappData,
@@ -16,6 +16,10 @@ import {
   deleteQueuedWhatsappMessage,
   enqueueWhatsappMessage,
   createWhatsappCreditPixPayment,
+  closeWhatsappConversation,
+  getWhatsappInboxData,
+  replyToWhatsappConversation,
+  takeWhatsappConversation,
 } from "@/lib/whatsapp.functions";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,6 +47,9 @@ import {
   Filter,
   Copy,
   QrCode,
+  Inbox,
+  UserCheck,
+  CheckCircle2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/whatsapp")({
@@ -113,6 +120,9 @@ type CreditPackage = { id: string; name: string; description: string; message_co
 type CreditPurchase = { id: string; message_count: number; amount_cents: number; status: string; paid_at: string | null; created_at: string };
 type CreditPayment = { package_name: string; message_count: number; qr_code: string | null; copy_paste: string | null };
 type WhatsappData = { settings: (Partial<Settings> & { credits_balance?: number }) | null; packages: CreditPackage[]; purchases: CreditPurchase[]; recent: RecentMessage[]; totals: Record<string, number>; analytics: { total: number; reservedCredits: number; netCredits: number; byStatus: Record<string, number>; byKind: Record<string, number>; byDelivery: Record<string, number> } };
+type InboxConversation = { id: string; provider: string; contact_phone: string; contact_name: string | null; status: "bot" | "human" | "closed"; assigned_user_id: string | null; last_message_at: string; last_inbound_preview: string | null; closed_at: string | null };
+type InboxMessage = { id: string; conversation_id: string; direction: "inbound" | "outbound"; content: string; type: string; at: string; status: string };
+type InboxData = { conversations: InboxConversation[]; messages: InboxMessage[] };
 
 const DEFAULTS: Settings = {
   enabled: false,
@@ -171,10 +181,19 @@ function WhatsappPage() {
   const deleteMsg = useServerFn(deleteQueuedWhatsappMessage);
   const enqueue = useServerFn(enqueueWhatsappMessage);
   const createCreditPix = useServerFn(createWhatsappCreditPixPayment);
+  const fetchInbox = useServerFn(getWhatsappInboxData);
+  const takeConversation = useServerFn(takeWhatsappConversation);
+  const closeConversation = useServerFn(closeWhatsappConversation);
+  const replyConversation = useServerFn(replyToWhatsappConversation);
 
   const { data, isLoading, refetch } = useQuery<WhatsappData>({
     queryKey: ["whatsapp-data"],
     queryFn: async () => await fetchData() as WhatsappData,
+  });
+  const inboxQuery = useQuery<InboxData>({
+    queryKey: ["whatsapp-inbox"],
+    queryFn: async () => await fetchInbox() as InboxData,
+    refetchInterval: 20_000,
   });
 
   const [cfg, setCfg] = useState<Settings>(DEFAULTS);
@@ -267,7 +286,7 @@ function WhatsappPage() {
         )}
 
         <Tabs defaultValue="geral" className="w-full">
-          <TabsList className="w-full sm:w-auto">
+          <TabsList className="h-auto w-full flex-wrap justify-start gap-1 p-1 sm:w-auto">
             <TabsTrigger value="geral" className="flex items-center gap-1">
               <Settings className="h-3.5 w-3.5" /> Geral
             </TabsTrigger>
@@ -276,6 +295,9 @@ function WhatsappPage() {
             </TabsTrigger>
             <TabsTrigger value="manual" className="flex items-center gap-1">
               <Send className="h-3.5 w-3.5" /> Envio manual
+            </TabsTrigger>
+            <TabsTrigger value="inbox" className="flex items-center gap-1">
+              <Inbox className="h-3.5 w-3.5" /> Atendimento
             </TabsTrigger>
             <TabsTrigger value="creditos" className="flex items-center gap-1">
               <Wallet className="h-3.5 w-3.5" /> Créditos
@@ -438,6 +460,17 @@ function WhatsappPage() {
           {/* ===== ABA: ENVIO MANUAL ===== */}
           <TabsContent value="manual" className="mt-4">
             <ManualSendForm enqueue={enqueue} refetch={refetch} globalEnabled={cfg.enabled} />
+          </TabsContent>
+
+          <TabsContent value="inbox" className="mt-4">
+            <WhatsappInbox
+              data={inboxQuery.data}
+              loading={inboxQuery.isLoading}
+              onRefresh={() => inboxQuery.refetch()}
+              onTake={async (conversationId) => { await takeConversation({ data: { conversation_id: conversationId } }); }}
+              onClose={async (conversationId) => { await closeConversation({ data: { conversation_id: conversationId } }); }}
+              onReply={async (conversationId, content) => { await replyConversation({ data: { conversation_id: conversationId, content } }); }}
+            />
           </TabsContent>
 
           <TabsContent value="creditos" className="mt-4">
@@ -825,6 +858,72 @@ function CreditPackages({
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function WhatsappInbox({
+  data,
+  loading,
+  onRefresh,
+  onTake,
+  onClose,
+  onReply,
+}: {
+  data: InboxData | undefined;
+  loading: boolean;
+  onRefresh: () => void;
+  onTake: (conversationId: string) => Promise<void>;
+  onClose: (conversationId: string) => Promise<void>;
+  onReply: (conversationId: string, content: string) => Promise<void>;
+}) {
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [reply, setReply] = useState("");
+  const [busy, setBusy] = useState(false);
+  const conversations = data?.conversations ?? [];
+  const selected = conversations.find((conversation) => conversation.id === selectedId) ?? conversations[0] ?? null;
+  const timeline = useMemo(() => (data?.messages ?? []).filter((message) => message.conversation_id === selected?.id).sort((a, b) => a.at.localeCompare(b.at)), [data?.messages, selected?.id]);
+
+  async function run(action: () => Promise<void>, success: string) {
+    setBusy(true);
+    try {
+      await action();
+      toast.success(success);
+      setReply("");
+      onRefresh();
+    } catch (error) {
+      toast.error(errorMessage(error, "Não foi possível atualizar o atendimento."));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) return <Card><CardContent className="py-10 text-sm text-muted-foreground">Carregando atendimentos…</CardContent></Card>;
+  if (!conversations.length) return <Card className="border-dashed"><CardContent className="py-12 text-center"><Inbox className="mx-auto mb-3 h-8 w-8 text-emerald-600" /><h2 className="font-semibold">Nenhuma conversa recebida</h2><p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">Quando alguém enviar uma mensagem pelo número conectado, ela aparecerá aqui para sua equipe assumir e responder.</p></CardContent></Card>;
+
+  return (
+    <section className="overflow-hidden rounded-xl border bg-card shadow-sm">
+      <header className="flex items-center justify-between border-b bg-emerald-950 px-4 py-3 text-white">
+        <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-300">Central de atendimento</p><h2 className="font-display text-lg font-semibold">Conversas que pedem cuidado</h2></div>
+        <Button size="sm" variant="secondary" onClick={onRefresh}>Atualizar</Button>
+      </header>
+      <div className="grid min-h-[520px] lg:grid-cols-[330px_1fr]">
+        <aside className="max-h-[520px] overflow-y-auto border-b bg-stone-50 lg:border-b-0 lg:border-r">
+          {conversations.map((conversation) => {
+            const active = selected?.id === conversation.id;
+            return <button key={conversation.id} onClick={() => setSelectedId(conversation.id)} className={`w-full border-b px-4 py-3 text-left transition ${active ? "bg-white shadow-[inset_3px_0_0_#059669]" : "hover:bg-white"}`}>
+              <div className="flex items-center justify-between gap-2"><strong className="truncate text-sm">{conversation.contact_name || conversation.contact_phone}</strong><Badge variant={conversation.status === "closed" ? "neutral" : conversation.status === "human" ? "success" : "outline"}>{conversation.status === "human" ? "em atendimento" : conversation.status === "closed" ? "encerrada" : "bot"}</Badge></div>
+              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{conversation.last_inbound_preview || "Mensagem recebida"}</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">{new Date(conversation.last_message_at).toLocaleString("pt-BR")}</p>
+            </button>;
+          })}
+        </aside>
+        {selected && <main className="flex min-w-0 flex-col bg-[linear-gradient(135deg,#f8faf8,#eef7f1)]">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b bg-white px-5 py-3"><div><h3 className="font-semibold">{selected.contact_name || "Contato sem nome"}</h3><p className="text-xs text-muted-foreground">{selected.contact_phone} · {selected.provider}</p></div><div className="flex gap-2">{selected.status !== "human" && <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => onTake(selected.id), "Conversa assumida pela sua equipe.")}><UserCheck className="mr-1 h-4 w-4" />Assumir</Button>}{selected.status !== "closed" && <Button size="sm" variant="outline" disabled={busy} onClick={() => run(() => onClose(selected.id), "Conversa encerrada.")}><CheckCircle2 className="mr-1 h-4 w-4" />Encerrar</Button>}</div></div>
+          <div className="flex-1 space-y-3 overflow-y-auto p-5">{timeline.length === 0 ? <p className="text-sm text-muted-foreground">Sem mensagens registradas.</p> : timeline.map((message) => <div key={`${message.direction}-${message.id}`} className={`flex ${message.direction === "outbound" ? "justify-end" : "justify-start"}`}><div className={`max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm ${message.direction === "outbound" ? "rounded-br-sm bg-emerald-700 text-white" : "rounded-bl-sm bg-white text-ink"}`}><p className="whitespace-pre-wrap">{message.content}</p><p className={`mt-1 text-[10px] ${message.direction === "outbound" ? "text-emerald-100" : "text-muted-foreground"}`}>{new Date(message.at).toLocaleString("pt-BR")} · {message.direction === "outbound" ? message.status : "recebida"}</p></div></div>)}</div>
+          <div className="border-t bg-white p-4"><Label htmlFor="inbox-reply" className="sr-only">Responder</Label><div className="flex gap-2"><Textarea id="inbox-reply" value={reply} onChange={(event) => setReply(event.target.value)} maxLength={800} rows={2} placeholder={selected.status === "closed" ? "Assuma a conversa para responder" : "Escreva uma resposta acolhedora…"} disabled={busy || selected.status === "closed"} /><Button disabled={busy || selected.status === "closed" || !reply.trim()} onClick={() => run(() => onReply(selected.id, reply.trim()), "Resposta adicionada à fila de envio.")}><Send className="mr-1 h-4 w-4" />Enviar</Button></div><p className="mt-1 text-xs text-muted-foreground">A resposta usa 1 crédito e segue pela fila do provedor conectado.</p></div>
+        </main>}
+      </div>
+    </section>
   );
 }
 

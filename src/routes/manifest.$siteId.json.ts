@@ -68,6 +68,7 @@ export const Route = createFileRoute("/manifest/$siteId/json")({
           JSON.stringify({
             name,
             short_name: shortName,
+            lang: "pt-BR",
             description: account.brand_subtitle || `Agenda, conteudos e comunicados de ${name}.`,
             start_url: `/${slug}`,
             scope: "/",

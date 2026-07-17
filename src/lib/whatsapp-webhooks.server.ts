@@ -1,5 +1,5 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { normalizeWhatsappPhone } from "@/lib/whatsapp-consent.server";
+import { isWhatsappOptOutCommand, normalizeWhatsappPhone, recordWhatsappOptOut, type WhatsappConsentClient } from "@/lib/whatsapp-consent.server";
 import type { WhatsappProviderId } from "@/lib/whatsapp-providers.server";
 
 type DeliveryStatus = "sent" | "delivered" | "read" | "failed" | "unknown";
@@ -16,6 +16,18 @@ export type WhatsappDeliveryEventInput = {
     businessAccountId?: string | null;
     instanceId?: string | null;
   };
+};
+
+export type WhatsappInboundEventInput = {
+  provider: WhatsappProviderId;
+  providerMessageId: string;
+  senderPhone: string;
+  senderName: string | null;
+  messageType: string;
+  content: string | null;
+  receivedAt: string;
+  rawPayload: unknown;
+  providerAccountHint?: WhatsappDeliveryEventInput["providerAccountHint"];
 };
 
 type MessageLookup = {
@@ -129,6 +141,41 @@ export function parseWhatsappDeliveryWebhook(provider: WhatsappProviderId, raw: 
   return [];
 }
 
+export function parseWhatsappInboundWebhook(provider: WhatsappProviderId, raw: unknown): WhatsappInboundEventInput[] {
+  const payload = asRecord(raw);
+  if (provider === "meta_cloud") {
+    const events: WhatsappInboundEventInput[] = [];
+    for (const entry of Array.isArray(payload.entry) ? payload.entry : []) {
+      const entryRecord = asRecord(entry);
+      for (const change of Array.isArray(entryRecord.changes) ? entryRecord.changes : []) {
+        const value = asRecord(asRecord(change).value);
+        const metadata = asRecord(value.metadata);
+        const contacts = Array.isArray(value.contacts) ? value.contacts : [];
+        const contact = asRecord(contacts[0]);
+        const profile = asRecord(contact.profile);
+        for (const message of Array.isArray(value.messages) ? value.messages : []) {
+          const item = asRecord(message);
+          const type = pickString(item.type) ?? "text";
+          const content = pickString(asRecord(item.text).body, asRecord(item.button).text, asRecord(item.interactive).button_reply && asRecord(asRecord(item.interactive).button_reply).title);
+          const senderPhone = normalizeWhatsappPhone(pickString(item.from) ?? "");
+          const providerMessageId = pickString(item.id);
+          if (!senderPhone || !providerMessageId) continue;
+          events.push({ provider, providerMessageId, senderPhone, senderName: pickString(profile.name), messageType: type, content, receivedAt: dateFromTimestamp(item.timestamp), rawPayload: item, providerAccountHint: { phoneNumberId: pickString(metadata.phone_number_id), businessAccountId: pickString(entryRecord.id) } });
+        }
+      }
+    }
+    return events;
+  }
+  const data = asRecord(payload.data);
+  const key = asRecord(data.key);
+  const fromMe = Boolean(payload.fromMe ?? data.fromMe ?? key.fromMe);
+  const senderPhone = normalizeWhatsappPhone(pickString(payload.phone, payload.from, data.phone, data.from, key.remoteJid)?.replace(/\D/g, "") ?? "");
+  const providerMessageId = pickString(payload.messageId, payload.message_id, payload.id, data.messageId, data.message_id, data.id, key.id);
+  const content = pickString(payload.text, payload.body, asRecord(payload.message).conversation, data.text, data.body, asRecord(data.message).conversation);
+  if (fromMe || !senderPhone || !providerMessageId) return [];
+  return [{ provider, providerMessageId, senderPhone, senderName: pickString(payload.pushName, payload.name, data.pushName, data.name), messageType: pickString(payload.type, data.type) ?? "text", content, receivedAt: dateFromTimestamp(payload.timestamp ?? data.timestamp), rawPayload: raw, providerAccountHint: { instanceId: pickString(payload.instanceId, payload.instance_id, data.instanceId) } }];
+}
+
 async function findMessage(event: WhatsappDeliveryEventInput): Promise<MessageLookup | null> {
   if (!event.providerMessageId) return null;
 
@@ -200,4 +247,34 @@ export async function recordWhatsappDeliveryEvent(event: WhatsappDeliveryEventIn
   }
 
   return { accountId, messageId: message?.id ?? null, status: event.status };
+}
+
+export async function recordWhatsappInboundEvent(event: WhatsappInboundEventInput) {
+  const accountId = await findAccountId(event, null);
+  if (!accountId) return { accountId: null, conversationId: null, ignored: true };
+  const now = new Date().toISOString();
+  const { data: conversation, error: conversationError } = await supabaseAdmin
+    .from("whatsapp_conversations" as never)
+    .upsert({ account_id: accountId, provider: event.provider, contact_phone: event.senderPhone, contact_name: event.senderName, last_message_at: event.receivedAt, last_inbound_preview: event.content?.slice(0, 500) ?? null, updated_at: now } as never, { onConflict: "account_id,provider,contact_phone" })
+    .select("id").single();
+  if (conversationError) throw new Error(conversationError.message);
+  const conversationId = (conversation as { id: string }).id;
+  const { error } = await supabaseAdmin.from("whatsapp_inbound_messages" as never).upsert({
+    account_id: accountId, conversation_id: conversationId, provider: event.provider,
+    provider_message_id: event.providerMessageId, sender_phone: event.senderPhone,
+    message_type: event.messageType, content: event.content, raw_payload: event.rawPayload as never,
+    received_at: event.receivedAt,
+  } as never, { onConflict: "provider,provider_message_id", ignoreDuplicates: true });
+  if (error) throw new Error(error.message);
+  if (isWhatsappOptOutCommand(event.content)) {
+    await recordWhatsappOptOut({
+      supabase: supabaseAdmin as unknown as WhatsappConsentClient,
+      accountId,
+      phone: event.senderPhone,
+      source: "inbound_webhook",
+      reason: "Comando de cancelamento recebido no WhatsApp.",
+      metadata: { provider: event.provider, provider_message_id: event.providerMessageId, conversation_id: conversationId },
+    });
+  }
+  return { accountId, conversationId, ignored: false };
 }

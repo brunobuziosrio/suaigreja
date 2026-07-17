@@ -68,6 +68,10 @@ const EnqueueMessageInput = z.object({
   kind: z.enum(MSG_KINDS),
   member_id: z.string().uuid().nullable().optional(),
 });
+const ConversationIdInput = z.object({ conversation_id: z.string().uuid() });
+const ReplyToConversationInput = ConversationIdInput.extend({
+  content: z.string().min(1).max(800),
+});
 
 type WhatsappCountRow = {
   status: string;
@@ -397,5 +401,130 @@ export const enqueueWhatsappMessage = createServerFn({ method: "POST" })
       });
       throw new Error(error.message);
     }
+    return { ok: true };
+  });
+
+type InboxConversationRow = {
+  id: string;
+  provider: string;
+  contact_phone: string;
+  contact_name: string | null;
+  status: "bot" | "human" | "closed";
+  assigned_user_id: string | null;
+  last_message_at: string;
+  last_inbound_preview: string | null;
+  closed_at: string | null;
+};
+
+export const getWhatsappInboxData = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
+    await requirePermission(context, "whatsapp", "view");
+    const { supabase } = context;
+    const { data: conversations, error } = await supabase
+      .from("whatsapp_conversations" as never)
+      .select("id, provider, contact_phone, contact_name, status, assigned_user_id, last_message_at, last_inbound_preview, closed_at")
+      .eq("account_id", accountId)
+      .order("last_message_at", { ascending: false })
+      .limit(80);
+    if (error) throw new Error(error.message);
+
+    const rows = (conversations ?? []) as InboxConversationRow[];
+    if (!rows.length) return { conversations: [], messages: [] };
+    const ids = rows.map((row) => row.id);
+    const phones = [...new Set(rows.map((row) => row.contact_phone))];
+    const [inboundRes, outboundRes] = await Promise.all([
+      supabase
+        .from("whatsapp_inbound_messages" as never)
+        .select("id, conversation_id, sender_phone, message_type, content, received_at")
+        .eq("account_id", accountId)
+        .in("conversation_id", ids)
+        .order("received_at", { ascending: true })
+        .limit(500),
+      supabase
+        .from("whatsapp_messages")
+        .select("id, phone, content, status, created_at, sent_at")
+        .eq("account_id", accountId)
+        .in("phone", phones)
+        .order("created_at", { ascending: true })
+        .limit(500),
+    ]);
+    if (inboundRes.error) throw new Error(inboundRes.error.message);
+    if (outboundRes.error) throw new Error(outboundRes.error.message);
+
+    const byPhone = new Map(rows.map((row) => [row.contact_phone, row.id]));
+    const inbound = ((inboundRes.data ?? []) as Array<Record<string, unknown>>).map((message) => ({
+      id: String(message.id), conversation_id: String(message.conversation_id), direction: "inbound" as const,
+      content: String(message.content ?? "[mensagem sem texto]"), type: String(message.message_type ?? "text"),
+      at: String(message.received_at), status: "received",
+    }));
+    const outbound = ((outboundRes.data ?? []) as Array<Record<string, unknown>>)
+      .map((message) => ({
+        id: String(message.id), conversation_id: byPhone.get(String(message.phone)), direction: "outbound" as const,
+        content: String(message.content ?? ""), type: "text", at: String(message.sent_at ?? message.created_at), status: String(message.status ?? "queued"),
+      }))
+      .filter((message) => Boolean(message.conversation_id));
+    return { conversations: rows, messages: [...inbound, ...outbound] };
+  });
+
+export const takeWhatsappConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => ConversationIdInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
+    await requirePermission(context, "whatsapp", "edit");
+    const { error } = await supabaseAdmin
+      .from("whatsapp_conversations" as never)
+      .update({ status: "human", assigned_user_id: context.userId, closed_at: null, updated_at: new Date().toISOString() } as never)
+      .eq("id", data.conversation_id).eq("account_id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const closeWhatsappConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => ConversationIdInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
+    await requirePermission(context, "whatsapp", "edit");
+    const now = new Date().toISOString();
+    const { error } = await supabaseAdmin
+      .from("whatsapp_conversations" as never)
+      .update({ status: "closed", closed_at: now, updated_at: now } as never)
+      .eq("id", data.conversation_id).eq("account_id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const replyToWhatsappConversation = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => ReplyToConversationInput.parse(input))
+  .handler(async ({ data, context }) => {
+    const { accountId } = await requireModuleAccess(context, "/whatsapp");
+    await requirePermission(context, "whatsapp", "create");
+    const { data: conversation, error: conversationError } = await supabaseAdmin
+      .from("whatsapp_conversations" as never)
+      .select("id, contact_phone, contact_name")
+      .eq("id", data.conversation_id).eq("account_id", accountId).maybeSingle();
+    if (conversationError) throw new Error(conversationError.message);
+    if (!conversation) throw new Error("Conversa não encontrada.");
+    const phone = normalizeWhatsappPhone(String((conversation as { contact_phone: string }).contact_phone));
+    if (await hasWhatsappOptedOut({ supabase: supabaseAdmin, accountId, phone })) throw new Error("Este contato retirou o consentimento para receber WhatsApp.");
+    const messageId = createWhatsappMessageId();
+    const reservation = await reserveWhatsappCredits({ supabase: supabaseAdmin, accountId, messageId, costCredits: 1, idempotencyKey: `reserve:inbox:${messageId}`, metadata: { kind: "manual", source: "inbox_reply", conversation_id: data.conversation_id } });
+    if (!reservation.ok) throw new Error(reservation.reason === "insufficient_credits" ? "Créditos insuficientes para responder." : "Não foi possível reservar créditos.");
+    const now = new Date().toISOString();
+    const { error: messageError } = await supabaseAdmin.from("whatsapp_messages").insert({
+      id: messageId, account_id: accountId, kind: "manual", phone,
+      recipient_name: (conversation as { contact_name: string | null }).contact_name,
+      content: appendWhatsappOptOutNotice(data.content), status: "queued", scheduled_for: now,
+      cost_credits: 1, credit_reserved_at: now,
+    });
+    if (messageError) {
+      await refundWhatsappMessageCredits({ supabase: supabaseAdmin, accountId, messageId, idempotencyKey: `refund:inbox_failed:${messageId}`, metadata: { source: "inbox_reply" } });
+      throw new Error(messageError.message);
+    }
+    await supabaseAdmin.from("whatsapp_conversations" as never).update({ status: "human", assigned_user_id: context.userId, closed_at: null, updated_at: now } as never).eq("id", data.conversation_id).eq("account_id", accountId);
     return { ok: true };
   });

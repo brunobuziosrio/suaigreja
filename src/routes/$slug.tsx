@@ -21,7 +21,7 @@ import {
   Facebook, Globe, Copy, MapPin, ArrowUpRight, Heart, MessageCircle, Quote,
   ChevronLeft, ChevronRight, Menu, X as XIcon,
   Church, Users, HeartHandshake, Cross, Sparkles, CalendarHeart,
-  BookOpen, Music, Baby, Home, Flame, Star, Radio, Newspaper, Phone, PlayCircle, Headphones,
+  BookOpen, Music, Baby, Home, Flame, Star, Radio, Newspaper, Phone, PlayCircle, Headphones, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -42,6 +42,48 @@ type EventItem = PublicHubData["events"][number];
 type LocationItem = NonNullable<PublicHubData["locations"]>[number];
 type InstagramPost = NonNullable<Awaited<ReturnType<typeof getPublicInstagramPosts>>>[number];
 type SocialLink = { href: string; Icon: LucideIcon; label: string; sub: string };
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+};
+
+function InstallAppButton({ accent, mobile = false }: { accent: string; mobile?: boolean }) {
+  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
+  const [installing, setInstalling] = useState(false);
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      event.preventDefault();
+      setPromptEvent(event as BeforeInstallPromptEvent);
+    };
+    const onInstalled = () => setPromptEvent(null);
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+  if (!promptEvent) return null;
+  return (
+    <button
+      type="button"
+      disabled={installing}
+      onClick={async () => {
+        setInstalling(true);
+        await promptEvent.prompt();
+        const choice = await promptEvent.userChoice;
+        if (choice.outcome === "accepted") setPromptEvent(null);
+        setInstalling(false);
+      }}
+      className={mobile
+        ? "mt-3 flex w-full items-center justify-center gap-2 rounded-full border py-3 text-sm font-bold uppercase tracking-wider transition hover:bg-stone-50"
+        : "ml-1 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider transition hover:bg-stone-50"}
+      style={{ borderColor: accent, color: accent }}
+    >
+      <Download className="h-3.5 w-3.5" /> {installing ? "Abrindo…" : "Instalar app"}
+    </button>
+  );
+}
 
 // Lightweight scroll-reveal wrapper using IntersectionObserver
 function Reveal({
@@ -1469,6 +1511,7 @@ function TopNav({
               {it.label}
             </a>
           ))}
+          <InstallAppButton accent={accent} />
           {ctaLabel && ctaHref && (
             <a
               href={ctaHref}
@@ -1512,6 +1555,7 @@ function TopNav({
                 <Heart className="h-4 w-4 fill-current" /> {ctaLabel}
               </a>
             )}
+            <InstallAppButton accent={accent} mobile />
           </div>
         </div>
       )}

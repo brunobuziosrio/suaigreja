@@ -41,6 +41,12 @@ export function appendWhatsappOptOutNotice(content: string) {
   return `${text}\n\n${OPT_OUT_NOTICE}`;
 }
 
+// Mantem o comando deliberadamente restrito para evitar que uma frase comum
+// contendo a palavra "sair" cancele o consentimento por engano.
+export function isWhatsappOptOutCommand(content: string | null | undefined) {
+  return /^(sair|cancelar|parar|stop)$/i.test(String(content ?? "").trim());
+}
+
 export async function hasWhatsappOptedOut({
   supabase,
   accountId,

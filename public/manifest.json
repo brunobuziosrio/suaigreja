@@ -1,6 +1,7 @@
 {
   "name": "suaigreja — plataforma da sua comunidade",
   "short_name": "suaigreja",
+  "lang": "pt-BR",
   "description": "Agenda, eventos, oração, visitantes e site pronto para a sua igreja.",
   "start_url": "/",
   "scope": "/",

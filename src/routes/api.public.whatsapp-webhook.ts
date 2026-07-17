@@ -2,7 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 import { verifyCronRequest } from "@/lib/cron-auth.server";
 import {
+  parseWhatsappInboundWebhook,
   parseWhatsappDeliveryWebhook,
+  recordWhatsappInboundEvent,
   recordWhatsappDeliveryEvent,
 } from "@/lib/whatsapp-webhooks.server";
 
@@ -85,12 +87,17 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
         if (!raw) return Response.json({ ok: false, error: "Payload inválido." }, { status: 400 });
 
         const events = parseWhatsappDeliveryWebhook(provider.data, raw);
+        const inboundEvents = parseWhatsappInboundWebhook(provider.data, raw);
         const recorded = [];
         for (const event of events) {
           recorded.push(await recordWhatsappDeliveryEvent(event));
         }
+        const inbound = [];
+        for (const event of inboundEvents) {
+          inbound.push(await recordWhatsappInboundEvent(event));
+        }
 
-        return Response.json({ ok: true, provider: provider.data, events: recorded.length, recorded });
+        return Response.json({ ok: true, provider: provider.data, events: recorded.length, inbound: inbound.length, recorded, inboundRecorded: inbound });
       },
     },
   },

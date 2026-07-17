@@ -35,6 +35,7 @@ function isPublicAssetPath(pathname: string) {
     pathname.startsWith("/_build/") ||
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/icon-") ||
+    pathname === "/sw.js" ||
     pathname === "/manifest.json"
   );
 }
