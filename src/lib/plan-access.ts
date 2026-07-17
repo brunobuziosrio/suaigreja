@@ -59,6 +59,13 @@ type SupabaseModuleClient = SupabasePlanClient & {
       };
     };
   };
+  from(table: "account_feature_overrides"): {
+    select(columns: string): {
+      eq(column: string, value: string): {
+        maybeSingle(): Promise<SupabaseResult<{ enabled: boolean }>>;
+      };
+    };
+  };
 };
 
 const TIER_RANK: Record<PlanTier, number> = {
@@ -220,7 +227,7 @@ export async function requireModuleAccess(
   if (!module) return requirePlanTier(context, "essential");
   const access = await requirePlanTier(context, module.minimumTier);
 
-  const [{ data: rollout, error: rolloutError }, { data: planFlag, error: flagError }] = await Promise.all([
+  const [{ data: rollout, error: rolloutError }, { data: planFlag, error: flagError }, { data: override, error: overrideError }] = await Promise.all([
     context.supabase.from("module_rollouts").select("status").eq("feature_id", module.id).maybeSingle(),
     context.supabase
       .from("plan_feature_flags")
@@ -228,9 +235,11 @@ export async function requireModuleAccess(
       .eq("feature_id", module.id)
       .eq("plan_tier", access.tier)
       .maybeSingle(),
+    context.supabase.from("account_feature_overrides").select("enabled").eq("account_id", access.accountId).eq("feature_id", module.id).maybeSingle(),
   ]);
   if (rolloutError) throw new Error(rolloutError.message);
   if (flagError) throw new Error(flagError.message);
+  if (overrideError) throw new Error(overrideError.message);
 
   const rolloutStatus = rollout?.status ?? (module.status === "lab" ? "internal" : "live");
   if (rolloutStatus === "hidden") {
@@ -249,7 +258,10 @@ export async function requireModuleAccess(
   }
 
   // Ausência de linha mantém compatibilidade enquanto uma migration ainda não foi aplicada.
-  if (planFlag && !planFlag.enabled) {
+  if (override?.enabled === false) {
+    throw new Error("Este recurso foi desativado para esta instituição.");
+  }
+  if (!override?.enabled && planFlag && !planFlag.enabled) {
     throw new Error("Este recurso não está incluído no seu plano atual.");
   }
   return access;
