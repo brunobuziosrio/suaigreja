@@ -2,6 +2,7 @@ import type { PlanTier } from "@/lib/billing-plans";
 import { resolveAccountContext } from "@/lib/account-context.server";
 
 export type ModuleStatus = "core" | "beta" | "lab" | "ready";
+export type ModuleRolloutStatus = "hidden" | "internal" | "beta" | "live";
 
 export type ModuleAccess = {
   id: string;
@@ -31,6 +32,30 @@ type SupabasePlanClient = {
     select(columns: string): {
       eq(column: "id", value: string): {
         maybeSingle(): Promise<SupabaseResult<AccountPlanRow>>;
+      };
+    };
+  };
+};
+
+type SupabaseModuleClient = SupabasePlanClient & {
+  from(table: "plan_feature_flags"): {
+    select(columns: string): {
+      eq(column: string, value: string): {
+        maybeSingle(): Promise<SupabaseResult<{ enabled: boolean }>>;
+      };
+    };
+  };
+  from(table: "module_rollouts"): {
+    select(columns: string): {
+      eq(column: string, value: string): {
+        maybeSingle(): Promise<SupabaseResult<{ status: ModuleRolloutStatus }>>;
+      };
+    };
+  };
+  from(table: "user_roles"): {
+    select(columns: string): {
+      eq(column: string, value: string): {
+        maybeSingle(): Promise<SupabaseResult<{ role: string }>>;
       };
     };
   };
@@ -186,15 +211,46 @@ export async function requirePlanTier(
 
 export async function requireModuleAccess(
   context: {
-    supabase: SupabasePlanClient;
+    supabase: SupabaseModuleClient;
     userId: string;
   },
   pathname: string,
 ): Promise<PlanTierCheck> {
   const module = getModuleForPath(pathname);
   if (!module) return requirePlanTier(context, "essential");
-  if (!isModuleEnabled(module)) {
-    throw new Error("Este módulo ainda não está disponível para venda.");
+  const access = await requirePlanTier(context, module.minimumTier);
+
+  const [{ data: rollout, error: rolloutError }, { data: planFlag, error: flagError }] = await Promise.all([
+    context.supabase.from("module_rollouts").select("status").eq("feature_id", module.id).maybeSingle(),
+    context.supabase
+      .from("plan_feature_flags")
+      .select("enabled")
+      .eq("feature_id", module.id)
+      .eq("plan_tier", access.tier)
+      .maybeSingle(),
+  ]);
+  if (rolloutError) throw new Error(rolloutError.message);
+  if (flagError) throw new Error(flagError.message);
+
+  const rolloutStatus = rollout?.status ?? (module.status === "lab" ? "internal" : "live");
+  if (rolloutStatus === "hidden") {
+    throw new Error("Este módulo está temporariamente desativado.");
   }
-  return requirePlanTier(context, module.minimumTier);
+
+  if (rolloutStatus === "internal") {
+    const { data: adminRole, error: adminError } = await context.supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (adminError) throw new Error(adminError.message);
+    if (!adminRole) throw new Error("Este módulo está reservado para testes internos.");
+  }
+
+  // Ausência de linha mantém compatibilidade enquanto uma migration ainda não foi aplicada.
+  if (planFlag && !planFlag.enabled) {
+    throw new Error("Este recurso não está incluído no seu plano atual.");
+  }
+  return access;
 }

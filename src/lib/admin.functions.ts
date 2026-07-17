@@ -60,6 +60,11 @@ const featureFlagSchema = z.object({
   enabled: z.boolean(),
 });
 
+const moduleRolloutSchema = z.object({
+  feature_id: z.string().min(1).max(80),
+  status: z.enum(["hidden", "internal", "beta", "live"]),
+});
+
 export const listPlanFeatureFlags = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -79,6 +84,29 @@ export const updatePlanFeatureFlag = createServerFn({ method: "POST" })
     const { error } = await supabaseAdmin
       .from("plan_feature_flags" as never)
       .upsert(data as never, { onConflict: "feature_id,plan_tier" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const listModuleRollouts = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data, error } = await supabaseAdmin
+      .from("module_rollouts" as never)
+      .select("feature_id, status, updated_at" as never);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  });
+
+export const updateModuleRollout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => moduleRolloutSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("module_rollouts" as never)
+      .upsert({ ...data, updated_at: new Date().toISOString() } as never, { onConflict: "feature_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
