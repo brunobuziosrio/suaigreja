@@ -62,39 +62,15 @@ este arquivo e rode os comandos de verificação abaixo dentro de `app/`.
   públicas antigas. Foram corrigidos os erros objetivos encontrados nas entregas
   recentes (ativação, jornada e dashboard); lint pontual e build continuam passando.
 
-## Mudanças locais pendentes em `app/`
+## Entrega publicada em `app/`
 
-Há implementações locais após o checkpoint `ad1e5f1`. Elas incluem Central
-Pastoral, vocabulário multiperfil, pulso da comunidade e campanhas WhatsApp.
-As migrations abaixo ainda precisam ser aplicadas e validadas antes de qualquer
-deploy que use essas telas:
+O lote de Central Pastoral, vocabulário multiperfil, campanhas WhatsApp e Banco
+de Talentos foi publicado em 2026-07-21 no commit `1e5e2a9`.
 
-- `20260718120000_pastoral_followups.sql`
-- `20260718130000_account_religion_terms.sql`
-- `20260718140000_pastoral_followup_history.sql`
-- `20260718150000_whatsapp_campaign_metrics.sql`
-- `20260718160000_member_talents.sql`
-
-O Supabase CLI local ainda não está vinculado ao projeto remoto; não aplicar
-as migrations sem vincular o projeto e confirmar o ambiente. Se aparecer sujeira
-nova no Git, revisar antes de continuar:
-
-Em 2026-07-18, `npx supabase db lint` também não pôde validar as migrations:
-o banco Postgres local não estava acessível. Isso não altera nem aplica dados;
-antes de deploy, iniciar/conectar o ambiente local ou vincular com segurança o
-projeto remoto e executar a validação no ambiente correto. `npx supabase status`
-confirmou que o daemon Docker local não está disponível neste ambiente.
-
-Em 2026-07-20, a API do projeto configurado (`pgdnqgtlcksoklueooyv`) confirmou
-que as cinco migrations continuam pendentes: as quatro tabelas novas retornam
-`404` e as duas colunas novas retornam `400`. O arquivo `.env` tem chaves de
-API, mas não a senha administrativa do Postgres exigida pelo Supabase CLI para
-vincular e executar `db push`. Não aplicar por API ou manualmente sem essa
-credencial. As migrations foram reforçadas antes da aplicação para garantir que
-históricos pastorais e mensagens de campanha não possam referenciar registros
-de outra conta. O endpoint de acompanhamento também valida a origem e o
-responsável no servidor; no Banco de Talentos, o telefone não é mais enviado ao
-navegador quando a autorização de contato não foi registrada.
+As cinco migrations deste lote já estão aplicadas e ativas no Postgres de
+produção. O Supabase CLI local continua sem vínculo remoto, portanto futuras
+migrations devem seguir o fluxo seguro já usado na VPS ou ser vinculadas com a
+credencial administrativa correta antes de usar `db push`.
 
 Na auditoria do mesmo lote, `setEventAttendance` passou a confirmar no servidor
 que evento e participante pertencem à conta atual antes do `upsert`. As prévias
@@ -139,55 +115,19 @@ git status --short
 
 ## Próximo lote de execução
 
-Ordem obrigatória para a próxima sessão:
-
-> **Retomada de amanhã — finalizar o sistema:** não abrir novos módulos antes de
-> fechar as migrations, validações em navegador e pendências de venda/operação
-> desta seção. O objetivo é encerrar com uma entrega publicável e um checklist
-> objetivo do que ainda depender de infraestrutura ou decisão externa.
-
-1. **Aplicar e validar as migrations pendentes** antes de deploy:
-   `20260718120000_pastoral_followups.sql`,
-   `20260718130000_account_religion_terms.sql` e
-   `20260718140000_pastoral_followup_history.sql` e
-   `20260718150000_whatsapp_campaign_metrics.sql` e
-   `20260718160000_member_talents.sql`. O CLI local não está vinculado
-   ao projeto Supabase remoto (`supabase link` ausente), portanto não aplicar às
-   cegas. Depois, validar permissões e isolamento por conta.
-2. **Acompanhamento Pastoral — código concluído, aguardando migrations**:
-   `/acompanhamento` reúne visitantes, decisões, pedidos de oração e ausências;
-   registra responsável, próximo contato, nota, conclusão, histórico e filtros.
-   O dashboard também alerta itens vencidos ou sem responsável. Validar em
-   navegador real depois de aplicar as migrations.
-3. **Vocabulário multiperfil — código concluído, aguardando migration**:
-   `/vocabulario` permite ajustar rótulos de apresentação sem mudar regras de
-   negócio, banco ou permissões. Validar em navegador depois da migration.
-4. **Automações consentidas — campanha por comunidade ou grupo entregue**:
-`/campanhas-whatsapp` cria mensagem, prévia de membros ativos com consentimento,
-exclusão de opt-out, cálculo/reserva de créditos e confirmação para enfileirar.
-Também permite restringir o envio a um grupo ativo e/ou a uma etapa da jornada,
-com validação de pertencimento do grupo à comunidade atual. Também registra cada
-novo disparo para exibir fila, entrega, leitura e falhas, conforme o retorno do
-provedor WhatsApp. Este bloco está concluído em código e aguarda a migration de
-métricas para teste real.
-5. **Jornada unificada**: consolidar estados e automações para visitante,
-participante, voluntário e liderança, aproveitando dados existentes em vez de
-duplicar cadastros. A tela de Jornada já foi aprimorada com prioridade para quem
-está sem etapa e próximos passos práticos por estágio; a consolidação automática
-entre fontes continua como evolução futura.
-6. **Banco de talentos — código concluído, aguardando migration**: `/talentos`
-armazena profissão, habilidades, idiomas, disponibilidade e observações por
-participante, com busca rápida para projetos e escalas. O contato fica oculto
-por padrão e só libera atalho de WhatsApp quando a equipe registra autorização.
-7. **Assistente de Eventos — código concluído**: `/assistente-eventos` reaproveita
-as páginas de evento para gerar convite de WhatsApp, legenda de redes sociais e
-checklist operacional, sem duplicar cadastros. O Radar básico foi entregue junto
-à Central Pastoral. A lista detalhada e a justificativa ficam em
-`ESTRATEGIA_E_PRIORIDADES_MERCADO_2026-07-18.md`, mas ela não deve ser usada
-como fila.
-8. **Ativação comercial — código concluído**: `/ativacao` apresenta checklist
-com progresso para identidade da comunidade, participantes, evento, WhatsApp e
-equipe, usando dados reais onde já há integração.
+1. Configurar o access token corporativo do Mercado Pago; a configuração existe
+   no banco, mas está sem token, então não é possível emitir nem validar a compra
+   das assinaturas. Em seguida, testar compra e webhook dos seis produtos.
+2. Criar credenciais isoladas de E2E para validar login, equipe, finanças,
+   acompanhamento, vocabulário, campanhas e talentos em navegador real.
+3. Executar uma prova de entrega SMTP em caixa de teste e validar convite de
+   equipe ponta a ponta. A infraestrutura SMTP está configurada, mas não foi
+   possível realizar envio sem um destinatário de teste autorizado.
+4. Validar visualmente em uma conta Premium com dados reais o resumo financeiro,
+   Livro Caixa, filtros, CSV, conciliação/repasses e responsividade de
+   Configurações em desktop/tablet/mobile.
+5. Confirmar preços, limites e política de upgrade/downgrade; manter domínio
+   gerenciado como fluxo assistido até a decisão sobre registrador e renovação.
 
 ## Pendências técnicas imediatas
 
