@@ -10,7 +10,7 @@ export type SmallGroupRow = Database["public"]["Tables"]["small_groups"]["Row"];
 export const listSmallGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -43,7 +43,7 @@ export const upsertSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = { ...data, account_id: accountId, updated_at: new Date().toISOString() };
@@ -69,7 +69,7 @@ export const deleteSmallGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i: { id: string }) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", "delete");
     const { supabase } = context;
     const { error } = await supabase

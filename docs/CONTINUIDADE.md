@@ -1,16 +1,23 @@
 # Continuidade - Saas Igreja
 
-Atualizado em: 2026-07-12
+Atualizado em: 2026-07-21
 
 Este é o arquivo principal para retomar o projeto. Antes de mexer no código, leia
 este arquivo e rode os comandos de verificação abaixo dentro de `app/`.
 
-## Regra de contexto
+## Regra de contexto e fila única
 
 - Projeto correto: `C:\Users\Bruno\Local Sites\Saas Igreja\app`.
 - Git real do produto: `app/.git`.
 - Não misturar com outros projetos, plugins WordPress externos ou rotinas de outros clientes.
 - Os documentos antigos ficam como histórico; não use eles como fila principal sem conferir este arquivo.
+- **Única fonte de execução:** este arquivo. Ao iniciar uma sessão, seguir a
+  seção `Próximo lote de execução` abaixo. Não escolher tarefa diretamente de
+  `IDEIAS_IMPLEMENTACOES.md`, relatórios de mercado, estratégia ou documentos
+  legais; eles são referência, não backlog ativo.
+- Ao concluir um lote, atualizar esta seção e, se necessário, registrar o
+  detalhe no `BACKLOG-2026-07-15.md`. Não criar outro arquivo de ideias para
+  definir o próximo trabalho.
 
 ## Estado atual confirmado
 
@@ -50,17 +57,137 @@ este arquivo e rode os comandos de verificação abaixo dentro de `app/`.
 - `npm run build` passou no checkpoint.
 - `npm run lint` global passou com warnings, sem erros. Os avisos restantes são dívida
   técnica conhecida, principalmente `any` antigo e hooks/dependências.
+- Em 2026-07-18, `npx tsc --noEmit` foi executado e ainda falha por dívida técnica
+  preexistente ampla, sobretudo contratos/tipos Supabase desatualizados e rotas
+  públicas antigas. Foram corrigidos os erros objetivos encontrados nas entregas
+  recentes (ativação, jornada e dashboard); lint pontual e build continuam passando.
 
 ## Mudanças locais pendentes em `app/`
 
-Nenhuma pendência local conhecida no checkpoint `ad1e5f1`.
+Há implementações locais após o checkpoint `ad1e5f1`. Elas incluem Central
+Pastoral, vocabulário multiperfil, pulso da comunidade e campanhas WhatsApp.
+As migrations abaixo ainda precisam ser aplicadas e validadas antes de qualquer
+deploy que use essas telas:
 
-Se aparecer sujeira nova no Git, revisar antes de continuar:
+- `20260718120000_pastoral_followups.sql`
+- `20260718130000_account_religion_terms.sql`
+- `20260718140000_pastoral_followup_history.sql`
+- `20260718150000_whatsapp_campaign_metrics.sql`
+- `20260718160000_member_talents.sql`
+
+O Supabase CLI local ainda não está vinculado ao projeto remoto; não aplicar
+as migrations sem vincular o projeto e confirmar o ambiente. Se aparecer sujeira
+nova no Git, revisar antes de continuar:
+
+Em 2026-07-18, `npx supabase db lint` também não pôde validar as migrations:
+o banco Postgres local não estava acessível. Isso não altera nem aplica dados;
+antes de deploy, iniciar/conectar o ambiente local ou vincular com segurança o
+projeto remoto e executar a validação no ambiente correto. `npx supabase status`
+confirmou que o daemon Docker local não está disponível neste ambiente.
+
+Em 2026-07-20, a API do projeto configurado (`pgdnqgtlcksoklueooyv`) confirmou
+que as cinco migrations continuam pendentes: as quatro tabelas novas retornam
+`404` e as duas colunas novas retornam `400`. O arquivo `.env` tem chaves de
+API, mas não a senha administrativa do Postgres exigida pelo Supabase CLI para
+vincular e executar `db push`. Não aplicar por API ou manualmente sem essa
+credencial. As migrations foram reforçadas antes da aplicação para garantir que
+históricos pastorais e mensagens de campanha não possam referenciar registros
+de outra conta. O endpoint de acompanhamento também valida a origem e o
+responsável no servidor; no Banco de Talentos, o telefone não é mais enviado ao
+navegador quando a autorização de contato não foi registrada.
+
+Na auditoria do mesmo lote, `setEventAttendance` passou a confirmar no servidor
+que evento e participante pertencem à conta atual antes do `upsert`. As prévias
+e os disparos de campanha WhatsApp também passaram a consultar opt-outs em
+blocos de 200 números, em vez de fazer uma consulta por destinatário. Lint dos
+módulos alterados, testes unitários, build e `npm run secrets:check` passaram.
+
+Ainda em 2026-07-20, foram corrigidos erros objetivos de TypeScript no gerenciador
+de doações (campanha sem ID ainda não pode ser excluída) e no autocomplete de
+endereços (referência nula em callback assíncrono). A abstração de consultas do
+controle de planos também passou a aceitar o tipo `PromiseLike` retornado pelo
+Supabase e encadeamentos de filtros. O fluxo de domínio premium passou a usar a
+interface mínima dessa consulta para não acionar inferência recursiva do cliente
+gerado. A checagem completa de tipos ainda falha por contratos Supabase e rotas
+públicas históricos; os arquivos corrigidos não aparecem mais na sua saída.
+
+O aceite legal no cadastro com Google também foi corrigido: `signInWithOAuth`
+não suporta metadados de usuário. O login agora guarda o aceite apenas durante
+o redirecionamento em `sessionStorage`, e o guard autenticado grava as versões
+dos Termos e da Política no usuário assim que a sessão OAuth estiver disponível.
+Validar manualmente esse fluxo após deploy com uma conta Google de teste.
+
+No saneamento de tipos, também foram corrigidos contratos locais de presença,
+agenda do Hub, permissões e relatórios para refletir campos realmente anuláveis
+do banco. Esses arquivos não aparecem mais na saída de `npx tsc --noEmit`;
+permanecem erros históricos que dependem de atualizar os tipos gerados do
+Supabase e revisar rotas públicas antigas.
+
+O endpoint de Check-in Infantil Seguro também passou a devolver contratos
+serializáveis explícitos para crianças e retiradas pendentes, removendo o uso de
+`unknown[]` que impedia a validação de tipo da rota autenticada.
+
+Também em 2026-07-20: `npm run lint`, `npm test` (12 testes) e `npm run build`
+passaram; o smoke E2E público passou em desktop e mobile (4 testes). Os 2
+testes autenticados permanecem condicionados a `E2E_USER_EMAIL` e
+`E2E_USER_PASSWORD` de uma conta de teste.
 
 ```powershell
 git -C app status --short
 git status --short
 ```
+
+## Próximo lote de execução
+
+Ordem obrigatória para a próxima sessão:
+
+> **Retomada de amanhã — finalizar o sistema:** não abrir novos módulos antes de
+> fechar as migrations, validações em navegador e pendências de venda/operação
+> desta seção. O objetivo é encerrar com uma entrega publicável e um checklist
+> objetivo do que ainda depender de infraestrutura ou decisão externa.
+
+1. **Aplicar e validar as migrations pendentes** antes de deploy:
+   `20260718120000_pastoral_followups.sql`,
+   `20260718130000_account_religion_terms.sql` e
+   `20260718140000_pastoral_followup_history.sql` e
+   `20260718150000_whatsapp_campaign_metrics.sql` e
+   `20260718160000_member_talents.sql`. O CLI local não está vinculado
+   ao projeto Supabase remoto (`supabase link` ausente), portanto não aplicar às
+   cegas. Depois, validar permissões e isolamento por conta.
+2. **Acompanhamento Pastoral — código concluído, aguardando migrations**:
+   `/acompanhamento` reúne visitantes, decisões, pedidos de oração e ausências;
+   registra responsável, próximo contato, nota, conclusão, histórico e filtros.
+   O dashboard também alerta itens vencidos ou sem responsável. Validar em
+   navegador real depois de aplicar as migrations.
+3. **Vocabulário multiperfil — código concluído, aguardando migration**:
+   `/vocabulario` permite ajustar rótulos de apresentação sem mudar regras de
+   negócio, banco ou permissões. Validar em navegador depois da migration.
+4. **Automações consentidas — campanha por comunidade ou grupo entregue**:
+`/campanhas-whatsapp` cria mensagem, prévia de membros ativos com consentimento,
+exclusão de opt-out, cálculo/reserva de créditos e confirmação para enfileirar.
+Também permite restringir o envio a um grupo ativo e/ou a uma etapa da jornada,
+com validação de pertencimento do grupo à comunidade atual. Também registra cada
+novo disparo para exibir fila, entrega, leitura e falhas, conforme o retorno do
+provedor WhatsApp. Este bloco está concluído em código e aguarda a migration de
+métricas para teste real.
+5. **Jornada unificada**: consolidar estados e automações para visitante,
+participante, voluntário e liderança, aproveitando dados existentes em vez de
+duplicar cadastros. A tela de Jornada já foi aprimorada com prioridade para quem
+está sem etapa e próximos passos práticos por estágio; a consolidação automática
+entre fontes continua como evolução futura.
+6. **Banco de talentos — código concluído, aguardando migration**: `/talentos`
+armazena profissão, habilidades, idiomas, disponibilidade e observações por
+participante, com busca rápida para projetos e escalas. O contato fica oculto
+por padrão e só libera atalho de WhatsApp quando a equipe registra autorização.
+7. **Assistente de Eventos — código concluído**: `/assistente-eventos` reaproveita
+as páginas de evento para gerar convite de WhatsApp, legenda de redes sociais e
+checklist operacional, sem duplicar cadastros. O Radar básico foi entregue junto
+à Central Pastoral. A lista detalhada e a justificativa ficam em
+`ESTRATEGIA_E_PRIORIDADES_MERCADO_2026-07-18.md`, mas ela não deve ser usada
+como fila.
+8. **Ativação comercial — código concluído**: `/ativacao` apresenta checklist
+com progresso para identidade da comunidade, participantes, evento, WhatsApp e
+equipe, usando dados reais onde já há integração.
 
 ## Pendências técnicas imediatas
 
@@ -112,3 +239,34 @@ npx eslint src/lib/admin.functions.ts src/lib/account.functions.ts src/lib/membe
 - Não formatar o projeto inteiro de uma vez.
 - Não fazer deploy sem saber se as migrations novas foram aplicadas.
 - Não usar arquivos de outro projeto como referência.
+
+## Checkpoint — 20/07/2026 (fim da sessão)
+
+- Correções locais recentes foram salvas nos arquivos de origem: contratos do Hub
+  público, agenda, eventos, localizações, notícias, carteirinha, Visitantes,
+  Festinhas, Patrimônio, Doações, Check-in e administração de WhatsApp.
+- Validações já concluídas durante a sessão: `npm test` (12 testes), builds de
+  produção e lint dos arquivos alterados passaram. O build ainda emite apenas
+  avisos conhecidos de tamanho de chunk/imports de terceiros.
+- `npx tsc --noEmit` continua com pendências parcialmente bloqueadas pelo schema
+  gerado desatualizado: migrations locais ainda não foram aplicadas ao Supabase
+  remoto. Não aplicar sem credencial de banco/fluxo de deploy autorizado.
+- Próxima ação recomendada: aplicar as cinco migrations pendentes, regenerar os
+  tipos do Supabase e então rodar `npx tsc --noEmit` para corrigir somente os
+  erros residuais reais.
+- Atenção: `dist/` é artefato de build e já estava alterado; não limpar nem
+  versionar automaticamente.
+
+## Checkpoint — 21/07/2026 (pronto para publicação)
+
+- As cinco migrations pendentes foram aplicadas com sucesso no Postgres de
+  produção (`supabase-db`): acompanhamento pastoral, vocabulário multiperfil,
+  histórico pastoral, métricas de campanhas WhatsApp e banco de talentos.
+- `src/integrations/supabase/types.ts` foi regenerado diretamente do schema de
+  produção pelo `postgres-meta` interno. Foram removidos casts obsoletos nos
+  contratos de campanhas, planos e política de privacidade.
+- `npx tsc --noEmit`, `npm run lint`, `npm test` (12 testes), `npm run build` e
+  o smoke E2E público desktop/mobile (4 testes) passaram. Os testes autenticados
+  continuam condicionados a `E2E_USER_EMAIL` e `E2E_USER_PASSWORD`.
+- O build ainda emite apenas avisos conhecidos de tamanho de chunk/imports de
+  terceiros. `dist/` continua sendo artefato de build e não deve ser versionado.

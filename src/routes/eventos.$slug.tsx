@@ -58,7 +58,7 @@ export const Route = createFileRoute("/eventos/$slug")({
 function EventsListPage() {
   const { account, events, chrome } = Route.useLoaderData() as EventsLoaderData;
   const accent = account.primary_color || "#467da5";
-  const slug = account.custom_slug || account.site_id;
+  const slug = account.custom_slug || account.site_id || "";
   const brand = account.brand_title || "Eventos";
 
   const fmtDate = (d: string) => {

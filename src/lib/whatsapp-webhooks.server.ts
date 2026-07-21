@@ -36,6 +36,11 @@ type MessageLookup = {
   status: string;
 };
 
+type ProviderAccountLookup = Pick<
+  WhatsappDeliveryEventInput,
+  "provider" | "providerAccountHint"
+>;
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
@@ -190,7 +195,7 @@ async function findMessage(event: WhatsappDeliveryEventInput): Promise<MessageLo
   return (data ?? null) as MessageLookup | null;
 }
 
-async function findAccountId(event: WhatsappDeliveryEventInput, message: MessageLookup | null) {
+async function findAccountId(event: ProviderAccountLookup, message: MessageLookup | null) {
   if (message) return message.account_id;
   const hint = event.providerAccountHint;
   if (!hint) return null;

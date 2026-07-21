@@ -83,6 +83,14 @@ export const setEventAttendance = createServerFn({ method: "POST" })
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "events", "edit");
     const { supabase } = context;
+    const [eventResult, memberResult] = await Promise.all([
+      supabase.from("events").select("id").eq("id", data.event_id).eq("account_id", accountId).maybeSingle(),
+      supabase.from("members").select("id").eq("id", data.member_id).eq("account_id", accountId).maybeSingle(),
+    ]);
+    if (eventResult.error) throw new Error(eventResult.error.message);
+    if (memberResult.error) throw new Error(memberResult.error.message);
+    if (!eventResult.data) throw new Error("Evento não encontrado nesta comunidade.");
+    if (!memberResult.data) throw new Error("Participante não encontrado nesta comunidade.");
     const { error } = await supabase.from("event_attendance" as never).upsert(
       {
         account_id: accountId,
@@ -108,6 +116,72 @@ export type AbsentMemberRow = {
   last_attended_at: string | null;
   days_absent: number | null;
 };
+
+export type CommunityAttendanceSummary = {
+  attendanceCount: number;
+  uniqueAttendees: number;
+  activeMembers: number;
+  participationRate: number | null;
+};
+
+// Indicador agregado para o dashboard. Não devolve histórico nem identifica
+// pessoas: a liderança só precisa da leitura coletiva do período.
+export const getCommunityAttendanceSummary = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .validator((i) =>
+    z
+      .object({
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "members", "view");
+    const { supabase } = context;
+    const fromTimestamp = `${data.from}T00:00:00.000Z`;
+    const toTimestamp = `${data.to}T23:59:59.999Z`;
+
+    const [{ count: attendanceCount, error: attendanceError }, { count: activeMembers, error: membersError }, { data: attendees, error: attendeesError }] =
+      await Promise.all([
+        supabase
+          .from("event_attendance" as never)
+          .select("*", { count: "exact", head: true })
+          .eq("account_id", accountId)
+          .eq("attended", true)
+          .gte("checked_in_at", fromTimestamp)
+          .lte("checked_in_at", toTimestamp),
+        supabase
+          .from("members")
+          .select("*", { count: "exact", head: true })
+          .eq("account_id", accountId)
+          .eq("status", "ativo"),
+        supabase
+          .from("event_attendance" as never)
+          .select("member_id")
+          .eq("account_id", accountId)
+          .eq("attended", true)
+          .gte("checked_in_at", fromTimestamp)
+          .lte("checked_in_at", toTimestamp),
+      ]);
+    if (attendanceError) throw new Error(attendanceError.message);
+    if (membersError) throw new Error(membersError.message);
+    if (attendeesError) throw new Error(attendeesError.message);
+
+    const uniqueAttendees = new Set(
+      ((attendees as Array<{ member_id: string }> | null) ?? []).map((row) => row.member_id),
+    ).size;
+    const totalActiveMembers = activeMembers ?? 0;
+
+    return {
+      attendanceCount: attendanceCount ?? 0,
+      uniqueAttendees,
+      activeMembers: totalActiveMembers,
+      participationRate:
+        totalActiveMembers > 0 ? Math.round((uniqueAttendees / totalActiveMembers) * 100) : null,
+    } satisfies CommunityAttendanceSummary;
+  });
 
 // So faz sentido alertar "sumido" se a igreja de fato estiver usando a
 // marcacao de presenca -- senao todo mundo apareceria como ausente no
@@ -156,7 +230,7 @@ export const listAbsentMembers = createServerFn({ method: "GET" })
     for (const a of (attendance as
       | Pick<AttendanceRecord, "member_id" | "checked_in_at">[]
       | null) ?? []) {
-      if (!lastAttendanceByMember.has(a.member_id))
+      if (a.checked_in_at && !lastAttendanceByMember.has(a.member_id))
         lastAttendanceByMember.set(a.member_id, a.checked_in_at);
     }
 

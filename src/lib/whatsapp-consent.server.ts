@@ -10,7 +10,7 @@ export type WhatsappConsentClient = {
     select(columns: string): {
       eq(column: "account_id", value: string): {
         eq(column: "phone_normalized", value: string): {
-          maybeSingle(): Promise<SupabaseResult<{ id: string }>>;
+          maybeSingle(): PromiseLike<SupabaseResult<{ id: string }>>;
         };
       };
     };
@@ -26,7 +26,7 @@ export type WhatsappConsentClient = {
       p_reason: string | null;
       p_metadata: Record<string, unknown>;
     },
-  ): Promise<SupabaseResult<unknown>>;
+  ): PromiseLike<SupabaseResult<unknown>>;
 };
 
 export function normalizeWhatsappPhone(phone: string) {

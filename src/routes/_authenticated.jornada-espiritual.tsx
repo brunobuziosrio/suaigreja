@@ -6,7 +6,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { listMembers, setMemberSpiritualStage, SPIRITUAL_STAGES } from "@/lib/members.functions";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sprout, Loader2 } from "lucide-react";
+import { ArrowRight, HeartHandshake, Loader2, Sprout, UsersRound } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 type SpiritualStage = (typeof SPIRITUAL_STAGES)[number];
@@ -23,12 +24,12 @@ export const Route = createFileRoute("/_authenticated/jornada-espiritual")({
   component: SpiritualJourneyPage,
 });
 
-const STAGE_META: Record<string, { label: string; color: string }> = {
-  novo_convertido: { label: "Novo convertido", color: "bg-sky-100 text-sky-800" },
-  em_acompanhamento: { label: "Em acompanhamento", color: "bg-amber-100 text-amber-800" },
-  batizado: { label: "Batizado", color: "bg-emerald-100 text-emerald-800" },
-  serve: { label: "Serve num ministério", color: "bg-purple-100 text-purple-800" },
-  lider: { label: "Líder", color: "bg-rose-100 text-rose-800" },
+const STAGE_META: Record<string, { label: string; color: string; next: string }> = {
+  novo_convertido: { label: "Novo convertido", color: "bg-sky-100 text-sky-800", next: "Convidar para acompanhamento e grupo" },
+  em_acompanhamento: { label: "Em acompanhamento", color: "bg-amber-100 text-amber-800", next: "Registrar próximo contato e avanço" },
+  batizado: { label: "Batizado", color: "bg-emerald-100 text-emerald-800", next: "Apresentar caminhos de serviço" },
+  serve: { label: "Serve num ministério", color: "bg-purple-100 text-purple-800", next: "Desenvolver formação e liderança" },
+  lider: { label: "Líder", color: "bg-rose-100 text-rose-800", next: "Acompanhar equipe e multiplicação" },
 };
 
 const STAGE_ORDER = [...SPIRITUAL_STAGES];
@@ -111,6 +112,13 @@ function SpiritualJourneyPage() {
           </button>
         </div>
 
+        <div className="mb-6 grid gap-3 lg:grid-cols-[1.2fr_1fr]">
+          <Card className="border-amber-500/20 bg-amber-500/5 p-4">
+            <div className="flex items-start gap-3"><HeartHandshake className="mt-0.5 h-5 w-5 text-amber-700"/><div><p className="font-medium">Prioridade de cuidado</p><p className="mt-1 text-sm text-muted-foreground">{counts.sem_etapa > 0 ? `${counts.sem_etapa} pessoa(s) ativa(s) ainda sem etapa definida.` : "Toda a comunidade ativa já possui uma etapa definida."}</p><Link to="/acompanhamento" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-amber-800 hover:underline">Abrir acompanhamento pastoral <ArrowRight className="h-4 w-4"/></Link></div></div>
+          </Card>
+          <Card className="p-4"><div className="flex items-start gap-3"><UsersRound className="mt-0.5 h-5 w-5 text-primary"/><div><p className="font-medium">Próximo passo por etapa</p><p className="mt-1 text-sm text-muted-foreground">Ao selecionar uma etapa, cada cartão mostra a ação de desenvolvimento recomendada.</p></div></div></Card>
+        </div>
+
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
         ) : filtered.length === 0 ? (
@@ -127,11 +135,11 @@ function SpiritualJourneyPage() {
                       {initials(m.full_name)}
                     </div>
                   )}
-                  <p className="text-sm font-medium truncate">{m.full_name}</p>
+                  <div className="min-w-0"><p className="text-sm font-medium truncate">{m.full_name}</p><p className="text-xs text-muted-foreground">{m.spiritual_stage ? STAGE_META[m.spiritual_stage].next : "Defina a etapa para iniciar um plano de cuidado"}</p></div>
                 </div>
                 <Select
                   value={m.spiritual_stage ?? "_none"}
-                  onValueChange={(v) => stageMut.mutate({ member_id: m.id, spiritual_stage: v === "_none" ? null : v })}
+                  onValueChange={(v) => stageMut.mutate({ member_id: m.id, spiritual_stage: v === "_none" ? null : v as SpiritualStage })}
                 >
                   <SelectTrigger className="w-56"><SelectValue placeholder="Sem etapa definida" /></SelectTrigger>
                   <SelectContent>

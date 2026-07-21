@@ -41,7 +41,7 @@ const getDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/finances");
+    const { accountId } = await requireModuleAccess(context as never, "/finances");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -59,7 +59,7 @@ const getMembersWithDonations = createServerFn({
 })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/finances");
+    const { accountId } = await requireModuleAccess(context as never, "/finances");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase

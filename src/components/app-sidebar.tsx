@@ -6,7 +6,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getIsAdmin } from "@/lib/admin.functions";
 import { getMyAccount } from "@/lib/account.functions";
 import { canAccessAccountPath } from "@/lib/plan-access";
-import { getReligionTerms } from "@/lib/religion-profiles";
+import { mergeReligionTerms, type ReligionTerms } from "@/lib/religion-profiles";
 import { adminGroup, adminItems, getNavGroups, primaryItems, type NavItem } from "@/lib/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useBranding, BRANDING_DEFAULTS } from "@/hooks/use-branding";
@@ -96,7 +96,11 @@ export function AppSidebar() {
   });
   const { data: brandingData } = useBranding();
   const branding = brandingData ?? BRANDING_DEFAULTS;
-  const terms = getReligionTerms(account?.religion_profile);
+  const terms = mergeReligionTerms(
+    account?.religion_profile,
+    (account as (typeof account & { religion_terms?: Partial<ReligionTerms> }) | undefined)
+      ?.religion_terms,
+  );
   const navGroups = getNavGroups(terms);
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);

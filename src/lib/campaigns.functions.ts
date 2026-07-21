@@ -23,7 +23,7 @@ const optionalUuid = z.preprocess(
 export const listCampaigns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/campanhas");
+    const { accountId } = await requireModuleAccess(context as never, "/campanhas");
     await requirePermission(context, "campaigns", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -65,7 +65,7 @@ export const upsertCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/campanhas");
+    const { accountId } = await requireModuleAccess(context as never, "/campanhas");
     await requirePermission(context, "campaigns", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload: CampaignPayload = {
@@ -103,7 +103,7 @@ export const deleteCampaign = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/campanhas");
+    const { accountId } = await requireModuleAccess(context as never, "/campanhas");
     await requirePermission(context, "campaigns", "delete");
     const { supabase: client } = context;
     const { error } = await client
@@ -119,7 +119,7 @@ export const getCampaignStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ campaignId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/campanhas");
+    const { accountId } = await requireModuleAccess(context as never, "/campanhas");
     await requirePermission(context, "campaigns", "view");
     const { supabase } = context;
     const { data: campaign, error: cErr } = await supabase

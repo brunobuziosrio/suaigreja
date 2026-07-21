@@ -17,7 +17,7 @@ export type PermissionModule = {
   description: string;
 };
 
-export type RolePermissions = Record<string, PermissionVerb[]>;
+export type RolePermissions = Record<string, readonly PermissionVerb[]>;
 
 export type RoleDefinition = {
   slug: string;

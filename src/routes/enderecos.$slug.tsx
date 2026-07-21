@@ -63,11 +63,11 @@ export const Route = createFileRoute("/enderecos/$slug")({
 });
 
 function LocationsPage() {
-  const { account, locations = [], chrome } = Route.useLoaderData() as LocationsLoaderData;
+  const { account, locations, chrome } = Route.useLoaderData() as LocationsLoaderData;
   const accent = account.primary_color || "#7d9b76";
-  const slug = account.custom_slug || account.site_id;
+  const slug = account.custom_slug || account.site_id || "";
   const brand = account.brand_title || "Nossos endereços";
-  const list = locations.filter((l) => l.address);
+  const list = (locations ?? []).filter((l) => l.address);
 
   const content = (
     <div className="min-h-screen bg-stone-50">

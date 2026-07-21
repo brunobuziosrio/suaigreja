@@ -13,16 +13,26 @@ const eventStatusInput = z.object({ festa_event_id: z.string().uuid(), status: z
 type FestaEvent = { id: string; name: string; status: "draft" | "open" | "closed" | "archived"; starts_at: string | null; created_at: string };
 type FestaStall = { id: string; festa_event_id: string; name: string; responsible_name: string | null; active: boolean; sort_order: number };
 type FestaProduct = { id: string; festa_stall_id: string; name: string; price_cents: number; stock_quantity: number | null; active: boolean };
+type FestaSummary = {
+  total_cents: number;
+  orders: number;
+  by_payment: Record<string, number>;
+  by_stall: Array<{ stall_id: string; total_cents: number; orders: number }>;
+};
+type FestaListItem = FestaEvent & {
+  stalls: Array<FestaStall & { products: FestaProduct[] }>;
+  summary: FestaSummary;
+};
 
 export const listFestinhas = createServerFn({ method: "GET" }).middleware([requireSupabaseAuth]).handler(async ({ context }) => {
-  const { accountId } = await requireModuleAccess(context, "/festinhas");
+  const { accountId } = await requireModuleAccess(context as never, "/festinhas");
   await requirePermission(context, "events", "view");
   const { supabase } = context;
   const { data: events, error } = await supabase.from("festa_events" as never).select("id, name, status, starts_at, created_at").eq("account_id", accountId).order("starts_at", { ascending: false, nullsFirst: false });
   if (error) throw new Error(error.message);
   const rows = (events ?? []) as unknown as FestaEvent[];
   const ids = rows.map((item) => item.id);
-  if (!ids.length) return [] as Array<FestaEvent & { stalls: Array<FestaStall & { products: FestaProduct[] }> }>;
+  if (!ids.length) return [] as FestaListItem[];
   const { data: stalls, error: stallsError } = await supabase.from("festa_stalls" as never).select("id, festa_event_id, name, responsible_name, active, sort_order").in("festa_event_id", ids).order("sort_order");
   if (stallsError) throw new Error(stallsError.message);
   const stallRows = (stalls ?? []) as unknown as FestaStall[];
@@ -33,7 +43,7 @@ export const listFestinhas = createServerFn({ method: "GET" }).middleware([requi
   const { data: orders, error: ordersError } = await supabase.from("festa_orders" as never).select("festa_event_id, stall_id, payment_method, total_cents").in("festa_event_id", ids).eq("status", "delivered");
   if (ordersError) throw new Error(ordersError.message);
   const orderRows = (orders ?? []) as unknown as Array<{ festa_event_id: string; stall_id: string | null; payment_method: string; total_cents: number }>;
-  return rows.map((event) => {
+  return rows.map((event): FestaListItem => {
     const eventOrders = orderRows.filter((order) => order.festa_event_id === event.id);
     const byPayment = Object.fromEntries(["pix", "card", "cash", "credit"].map((method) => [method, eventOrders.filter((order) => order.payment_method === method).reduce((sum, order) => sum + order.total_cents, 0)]));
     const byStall = stallRows.filter((stall) => stall.festa_event_id === event.id).map((stall) => ({ stall_id: stall.id, total_cents: eventOrders.filter((order) => order.stall_id === stall.id).reduce((sum, order) => sum + order.total_cents, 0), orders: eventOrders.filter((order) => order.stall_id === stall.id).length }));
@@ -42,7 +52,7 @@ export const listFestinhas = createServerFn({ method: "GET" }).middleware([requi
 });
 
 export const setFestinhaStatus = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((input) => eventStatusInput.parse(input)).handler(async ({ data, context }) => {
-  const { accountId } = await requireModuleAccess(context, "/festinhas");
+  const { accountId } = await requireModuleAccess(context as never, "/festinhas");
   await requirePermission(context, "events", "edit");
   const { data: updated, error } = await context.supabase.from("festa_events" as never).update({ status: data.status, updated_at: new Date().toISOString() } as never).eq("id", data.festa_event_id).eq("account_id", accountId).in("status", data.status === "open" ? ["draft", "closed"] : ["open"]).select("id").maybeSingle();
   if (error) throw new Error(error.message);
@@ -51,7 +61,7 @@ export const setFestinhaStatus = createServerFn({ method: "POST" }).middleware([
 });
 
 export const createFestinha = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((input) => eventInput.parse(input)).handler(async ({ data, context }) => {
-  const { accountId } = await requireModuleAccess(context, "/festinhas");
+  const { accountId } = await requireModuleAccess(context as never, "/festinhas");
   await requirePermission(context, "events", "create");
   const { error } = await context.supabase.from("festa_events" as never).insert({ account_id: accountId, name: data.name, starts_at: data.starts_at ?? null } as never);
   if (error) throw new Error(error.message);
@@ -59,21 +69,21 @@ export const createFestinha = createServerFn({ method: "POST" }).middleware([req
 });
 
 export const createFestaStall = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((input) => stallInput.parse(input)).handler(async ({ data, context }) => {
-  await requireModuleAccess(context, "/festinhas"); await requirePermission(context, "events", "create");
+  await requireModuleAccess(context as never, "/festinhas"); await requirePermission(context, "events", "create");
   const { error } = await context.supabase.from("festa_stalls" as never).insert({ ...data, responsible_name: data.responsible_name ?? null } as never);
   if (error) throw new Error(error.message);
   return { ok: true };
 });
 
 export const createFestaProduct = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((input) => productInput.parse(input)).handler(async ({ data, context }) => {
-  await requireModuleAccess(context, "/festinhas"); await requirePermission(context, "events", "create");
+  await requireModuleAccess(context as never, "/festinhas"); await requirePermission(context, "events", "create");
   const { error } = await context.supabase.from("festa_products" as never).insert({ ...data, stock_quantity: data.stock_quantity ?? null } as never);
   if (error) throw new Error(error.message);
   return { ok: true };
 });
 
 export const recordFestaSale = createServerFn({ method: "POST" }).middleware([requireSupabaseAuth]).validator((input) => saleInput.parse(input)).handler(async ({ data, context }) => {
-  await requireModuleAccess(context, "/festinhas"); await requirePermission(context, "events", "create");
+  await requireModuleAccess(context as never, "/festinhas"); await requirePermission(context, "events", "create");
   const client = context.supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: Array<{ order_id: string; order_code: string; total_cents: number }> | null; error: { message: string } | null }> };
   const { data: result, error } = await client.rpc("record_festa_sale", { p_stall_id: data.festa_stall_id, p_payment_method: data.payment_method, p_items: data.items });
   if (error) throw new Error(error.message);

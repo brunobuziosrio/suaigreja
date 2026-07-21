@@ -11,6 +11,7 @@ import {
   Cake,
   GraduationCap,
   HandCoins,
+  HandHeart,
   Megaphone,
   Lightbulb,
   Loader2,
@@ -20,6 +21,8 @@ import {
   AlertTriangle,
   Sparkles,
   UserCheck,
+  UserPlus,
+  Activity,
   TrendingDown,
   UserX,
   ArrowDownRight,
@@ -29,7 +32,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
 import { canAccessPath, resolvePlanTier } from "@/lib/plan-access";
-import { getProfile, getReligionTerms } from "@/lib/religion-profiles";
+import { getProfile, mergeReligionTerms, type ReligionTerms } from "@/lib/religion-profiles";
 import { listLocations } from "@/lib/locations.functions";
 import { listTypes } from "@/lib/types.functions";
 import { listEvents } from "@/lib/events.functions";
@@ -39,7 +42,12 @@ import { listFinancialEntries, type FinancialEntryRow } from "@/lib/financial-en
 import { listSystemUpdates, createSuggestion } from "@/lib/feedback.functions";
 import { listUpcomingUnconfirmedShifts } from "@/lib/volunteer-shifts.functions";
 import { listCampaigns } from "@/lib/campaigns.functions";
-import { listAbsentMembers } from "@/lib/event-attendance.functions";
+import {
+  getCommunityAttendanceSummary,
+  listAbsentMembers,
+  type CommunityAttendanceSummary,
+} from "@/lib/event-attendance.functions";
+import { listPastoralQueue } from "@/lib/pastoral-followups.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -61,6 +69,7 @@ type DashboardDestination =
   | "/escalas"
   | "/hub"
   | "/locations"
+  | "/acompanhamento"
   | "/membros"
   | "/types";
 
@@ -78,6 +87,8 @@ function DashboardPage() {
   const fetchUnconfirmedShifts = useServerFn(listUpcomingUnconfirmedShifts);
   const fetchContributionCampaigns = useServerFn(listCampaigns);
   const fetchAbsentMembers = useServerFn(listAbsentMembers);
+  const fetchPastoralQueue = useServerFn(listPastoralQueue);
+  const fetchAttendanceSummary = useServerFn(getCommunityAttendanceSummary);
   const {
     data: account,
     isLoading: accountLoading,
@@ -145,6 +156,11 @@ function DashboardPage() {
     queryFn: () => fetchAbsentMembers(),
     enabled: canUseMembers,
   });
+  const { data: pastoralQueue = [] } = useQuery({
+    queryKey: ["pastoral-queue"],
+    queryFn: () => fetchPastoralQueue(),
+    enabled: canUseMembers,
+  });
   const range = useMemo(() => {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
@@ -162,8 +178,23 @@ function DashboardPage() {
     queryKey: ["events", range.from, range.to],
     queryFn: async () => await fetchEvents({ data: range }) as Event[],
   });
+  const {
+    data: attendanceSummary,
+    isLoading: attendanceSummaryLoading,
+    isError: attendanceSummaryError,
+    refetch: refetchAttendanceSummary,
+  } = useQuery<CommunityAttendanceSummary>({
+    queryKey: ["community-attendance-summary", range.from, range.to],
+    queryFn: async () =>
+      (await fetchAttendanceSummary({ data: range })) as CommunityAttendanceSummary,
+    enabled: canUseMembers,
+  });
   const profile = account ? getProfile(account.religion_profile) : null;
-  const terms = getReligionTerms(account?.religion_profile);
+  const terms = mergeReligionTerms(
+    account?.religion_profile,
+    (account as (typeof account & { religion_terms?: Partial<ReligionTerms> }) | undefined)
+      ?.religion_terms,
+  );
 
   const fetchUpdates = useServerFn(listSystemUpdates);
   const { data: updates = [] } = useQuery<SystemUpdate[]>({
@@ -178,7 +209,7 @@ function DashboardPage() {
   });
 
   const currentMonth = new Date().getMonth() + 1;
-  const birthdays = members.filter((m) => {
+  const birthdays = members.filter((m): m is Member & { birth_date: string } => {
     if (!m.birth_date) return false;
     return new Date(m.birth_date + "T00:00:00").getMonth() + 1 === currentMonth;
   });
@@ -186,6 +217,13 @@ function DashboardPage() {
     ? members.filter((m) => m.status === "ativo").length
     : "Pro";
   const activeCampaigns = campaigns.filter((campaign) => campaign.active).length;
+  const newMembersThisMonth = useMemo(
+    () =>
+      canUseMembers
+        ? members.filter((member) => member.created_at?.startsWith(range.from.slice(0, 7))).length
+        : 0,
+    [canUseMembers, members, range.from],
+  );
 
   const todayKey = useMemo(() => {
     const d = new Date();
@@ -308,6 +346,24 @@ function DashboardPage() {
         href: "/ausencias",
       });
     }
+    const overduePastoral = pastoralQueue.filter(
+      (item) => item.followup?.next_contact_at && item.followup.next_contact_at < todayKey,
+    );
+    const unassignedPastoral = pastoralQueue.filter(
+      (item) => item.followup && !item.followup.assignee_user_id,
+    );
+    if (overduePastoral.length > 0 || unassignedPastoral.length > 0) {
+      list.push({
+        key: "pastoral-radar",
+        icon: HandHeart,
+        tone: "text-rose-600 bg-rose-500/10",
+        title: `${overduePastoral.length} acompanhamento(s) vencido(s)`,
+        description: unassignedPastoral.length > 0
+          ? `${unassignedPastoral.length} item(ns) ainda sem responsável.`
+          : "Abra a fila pastoral e registre o próximo passo.",
+        href: "/acompanhamento",
+      });
+    }
     return list;
   }, [
     absentData,
@@ -321,8 +377,9 @@ function DashboardPage() {
     todayKey,
     unconfirmedShifts,
     upcomingEvents,
+    pastoralQueue,
   ]);
-  const setupTasks = useMemo(
+  const setupTasks = useMemo<Array<{ label: string; description: string; done: boolean; href: DashboardDestination }>>(
     () => [
       {
         label: `Cadastrar o primeiro ${terms.person}`,
@@ -377,6 +434,7 @@ function DashboardPage() {
     typesLoading ||
     eventsLoading ||
     campaignsLoading ||
+    (canUseMembers && attendanceSummaryLoading) ||
     (canUseMembers && membersLoading);
   const hasDashboardDataError =
     accountError ||
@@ -384,6 +442,7 @@ function DashboardPage() {
     typesError ||
     eventsError ||
     campaignsError ||
+    (canUseMembers && attendanceSummaryError) ||
     (canUseMembers && membersError);
   const retryDashboardData = () => {
     void refetchAccount();
@@ -391,6 +450,7 @@ function DashboardPage() {
     void refetchTypes();
     void refetchEvents();
     void refetchCampaigns();
+    if (canUseMembers) void refetchAttendanceSummary();
     if (canUseMembers) void refetchMembers();
   };
   const [showCompletedSetupSteps, setShowCompletedSetupSteps] = useState(false);
@@ -487,6 +547,109 @@ function DashboardPage() {
               ))}
             </div>
           )}
+        </Card>
+
+        <Card className="mb-6 overflow-hidden border-primary/20">
+          <div className="border-b bg-primary/[0.035] px-5 py-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-primary" />
+                <div>
+                  <h2 className="font-semibold">Pulso da comunidade</h2>
+                  <p className="text-xs text-muted-foreground">
+                    Indicadores consolidados de {formatMonthLabel(range.from)}.
+                  </p>
+                </div>
+              </div>
+              <span className="w-fit rounded-full bg-background px-2.5 py-1 text-xs text-muted-foreground shadow-sm ring-1 ring-border">
+                Atualização em tempo real
+              </span>
+            </div>
+          </div>
+          <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
+            <Link to={canUseMembers ? "/agenda" : "/billing"} className="group p-5 hover:bg-muted/30">
+              <div className="flex items-start justify-between gap-3">
+                <div className="rounded-md bg-sky-500/10 p-2 text-sky-700">
+                  <UserCheck className="h-4 w-4" />
+                </div>
+                {attendanceSummary?.participationRate !== null &&
+                  attendanceSummary?.participationRate !== undefined && (
+                    <span className="text-xs font-semibold text-sky-700">
+                      {attendanceSummary.participationRate}%
+                    </span>
+                  )}
+              </div>
+              <p className="mt-4 text-2xl font-semibold tabular-nums">
+                {attendanceSummaryLoading
+                  ? "…"
+                  : attendanceSummary
+                    ? attendanceSummary.uniqueAttendees
+                    : "—"}
+              </p>
+              <p className="mt-1 text-sm font-medium">Participaram</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {attendanceSummary
+                  ? `${attendanceSummary.attendanceCount} presença(s) registrada(s) no período`
+                  : "Registre presenças nos eventos para acompanhar este indicador."}
+              </p>
+            </Link>
+
+            <Link to={canUseMembers ? "/membros" : "/billing"} className="group p-5 hover:bg-muted/30">
+              <div className="flex items-start justify-between gap-3">
+                <div className="rounded-md bg-emerald-500/10 p-2 text-emerald-700">
+                  <UserPlus className="h-4 w-4" />
+                </div>
+                <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+              </div>
+              <p className="mt-4 text-2xl font-semibold tabular-nums">
+                {canUseMembers ? newMembersThisMonth : "Pro"}
+              </p>
+              <p className="mt-1 text-sm font-medium">Novos cadastros</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                {canUseMembers ? "Pessoas adicionadas neste mês." : "Disponível a partir do plano Pro."}
+              </p>
+            </Link>
+
+            <DashboardLink to={canUseMembers ? "/ausencias" : "/billing"}>
+              <div className="group h-full p-5 transition-colors hover:bg-muted/30">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="rounded-md bg-amber-500/10 p-2 text-amber-700">
+                    <UserX className="h-4 w-4" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </div>
+                <p className="mt-4 text-2xl font-semibold tabular-nums">
+                  {canUseMembers ? (absentData?.trackingActive ? absentData.members.length : "—") : "Pro"}
+                </p>
+                <p className="mt-1 text-sm font-medium">Precisam de contato</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {absentData?.trackingActive
+                    ? "Sem presença registrada há 21 dias ou mais."
+                    : "Aparece após a primeira presença ser registrada."}
+                </p>
+              </div>
+            </DashboardLink>
+
+            <DashboardLink to={canUseContribCampaigns ? "/campanhas" : "/billing"}>
+              <div className="group h-full p-5 transition-colors hover:bg-muted/30">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="rounded-md bg-violet-500/10 p-2 text-violet-700">
+                    <HandCoins className="h-4 w-4" />
+                  </div>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </div>
+                <p className="mt-4 text-2xl font-semibold tabular-nums">
+                  {canUseContribCampaigns ? activeCampaigns : "Pro"}
+                </p>
+                <p className="mt-1 text-sm font-medium">Campanhas ativas</p>
+                <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                  {canUseContribCampaigns && campaignsBehindPace.length > 0
+                    ? `${campaignsBehindPace.length} abaixo do ritmo da meta.`
+                    : "Acompanhe metas e arrecadação no período."}
+                </p>
+              </div>
+            </DashboardLink>
+          </div>
         </Card>
 
         <Card className="mb-6 overflow-hidden border-primary/20">
@@ -1027,6 +1190,13 @@ function formatEventDate(dateStr?: string | null, startTime?: string | null): st
   const d = new Date(`${dateStr}T00:00:00`);
   const label = d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
   return startTime ? `${label}, ${startTime}` : label;
+}
+
+function formatMonthLabel(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00`).toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  });
 }
 
 function formatCurrency(valueCents: number): string {

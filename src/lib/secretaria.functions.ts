@@ -37,6 +37,25 @@ const SELECT_COLUMNS =
 
 const optionalText = z.string().max(2000).optional().nullable();
 
+type SecretariaRequestRow = {
+  id: string;
+  member_id: string | null;
+  request_type: string;
+  requester_name: string;
+  requester_phone: string | null;
+  requester_email: string | null;
+  details: string | null;
+  status: string;
+  priority: string;
+  preferred_date: string | null;
+  scheduled_at: string | null;
+  assignee_name: string | null;
+  due_date: string | null;
+  internal_notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 async function assertMemberBelongsToAccount(
   supabase: typeof supabaseAdmin,
   accountId: string,
@@ -56,22 +75,22 @@ async function assertMemberBelongsToAccount(
 export const listSecretariaRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data, error } = await supabase
       .from("secretaria_requests")
-      .select(SELECT_COLUMNS)
+      .select("*")
       .eq("account_id", accountId)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data ?? []) as unknown as SecretariaRequestRow[];
   });
 
 export const getSecretariaStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -134,7 +153,7 @@ export const upsertSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", data.id ? "edit" : "create");
     const { supabase: client } = context;
     await assertMemberBelongsToAccount(client, accountId, data.member_id);
@@ -178,7 +197,7 @@ export const updateSecretariaStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => statusSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "edit");
     const { supabase: client } = context;
     const { data: updated, error } = await client
@@ -197,7 +216,7 @@ export const listSecretariaRequestEvents = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
@@ -224,7 +243,7 @@ export const listSecretariaAttachments = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => requestIdSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
@@ -257,7 +276,7 @@ export const uploadSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => attachmentSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "edit");
     const { supabase } = context;
     const { data: request, error: requestError } = await supabase
@@ -305,7 +324,7 @@ export const createSecretariaAttachmentDownloadUrl = createServerFn({ method: "P
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "view");
     const { supabase } = context;
     const { data: attachment, error } = await supabase
@@ -331,7 +350,7 @@ export const deleteSecretariaAttachment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "delete");
     const { supabase } = context;
     const { data: attachment, error: fetchError } = await supabase
@@ -390,7 +409,7 @@ export const deleteSecretariaRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => idSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/secretaria");
+    const { accountId } = await requireModuleAccess(context as never, "/secretaria");
     await requirePermission(context, "secretaria", "delete");
     const { supabase: client } = context;
     const { data: deleted, error } = await client

@@ -25,7 +25,7 @@ export const DECISION_KINDS = [
 export const listDecisions = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "pastoral_care", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -48,7 +48,7 @@ export const updateDecisionStatus = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "pastoral_care", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -64,7 +64,7 @@ export const updateDecisionNote = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid(), note: z.string().max(1000) }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "pastoral_care", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -80,7 +80,7 @@ export const deleteDecision = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "pastoral_care", "delete");
     const { supabase } = context;
     const { error } = await supabase

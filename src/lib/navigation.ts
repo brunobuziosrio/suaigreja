@@ -24,6 +24,7 @@ import {
   HeartHandshake,
   IdCard,
   Landmark,
+  Languages,
   LayoutDashboard,
   ListChecks,
   Lock,
@@ -34,7 +35,9 @@ import {
   Package,
   QrCode,
   Radio,
+  Rocket,
   Settings,
+  Send,
   ShieldCheck,
   Sparkles,
   Sprout,
@@ -48,6 +51,7 @@ import {
   WalletCards,
   ClipboardList,
   Building2,
+  BriefcaseBusiness,
 } from "lucide-react";
 import type { getReligionTerms } from "@/lib/religion-profiles";
 
@@ -93,6 +97,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
         { title: terms.publicPage, url: "/hub", icon: Globe },
         { title: "Boletim Semanal", url: "/boletim", icon: Newspaper },
         { title: "WhatsApp", url: "/whatsapp", icon: MessageCircle },
+        { title: "Campanha WhatsApp", url: "/campanhas-whatsapp", icon: Send },
         { title: "Transmissões", url: "/transmissoes", icon: Radio },
       ],
     },
@@ -110,6 +115,8 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
         { title: terms.smallGroups, url: "/celulas", icon: Users2 },
         { title: "Pedidos de oração", url: "/oracoes", icon: HandHeart },
         { title: "Central de Decisões", url: "/decisoes", icon: Sparkles },
+        { title: "Acompanhamento pastoral", url: "/acompanhamento", icon: HeartHandshake },
+        { title: "Banco de Talentos", url: "/talentos", icon: BriefcaseBusiness },
         { title: "Ação Social", url: "/acao-social", icon: HeartHandshake },
         { title: terms.secretaryPortal, url: "/secretaria", icon: ClipboardList },
       ],
@@ -120,6 +127,7 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       items: [
         { title: "Agenda", url: "/agenda", icon: CalendarDays },
         { title: "Eventos", url: "/eventos", icon: CalendarHeart },
+        { title: "Assistente de Eventos", url: "/assistente-eventos", icon: Sparkles },
         { title: "Festinhas e barracas", url: "/festinhas", icon: CookingPot },
         { title: "Check-in", url: "/checkin", icon: QrCode },
         { title: "Check-in Infantil", url: "/checkin-infantil", icon: ShieldCheck },
@@ -154,6 +162,8 @@ export function getNavGroups(terms: ReligionTerms): NavGroupDef[] {
       icon: Settings,
       items: [
         { title: "Configurações", url: "/settings", icon: Settings },
+        { title: "Ativação", url: "/ativacao", icon: Rocket },
+        { title: "Vocabulário", url: "/vocabulario", icon: Languages },
         { title: "Equipe e permissões", url: "/equipe", icon: ShieldCheck },
         { title: "Privacidade e Dados", url: "/privacidade", icon: Lock },
         { title: "Política de Privacidade", url: "/politica-privacidade", icon: FileText },

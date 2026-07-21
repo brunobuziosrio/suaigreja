@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyAccount } from "@/lib/account.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { canAccessAccountPath, getModuleAccess } from "@/lib/plan-access";
 
@@ -24,6 +25,37 @@ function AuthenticatedLayout() {
     retry: 1,
     staleTime: 60_000,
   });
+
+  useEffect(() => {
+    if (!user) return;
+    const raw = sessionStorage.getItem("suaigreja.oauth-legal-acceptance");
+    if (!raw) return;
+    try {
+      const acceptance = JSON.parse(raw) as {
+        platform_terms_version?: unknown;
+        platform_privacy_version?: unknown;
+      };
+      if (
+        typeof acceptance.platform_terms_version !== "string" ||
+        typeof acceptance.platform_privacy_version !== "string"
+      ) {
+        sessionStorage.removeItem("suaigreja.oauth-legal-acceptance");
+        return;
+      }
+      void supabase.auth
+        .updateUser({
+          data: {
+            platform_terms_version: acceptance.platform_terms_version,
+            platform_privacy_version: acceptance.platform_privacy_version,
+          },
+        })
+        .then(({ error }) => {
+          if (!error) sessionStorage.removeItem("suaigreja.oauth-legal-acceptance");
+        });
+    } catch {
+      sessionStorage.removeItem("suaigreja.oauth-legal-acceptance");
+    }
+  }, [user]);
 
   useEffect(() => {
     if (loading) return;

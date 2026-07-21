@@ -198,7 +198,7 @@ export function DonationsManager({ slug }: { slug?: string | null }) {
                   {c.pix_key_type} · {c.recipient_name}
                 </p>
                 {(() => {
-                  const s = statsByCampaign.get(c.id);
+                  const s = c.id ? statsByCampaign.get(c.id) : undefined;
                   const raised = s?.raisedCents ?? 0;
                   if (!c.goal_cents && raised === 0) return null;
                   const pct = c.goal_cents ? Math.min(100, Math.round((raised / c.goal_cents) * 100)) : null;
@@ -219,7 +219,7 @@ export function DonationsManager({ slug }: { slug?: string | null }) {
               </div>
               <div className="flex flex-col gap-1">
                 <Button size="icon" variant="ghost" onClick={() => setEditing(c)}><Pencil className="h-4 w-4" /></Button>
-                <Button size="icon" variant="ghost" onClick={() => { if (confirm("Remover campanha?")) delMut.mutate(c.id); }}>
+                <Button size="icon" variant="ghost" disabled={!c.id} onClick={() => { if (c.id && confirm("Remover campanha?")) delMut.mutate(c.id); }}>
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>

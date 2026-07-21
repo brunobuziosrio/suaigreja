@@ -31,7 +31,7 @@ export const listPrivacyPolicyVersions = createServerFn({ method: "GET" })
     await requirePermission(context, "settings", "view");
     const { supabase } = context;
     const { data, error } = await supabase
-      .from("privacy_policies" as never)
+      .from("privacy_policies")
       .select("*")
       .eq("account_id", accountId)
       .order("effective_date", { ascending: false });
@@ -140,7 +140,7 @@ export const getPublicPrivacyPolicy = createServerFn({ method: "GET" })
     const [{ data: account }, { data: policy }] = await Promise.all([
       supabaseAdmin.from("accounts").select("brand_title").eq("id", accountId).maybeSingle(),
       supabaseAdmin
-        .from("privacy_policies" as never)
+        .from("privacy_policies")
         .select("version, content, effective_date")
         .eq("account_id", accountId)
         .eq("is_current", true)

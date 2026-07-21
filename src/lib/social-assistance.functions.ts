@@ -40,7 +40,7 @@ export type SocialDeliveryRow = {
 export const listSocialFamilies = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -67,7 +67,7 @@ export const upsertSocialFamily = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => familySchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
@@ -103,7 +103,7 @@ export const setSocialFamilyStatus = createServerFn({ method: "POST" })
     z.object({ id: z.string().uuid(), status: z.enum(["active", "inactive"]) }).parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -119,7 +119,7 @@ export const deleteSocialFamily = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -135,7 +135,7 @@ export const listSocialDeliveries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ family_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -151,7 +151,7 @@ export const listSocialDeliveries = createServerFn({ method: "POST" })
 export const listSocialDeliveriesThisMonth = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "view");
     const { supabase } = context;
     const now = new Date();
@@ -177,7 +177,7 @@ export const addSocialDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => deliverySchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "create");
     const { supabase } = context;
     const { data: family, error: famErr } = await supabase
@@ -205,7 +205,7 @@ export const deleteSocialDelivery = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "social_assistance", "delete");
     const { supabase } = context;
     const { error } = await supabase

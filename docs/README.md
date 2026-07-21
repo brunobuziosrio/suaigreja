@@ -6,6 +6,8 @@ Leia primeiro: `CONTINUIDADE.md`.
 
 - `CONTINUIDADE.md`: fonte principal para retomar o projeto e saber o próximo passo.
 - `IDEIAS_IMPLEMENTACOES.md`: backlog de produto e ideias futuras. Não é fila de execução imediata.
+- `ESTRATEGIA_E_PRIORIDADES_MERCADO_2026-07-18.md`: pesquisa de concorrentes, tese de posicionamento e fila priorizada de produto/comercial.
+- `ESPECIFICACAO_LEGAL_E_PRIVACIDADE_2026-07-18.md`: escopo original de Termos, Privacidade, LGPD, DPA e requisitos de implementação.
 - `ROADMAP_IMPLEMENTACAO.md`: histórico de roadmap e entregas maiores.
 - `ESTADO_ATUAL.md`: inventário histórico grande; consultar quando precisar de detalhe antigo.
 
@@ -25,4 +27,3 @@ Ao encerrar uma sessão, atualizar somente `CONTINUIDADE.md` com:
 4. Próximo passo objetivo.
 
 Evitar criar novo `.md` de retomada por data, salvo quando for relatório separado.
-

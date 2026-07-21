@@ -49,7 +49,7 @@ function CheckinPage() {
 
   const { data: entries = [] } = useQuery<CheckinEntry[]>({
     queryKey: ["checkin_entries", entriesForId],
-    queryFn: async () => entriesForId ? await listEntries({ data: { session_id: entriesForId } }) as CheckinEntry[] : [],
+    queryFn: async () => entriesForId ? await listEntries({ data: { session_id: entriesForId } }) as unknown as CheckinEntry[] : [],
     enabled: !!entriesFor,
   });
 

@@ -11,7 +11,7 @@ const monthSchema = z.object({
 
 type EbdMemberRow = { id: string; full_name: string };
 type EbdClassRow = { id: string; name: string };
-type CheckinSessionRow = { id: string; title: string; session_date: string; start_time: string };
+type CheckinSessionRow = { id: string; title: string; session_date: string; start_time: string | null };
 type CheckinEntryRow = {
   session_id: string;
   member_id: string | null;
@@ -25,7 +25,7 @@ type SmallGroupRow = {
   leader_phone: string | null;
   neighborhood: string | null;
   weekday: number | null;
-  start_time: string;
+  start_time: string | null;
   capacity: number | null;
   active: boolean;
 };
@@ -43,7 +43,7 @@ export const getEbdMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/relatorios");
+    const { accountId } = await requireModuleAccess(context as never, "/relatorios");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
     const { from, to } = monthBounds(data.year, data.month);
@@ -118,7 +118,7 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => monthSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/relatorios");
+    const { accountId } = await requireModuleAccess(context as never, "/relatorios");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
     const { from, to } = monthBounds(data.year, data.month);
@@ -168,7 +168,7 @@ export const getCheckinMonthly = createServerFn({ method: "GET" })
 export const getSmallGroupsReport = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/relatorios");
+    const { accountId } = await requireModuleAccess(context as never, "/relatorios");
     await requirePermission(context, "reports", "view");
     const { supabase } = context;
     const [{ data: groups, error: groupsError }, { data: memberships, error: membershipsError }] =

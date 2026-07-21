@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Users, Printer } from "lucide-react";
 import { MemberCard } from "@/components/member-card";
 
-type MemberCardChurch = NonNullable<Awaited<ReturnType<typeof getPublicMemberCard>>["church"]> & {
+type MemberCardChurch = NonNullable<NonNullable<Awaited<ReturnType<typeof getPublicMemberCard>>>["church"]> & {
   card_title_size_px?: number | null;
   card_footer_size_px?: number | null;
   card_field_size_px?: number | null;

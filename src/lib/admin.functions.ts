@@ -76,8 +76,8 @@ export const listPlanFeatureFlags = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
-      .from("plan_feature_flags" as never)
-      .select("feature_id, plan_tier, enabled" as never);
+      .from("plan_feature_flags")
+      .select("feature_id, plan_tier, enabled");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -88,8 +88,8 @@ export const updatePlanFeatureFlag = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
-      .from("plan_feature_flags" as never)
-      .upsert(data as never, { onConflict: "feature_id,plan_tier" });
+      .from("plan_feature_flags")
+      .upsert(data, { onConflict: "feature_id,plan_tier" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -99,8 +99,8 @@ export const listModuleRollouts = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
-      .from("module_rollouts" as never)
-      .select("feature_id, status, updated_at" as never);
+      .from("module_rollouts")
+      .select("feature_id, status, updated_at");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -111,8 +111,8 @@ export const updateModuleRollout = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
-      .from("module_rollouts" as never)
-      .upsert({ ...data, updated_at: new Date().toISOString() } as never, { onConflict: "feature_id" });
+      .from("module_rollouts")
+      .upsert({ ...data, updated_at: new Date().toISOString() }, { onConflict: "feature_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -122,8 +122,8 @@ export const listAccountFeatureOverrides = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     const { data, error } = await supabaseAdmin
-      .from("account_feature_overrides" as never)
-      .select("account_id, feature_id, enabled, updated_at" as never);
+      .from("account_feature_overrides")
+      .select("account_id, feature_id, enabled, updated_at");
     if (error) throw new Error(error.message);
     return data ?? [];
   });
@@ -134,8 +134,8 @@ export const updateAccountFeatureOverride = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
-      .from("account_feature_overrides" as never)
-      .upsert({ ...data, updated_at: new Date().toISOString() } as never, { onConflict: "account_id,feature_id" });
+      .from("account_feature_overrides")
+      .upsert({ ...data, updated_at: new Date().toISOString() }, { onConflict: "account_id,feature_id" });
     if (error) throw new Error(error.message);
     return { ok: true };
   });

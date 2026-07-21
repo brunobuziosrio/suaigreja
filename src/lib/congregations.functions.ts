@@ -38,7 +38,7 @@ const schema = z.object({
 export const listCongregations = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/congregacoes");
+    const { accountId } = await requireModuleAccess(context as never, "/congregacoes");
     await requirePermission(context, "members", "view");
     const { data, error } = await context.supabase
       .from("congregations" as never)
@@ -57,7 +57,7 @@ export const upsertCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => schema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/congregacoes");
+    const { accountId } = await requireModuleAccess(context as never, "/congregacoes");
     await requirePermission(context, "members", data.id ? "edit" : "create");
     const clean = (v?: string | null) => v?.trim() || null;
     const payload = {
@@ -90,7 +90,7 @@ export const deleteCongregation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/congregacoes");
+    const { accountId } = await requireModuleAccess(context as never, "/congregacoes");
     await requirePermission(context, "members", "delete");
     const { error } = await context.supabase
       .from("congregations" as never)

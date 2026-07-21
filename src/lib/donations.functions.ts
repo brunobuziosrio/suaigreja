@@ -369,7 +369,7 @@ export const getDonationsMonthlyReport = createServerFn({ method: "GET" })
     z.object({ year: z.number().int().min(2020).max(2100) }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as unknown as Parameters<typeof requirePlanTier>[0], "pro");
     await requirePermission(context, "campaigns", "view");
     const { supabase } = context;
     const start = `${data.year}-01-01T00:00:00.000Z`;

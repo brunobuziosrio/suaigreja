@@ -119,7 +119,7 @@ function AdminWhatsappPage() {
   const [providerOpen, setProviderOpen] = useState(false);
   const [creditOpen, setCreditOpen] = useState(false);
 
-  const rows = accounts as AccountRow[];
+  const rows = accounts as unknown as AccountRow[];
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return rows;

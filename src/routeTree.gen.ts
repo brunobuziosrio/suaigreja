@@ -33,9 +33,11 @@ import { Route as CertIdRouteImport } from './routes/cert.$id'
 import { Route as CMemberIdRouteImport } from './routes/c.$memberId'
 import { Route as ASiteIdRouteImport } from './routes/a.$siteId'
 import { Route as AuthenticatedWhatsappRouteImport } from './routes/_authenticated.whatsapp'
+import { Route as AuthenticatedVocabularioRouteImport } from './routes/_authenticated.vocabulario'
 import { Route as AuthenticatedVisitantesRouteImport } from './routes/_authenticated.visitantes'
 import { Route as AuthenticatedTypesRouteImport } from './routes/_authenticated.types'
 import { Route as AuthenticatedTransmissoesRouteImport } from './routes/_authenticated.transmissoes'
+import { Route as AuthenticatedTalentosRouteImport } from './routes/_authenticated.talentos'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
 import { Route as AuthenticatedSecretariaRouteImport } from './routes/_authenticated.secretaria'
 import { Route as AuthenticatedReservasRouteImport } from './routes/_authenticated.reservas'
@@ -69,11 +71,15 @@ import { Route as AuthenticatedCongregacoesRouteImport } from './routes/_authent
 import { Route as AuthenticatedCheckinInfantilRouteImport } from './routes/_authenticated.checkin-infantil'
 import { Route as AuthenticatedCheckinRouteImport } from './routes/_authenticated.checkin'
 import { Route as AuthenticatedCelulasRouteImport } from './routes/_authenticated.celulas'
+import { Route as AuthenticatedCampanhasWhatsappRouteImport } from './routes/_authenticated.campanhas-whatsapp'
 import { Route as AuthenticatedCampanhasRouteImport } from './routes/_authenticated.campanhas'
 import { Route as AuthenticatedBoletimRouteImport } from './routes/_authenticated.boletim'
 import { Route as AuthenticatedBillingRouteImport } from './routes/_authenticated.billing'
 import { Route as AuthenticatedAusenciasRouteImport } from './routes/_authenticated.ausencias'
+import { Route as AuthenticatedAtivacaoRouteImport } from './routes/_authenticated.ativacao'
+import { Route as AuthenticatedAssistenteEventosRouteImport } from './routes/_authenticated.assistente-eventos'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated.agenda'
+import { Route as AuthenticatedAcompanhamentoRouteImport } from './routes/_authenticated.acompanhamento'
 import { Route as AuthenticatedAcaoSocialRouteImport } from './routes/_authenticated.acao-social'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated.admin.index'
 import { Route as NSlugPostIdRouteImport } from './routes/n.$slug.$postId'
@@ -214,6 +220,12 @@ const AuthenticatedWhatsappRoute = AuthenticatedWhatsappRouteImport.update({
   path: '/whatsapp',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedVocabularioRoute =
+  AuthenticatedVocabularioRouteImport.update({
+    id: '/vocabulario',
+    path: '/vocabulario',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedVisitantesRoute = AuthenticatedVisitantesRouteImport.update({
   id: '/visitantes',
   path: '/visitantes',
@@ -230,6 +242,11 @@ const AuthenticatedTransmissoesRoute =
     path: '/transmissoes',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedTalentosRoute = AuthenticatedTalentosRouteImport.update({
+  id: '/talentos',
+  path: '/talentos',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -403,6 +420,12 @@ const AuthenticatedCelulasRoute = AuthenticatedCelulasRouteImport.update({
   path: '/celulas',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedCampanhasWhatsappRoute =
+  AuthenticatedCampanhasWhatsappRouteImport.update({
+    id: '/campanhas-whatsapp',
+    path: '/campanhas-whatsapp',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedCampanhasRoute = AuthenticatedCampanhasRouteImport.update({
   id: '/campanhas',
   path: '/campanhas',
@@ -423,11 +446,28 @@ const AuthenticatedAusenciasRoute = AuthenticatedAusenciasRouteImport.update({
   path: '/ausencias',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAtivacaoRoute = AuthenticatedAtivacaoRouteImport.update({
+  id: '/ativacao',
+  path: '/ativacao',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedAssistenteEventosRoute =
+  AuthenticatedAssistenteEventosRouteImport.update({
+    id: '/assistente-eventos',
+    path: '/assistente-eventos',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAcompanhamentoRoute =
+  AuthenticatedAcompanhamentoRouteImport.update({
+    id: '/acompanhamento',
+    path: '/acompanhamento',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedAcaoSocialRoute = AuthenticatedAcaoSocialRouteImport.update({
   id: '/acao-social',
   path: '/acao-social',
@@ -552,11 +592,15 @@ export interface FileRoutesByFullPath {
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/update-password': typeof UpdatePasswordRoute
   '/acao-social': typeof AuthenticatedAcaoSocialRoute
+  '/acompanhamento': typeof AuthenticatedAcompanhamentoRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/assistente-eventos': typeof AuthenticatedAssistenteEventosRoute
+  '/ativacao': typeof AuthenticatedAtivacaoRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/boletim': typeof AuthenticatedBoletimRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
+  '/campanhas-whatsapp': typeof AuthenticatedCampanhasWhatsappRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
   '/checkin-infantil': typeof AuthenticatedCheckinInfantilRoute
@@ -590,9 +634,11 @@ export interface FileRoutesByFullPath {
   '/reservas': typeof AuthenticatedReservasRoute
   '/secretaria': typeof AuthenticatedSecretariaRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/talentos': typeof AuthenticatedTalentosRoute
   '/transmissoes': typeof AuthenticatedTransmissoesRoute
   '/types': typeof AuthenticatedTypesRoute
   '/visitantes': typeof AuthenticatedVisitantesRoute
+  '/vocabulario': typeof AuthenticatedVocabularioRoute
   '/whatsapp': typeof AuthenticatedWhatsappRoute
   '/a/$siteId': typeof ASiteIdRoute
   '/c/$memberId': typeof CMemberIdRoute
@@ -638,11 +684,15 @@ export interface FileRoutesByTo {
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/update-password': typeof UpdatePasswordRoute
   '/acao-social': typeof AuthenticatedAcaoSocialRoute
+  '/acompanhamento': typeof AuthenticatedAcompanhamentoRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/assistente-eventos': typeof AuthenticatedAssistenteEventosRoute
+  '/ativacao': typeof AuthenticatedAtivacaoRoute
   '/ausencias': typeof AuthenticatedAusenciasRoute
   '/billing': typeof AuthenticatedBillingRoute
   '/boletim': typeof AuthenticatedBoletimRoute
   '/campanhas': typeof AuthenticatedCampanhasRoute
+  '/campanhas-whatsapp': typeof AuthenticatedCampanhasWhatsappRoute
   '/celulas': typeof AuthenticatedCelulasRoute
   '/checkin': typeof AuthenticatedCheckinRoute
   '/checkin-infantil': typeof AuthenticatedCheckinInfantilRoute
@@ -676,9 +726,11 @@ export interface FileRoutesByTo {
   '/reservas': typeof AuthenticatedReservasRoute
   '/secretaria': typeof AuthenticatedSecretariaRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/talentos': typeof AuthenticatedTalentosRoute
   '/transmissoes': typeof AuthenticatedTransmissoesRoute
   '/types': typeof AuthenticatedTypesRoute
   '/visitantes': typeof AuthenticatedVisitantesRoute
+  '/vocabulario': typeof AuthenticatedVocabularioRoute
   '/whatsapp': typeof AuthenticatedWhatsappRoute
   '/a/$siteId': typeof ASiteIdRoute
   '/c/$memberId': typeof CMemberIdRoute
@@ -726,11 +778,15 @@ export interface FileRoutesById {
   '/termos-de-uso': typeof TermosDeUsoRoute
   '/update-password': typeof UpdatePasswordRoute
   '/_authenticated/acao-social': typeof AuthenticatedAcaoSocialRoute
+  '/_authenticated/acompanhamento': typeof AuthenticatedAcompanhamentoRoute
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/assistente-eventos': typeof AuthenticatedAssistenteEventosRoute
+  '/_authenticated/ativacao': typeof AuthenticatedAtivacaoRoute
   '/_authenticated/ausencias': typeof AuthenticatedAusenciasRoute
   '/_authenticated/billing': typeof AuthenticatedBillingRoute
   '/_authenticated/boletim': typeof AuthenticatedBoletimRoute
   '/_authenticated/campanhas': typeof AuthenticatedCampanhasRoute
+  '/_authenticated/campanhas-whatsapp': typeof AuthenticatedCampanhasWhatsappRoute
   '/_authenticated/celulas': typeof AuthenticatedCelulasRoute
   '/_authenticated/checkin': typeof AuthenticatedCheckinRoute
   '/_authenticated/checkin-infantil': typeof AuthenticatedCheckinInfantilRoute
@@ -764,9 +820,11 @@ export interface FileRoutesById {
   '/_authenticated/reservas': typeof AuthenticatedReservasRoute
   '/_authenticated/secretaria': typeof AuthenticatedSecretariaRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/talentos': typeof AuthenticatedTalentosRoute
   '/_authenticated/transmissoes': typeof AuthenticatedTransmissoesRoute
   '/_authenticated/types': typeof AuthenticatedTypesRoute
   '/_authenticated/visitantes': typeof AuthenticatedVisitantesRoute
+  '/_authenticated/vocabulario': typeof AuthenticatedVocabularioRoute
   '/_authenticated/whatsapp': typeof AuthenticatedWhatsappRoute
   '/a/$siteId': typeof ASiteIdRoute
   '/c/$memberId': typeof CMemberIdRoute
@@ -814,11 +872,15 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/update-password'
     | '/acao-social'
+    | '/acompanhamento'
     | '/agenda'
+    | '/assistente-eventos'
+    | '/ativacao'
     | '/ausencias'
     | '/billing'
     | '/boletim'
     | '/campanhas'
+    | '/campanhas-whatsapp'
     | '/celulas'
     | '/checkin'
     | '/checkin-infantil'
@@ -852,9 +914,11 @@ export interface FileRouteTypes {
     | '/reservas'
     | '/secretaria'
     | '/settings'
+    | '/talentos'
     | '/transmissoes'
     | '/types'
     | '/visitantes'
+    | '/vocabulario'
     | '/whatsapp'
     | '/a/$siteId'
     | '/c/$memberId'
@@ -900,11 +964,15 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/update-password'
     | '/acao-social'
+    | '/acompanhamento'
     | '/agenda'
+    | '/assistente-eventos'
+    | '/ativacao'
     | '/ausencias'
     | '/billing'
     | '/boletim'
     | '/campanhas'
+    | '/campanhas-whatsapp'
     | '/celulas'
     | '/checkin'
     | '/checkin-infantil'
@@ -938,9 +1006,11 @@ export interface FileRouteTypes {
     | '/reservas'
     | '/secretaria'
     | '/settings'
+    | '/talentos'
     | '/transmissoes'
     | '/types'
     | '/visitantes'
+    | '/vocabulario'
     | '/whatsapp'
     | '/a/$siteId'
     | '/c/$memberId'
@@ -987,11 +1057,15 @@ export interface FileRouteTypes {
     | '/termos-de-uso'
     | '/update-password'
     | '/_authenticated/acao-social'
+    | '/_authenticated/acompanhamento'
     | '/_authenticated/agenda'
+    | '/_authenticated/assistente-eventos'
+    | '/_authenticated/ativacao'
     | '/_authenticated/ausencias'
     | '/_authenticated/billing'
     | '/_authenticated/boletim'
     | '/_authenticated/campanhas'
+    | '/_authenticated/campanhas-whatsapp'
     | '/_authenticated/celulas'
     | '/_authenticated/checkin'
     | '/_authenticated/checkin-infantil'
@@ -1025,9 +1099,11 @@ export interface FileRouteTypes {
     | '/_authenticated/reservas'
     | '/_authenticated/secretaria'
     | '/_authenticated/settings'
+    | '/_authenticated/talentos'
     | '/_authenticated/transmissoes'
     | '/_authenticated/types'
     | '/_authenticated/visitantes'
+    | '/_authenticated/vocabulario'
     | '/_authenticated/whatsapp'
     | '/a/$siteId'
     | '/c/$memberId'
@@ -1270,6 +1346,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedWhatsappRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/vocabulario': {
+      id: '/_authenticated/vocabulario'
+      path: '/vocabulario'
+      fullPath: '/vocabulario'
+      preLoaderRoute: typeof AuthenticatedVocabularioRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/visitantes': {
       id: '/_authenticated/visitantes'
       path: '/visitantes'
@@ -1289,6 +1372,13 @@ declare module '@tanstack/react-router' {
       path: '/transmissoes'
       fullPath: '/transmissoes'
       preLoaderRoute: typeof AuthenticatedTransmissoesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/talentos': {
+      id: '/_authenticated/talentos'
+      path: '/talentos'
+      fullPath: '/talentos'
+      preLoaderRoute: typeof AuthenticatedTalentosRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -1522,6 +1612,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedCelulasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/campanhas-whatsapp': {
+      id: '/_authenticated/campanhas-whatsapp'
+      path: '/campanhas-whatsapp'
+      fullPath: '/campanhas-whatsapp'
+      preLoaderRoute: typeof AuthenticatedCampanhasWhatsappRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/campanhas': {
       id: '/_authenticated/campanhas'
       path: '/campanhas'
@@ -1550,11 +1647,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAusenciasRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/ativacao': {
+      id: '/_authenticated/ativacao'
+      path: '/ativacao'
+      fullPath: '/ativacao'
+      preLoaderRoute: typeof AuthenticatedAtivacaoRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/assistente-eventos': {
+      id: '/_authenticated/assistente-eventos'
+      path: '/assistente-eventos'
+      fullPath: '/assistente-eventos'
+      preLoaderRoute: typeof AuthenticatedAssistenteEventosRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/agenda': {
       id: '/_authenticated/agenda'
       path: '/agenda'
       fullPath: '/agenda'
       preLoaderRoute: typeof AuthenticatedAgendaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/acompanhamento': {
+      id: '/_authenticated/acompanhamento'
+      path: '/acompanhamento'
+      fullPath: '/acompanhamento'
+      preLoaderRoute: typeof AuthenticatedAcompanhamentoRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/acao-social': {
@@ -1716,11 +1834,15 @@ const AuthenticatedMarketplaceRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAcaoSocialRoute: typeof AuthenticatedAcaoSocialRoute
+  AuthenticatedAcompanhamentoRoute: typeof AuthenticatedAcompanhamentoRoute
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedAssistenteEventosRoute: typeof AuthenticatedAssistenteEventosRoute
+  AuthenticatedAtivacaoRoute: typeof AuthenticatedAtivacaoRoute
   AuthenticatedAusenciasRoute: typeof AuthenticatedAusenciasRoute
   AuthenticatedBillingRoute: typeof AuthenticatedBillingRoute
   AuthenticatedBoletimRoute: typeof AuthenticatedBoletimRoute
   AuthenticatedCampanhasRoute: typeof AuthenticatedCampanhasRoute
+  AuthenticatedCampanhasWhatsappRoute: typeof AuthenticatedCampanhasWhatsappRoute
   AuthenticatedCelulasRoute: typeof AuthenticatedCelulasRoute
   AuthenticatedCheckinRoute: typeof AuthenticatedCheckinRoute
   AuthenticatedCheckinInfantilRoute: typeof AuthenticatedCheckinInfantilRoute
@@ -1754,9 +1876,11 @@ interface AuthenticatedRouteChildren {
   AuthenticatedReservasRoute: typeof AuthenticatedReservasRoute
   AuthenticatedSecretariaRoute: typeof AuthenticatedSecretariaRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTalentosRoute: typeof AuthenticatedTalentosRoute
   AuthenticatedTransmissoesRoute: typeof AuthenticatedTransmissoesRoute
   AuthenticatedTypesRoute: typeof AuthenticatedTypesRoute
   AuthenticatedVisitantesRoute: typeof AuthenticatedVisitantesRoute
+  AuthenticatedVocabularioRoute: typeof AuthenticatedVocabularioRoute
   AuthenticatedWhatsappRoute: typeof AuthenticatedWhatsappRoute
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
@@ -1770,11 +1894,15 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAcaoSocialRoute: AuthenticatedAcaoSocialRoute,
+  AuthenticatedAcompanhamentoRoute: AuthenticatedAcompanhamentoRoute,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedAssistenteEventosRoute: AuthenticatedAssistenteEventosRoute,
+  AuthenticatedAtivacaoRoute: AuthenticatedAtivacaoRoute,
   AuthenticatedAusenciasRoute: AuthenticatedAusenciasRoute,
   AuthenticatedBillingRoute: AuthenticatedBillingRoute,
   AuthenticatedBoletimRoute: AuthenticatedBoletimRoute,
   AuthenticatedCampanhasRoute: AuthenticatedCampanhasRoute,
+  AuthenticatedCampanhasWhatsappRoute: AuthenticatedCampanhasWhatsappRoute,
   AuthenticatedCelulasRoute: AuthenticatedCelulasRoute,
   AuthenticatedCheckinRoute: AuthenticatedCheckinRoute,
   AuthenticatedCheckinInfantilRoute: AuthenticatedCheckinInfantilRoute,
@@ -1808,9 +1936,11 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedReservasRoute: AuthenticatedReservasRoute,
   AuthenticatedSecretariaRoute: AuthenticatedSecretariaRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTalentosRoute: AuthenticatedTalentosRoute,
   AuthenticatedTransmissoesRoute: AuthenticatedTransmissoesRoute,
   AuthenticatedTypesRoute: AuthenticatedTypesRoute,
   AuthenticatedVisitantesRoute: AuthenticatedVisitantesRoute,
+  AuthenticatedVocabularioRoute: AuthenticatedVocabularioRoute,
   AuthenticatedWhatsappRoute: AuthenticatedWhatsappRoute,
   AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,

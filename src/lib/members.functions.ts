@@ -8,7 +8,7 @@ import { parseCsv, normalizeHeader } from "@/lib/csv";
 
 type MemberMutationPayload = {
   full_name: string;
-  photo_url: string | null;
+  photo_url?: string | null;
   email: string | null;
   phone: string | null;
   birth_date: string | null;
@@ -36,7 +36,7 @@ type MemberMutationPayload = {
 export const listMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -86,7 +86,7 @@ export const upsertMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
@@ -137,7 +137,7 @@ export const deleteMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => memberIdSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -167,7 +167,7 @@ export type FamilyGroup = {
 export const listFamilyGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -211,7 +211,7 @@ export const setMemberFamilyHead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => familyHeadSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", "edit");
     const { supabase } = context;
     if (data.family_head_id === data.member_id) {
@@ -255,7 +255,7 @@ export const setMemberSpiritualStage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => spiritualStageSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -316,7 +316,7 @@ export const importMembersCsv = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => importSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/membros");
+    const { accountId } = await requireModuleAccess(context as never, "/membros");
     await requirePermission(context, "members", "create");
     const { supabase } = context;
 

@@ -58,11 +58,8 @@ function verificationToken() {
 type AccountPlanQueryClient = {
   from(table: "accounts"): {
     select(columns: string): {
-      eq(
-        column: "id",
-        value: string,
-      ): {
-        maybeSingle(): Promise<{
+      eq(column: "id", value: string): {
+        maybeSingle(): PromiseLike<{
           data: Parameters<typeof resolveAccountAccess>[0] | null;
           error: { message: string } | null;
         }>;
@@ -169,7 +166,7 @@ export const updateCustomDomain = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    await requirePremiumDomainAccess(supabase, accountId);
+    await requirePremiumDomainAccess(supabase as unknown as AccountPlanQueryClient, accountId);
 
     const domain = data.domain ? normalizeDomain(data.domain) : "";
     if (!domain) {
@@ -223,7 +220,7 @@ export const verifyCustomDomain = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    await requirePremiumDomainAccess(supabase, accountId);
+    await requirePremiumDomainAccess(supabase as unknown as AccountPlanQueryClient, accountId);
 
     const { data: account, error: accountError } = await supabase
       .from("accounts")
@@ -273,7 +270,7 @@ export const requestManagedDomain = createServerFn({ method: "POST" })
     const { supabase } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    await requirePremiumDomainAccess(supabase, accountId);
+    await requirePremiumDomainAccess(supabase as unknown as AccountPlanQueryClient, accountId);
 
     const domain = data.domain ? normalizeDomain(data.domain) : "";
     if (!domain) {
@@ -496,6 +493,46 @@ export const updateAccountSettings = createServerFn({ method: "POST" })
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
     const { error } = await supabase.from("accounts").update(data).eq("id", accountId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const religionTermsSchema = z.object({
+  institution: z.string().trim().min(2).max(60),
+  institutionPlural: z.string().trim().min(2).max(80),
+  people: z.string().trim().min(2).max(60),
+  person: z.string().trim().min(2).max(60),
+  smallGroups: z.string().trim().min(2).max(80),
+  mainGathering: z.string().trim().min(2).max(60),
+  contribution: z.string().trim().min(2).max(60),
+  leader: z.string().trim().min(2).max(60),
+  secretaryPortal: z.string().trim().min(2).max(80),
+});
+
+export const getCustomReligionTerms = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "view");
+    const { data, error } = await context.supabase
+      .from("accounts")
+      .select("religion_profile,religion_terms")
+      .eq("id", accountId)
+      .single();
+    if (error) throw new Error(error.message);
+    return data as unknown as { religion_profile: ReligionProfile; religion_terms: Partial<z.infer<typeof religionTermsSchema>> };
+  });
+
+export const updateCustomReligionTerms = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator((input) => religionTermsSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { accountId } = await resolveAccountContext(context.userId);
+    await requirePermission(context, "settings", "manage");
+    const { error } = await context.supabase
+      .from("accounts")
+      .update({ religion_terms: data } as never)
+      .eq("id", accountId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

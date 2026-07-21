@@ -5,18 +5,46 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
+type VisitorListRow = {
+  id: string;
+  name: string;
+  phone: string | null;
+  email: string | null;
+  age_range: string | null;
+  how_found: string | null;
+  is_first_time: boolean;
+  prayer_request: string | null;
+  allow_contact: boolean;
+  status: string;
+  status_changed_at: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+type VisitorListQueryResult = {
+  data: VisitorListRow[] | null;
+  error: { message: string } | null;
+};
+type VisitorListClient = {
+  from: (table: "visitors") => {
+    select: (columns: string) => {
+      order: (column: string, options: { ascending: boolean }) => PromiseLike<VisitorListQueryResult>;
+    };
+  };
+};
+
 export const listVisitors = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    await requireModuleAccess(context, "/visitantes");
+    await requireModuleAccess(context as unknown as Parameters<typeof requireModuleAccess>[0], "/visitantes");
     await requirePermission(context, "visitors", "view");
     const { supabase } = context;
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as unknown as VisitorListClient)
       .from("visitors")
-      .select("*")
+      .select("id, name, phone, email, age_range, how_found, is_first_time, prayer_request, allow_contact, status, status_changed_at, notes, created_at")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return (data ?? []) as VisitorListRow[];
   });
 
 export const updateVisitorStatus = createServerFn({ method: "POST" })
@@ -30,7 +58,7 @@ export const updateVisitorStatus = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    await requireModuleAccess(context, "/visitantes");
+    await requireModuleAccess(context as unknown as Parameters<typeof requireModuleAccess>[0], "/visitantes");
     await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -45,7 +73,7 @@ export const updateVisitorNotes = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid(), notes: z.string().max(2000) }).parse(i))
   .handler(async ({ data, context }) => {
-    await requireModuleAccess(context, "/visitantes");
+    await requireModuleAccess(context as unknown as Parameters<typeof requireModuleAccess>[0], "/visitantes");
     await requirePermission(context, "visitors", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -60,7 +88,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    await requireModuleAccess(context, "/visitantes");
+    await requireModuleAccess(context as unknown as Parameters<typeof requireModuleAccess>[0], "/visitantes");
     await requirePermission(context, "visitors", "delete");
     const { supabase } = context;
     const { error } = await supabase.from("visitors").delete().eq("id", data.id);
@@ -71,7 +99,7 @@ export const deleteVisitor = createServerFn({ method: "POST" })
 export const getVisitorSettings = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/visitantes");
+    const { accountId } = await requireModuleAccess(context as unknown as Parameters<typeof requireModuleAccess>[0], "/visitantes");
     await requirePermission(context, "visitors", "view");
     const { supabase } = context;
     const { data } = await supabase
@@ -95,7 +123,7 @@ export const saveVisitorSettings = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/visitantes");
+    const { accountId } = await requireModuleAccess(context as unknown as Parameters<typeof requireModuleAccess>[0], "/visitantes");
     await requirePermission(context, "visitors", "manage");
     const { supabase } = context;
     const { error } = await supabase

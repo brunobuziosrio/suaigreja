@@ -2,7 +2,7 @@ import { createHash, randomInt } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { requireModuleAccess } from "@/lib/plan-access";
+import { requireModuleAccess, type PlanTierCheck } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 
 const hash = (code: string) => createHash("sha256").update(code).digest("hex");
@@ -20,20 +20,45 @@ const childSchema = z.object({
 
 type ChildCheckinContext = Parameters<typeof requireModuleAccess>[0];
 
-type ChildCheckinListResponse = {
-  children: unknown[];
-  activeEntries: unknown[];
+type ChildCheckinChild = {
+  id: string;
+  full_name: string;
+  birth_date: string | null;
+  guardian_name: string;
+  guardian_phone: string;
+  authorized_pickups: string | null;
+  allergies: string | null;
+  medical_notes: string | null;
+  active: boolean;
 };
 
-async function access(context: ChildCheckinContext, action: "view" | "create" | "edit") {
-  const result = await requireModuleAccess(context, "/checkin-infantil");
+type ActiveChildCheckinEntry = {
+  id: string;
+  child_id: string;
+  checked_in_at: string;
+  child_profiles: {
+    full_name: string;
+    guardian_name: string;
+    guardian_phone: string;
+    allergies: string | null;
+    photo_url: string | null;
+  } | null;
+};
+
+type ChildCheckinListResponse = {
+  children: ChildCheckinChild[];
+  activeEntries: ActiveChildCheckinEntry[];
+};
+
+async function access(context: ChildCheckinContext, action: "view" | "create" | "edit"): Promise<PlanTierCheck> {
+  const result = await requireModuleAccess(context as never, "/checkin-infantil");
   await requirePermission(context, "checkin", action);
   return result;
 }
 export const listChildCheckin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await access(context, "view");
+    const { accountId } = await access(context as never, "view");
     const [children, entries] = await Promise.all([
       context.supabase
         .from("child_profiles")
@@ -50,15 +75,15 @@ export const listChildCheckin = createServerFn({ method: "GET" })
     if (children.error) throw new Error(children.error.message);
     if (entries.error) throw new Error(entries.error.message);
     return {
-      children: (children.data ?? []) as unknown[],
-      activeEntries: (entries.data ?? []) as unknown[],
+      children: (children.data ?? []) as ChildCheckinChild[],
+      activeEntries: (entries.data ?? []) as ActiveChildCheckinEntry[],
     } satisfies ChildCheckinListResponse;
   });
 export const upsertChildProfile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => childSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await access(context, data.id ? "edit" : "create");
+    const { accountId } = await access(context as never, data.id ? "edit" : "create");
     const clean = (v?: string | null) => v?.trim() || null;
     const payload = {
       full_name: data.full_name.trim(),
@@ -86,7 +111,7 @@ export const checkinChild = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ child_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await access(context, "create");
+    const { accountId } = await access(context as never, "create");
     const { data: child, error: childError } = await context.supabase
       .from("child_profiles")
       .select("id")
@@ -120,7 +145,7 @@ export const checkoutChild = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await access(context, "edit");
+    const { accountId } = await access(context as never, "edit");
     const { data: entry, error } = await context.supabase
       .from("child_checkin_entries")
       .select("pickup_code_hash")

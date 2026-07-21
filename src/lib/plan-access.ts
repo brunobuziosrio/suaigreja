@@ -27,44 +27,29 @@ type SupabaseResult<T> = {
   error: { message: string } | null;
 };
 
+type SupabaseSingleQuery<T> = {
+  eq(column: string, value: string): SupabaseSingleQuery<T>;
+  maybeSingle(): PromiseLike<SupabaseResult<T>>;
+};
+
 type SupabasePlanClient = {
   from(table: "accounts"): {
-    select(columns: string): {
-      eq(column: "id", value: string): {
-        maybeSingle(): Promise<SupabaseResult<AccountPlanRow>>;
-      };
-    };
+    select(columns: string): SupabaseSingleQuery<AccountPlanRow>;
   };
 };
 
 type SupabaseModuleClient = SupabasePlanClient & {
   from(table: "plan_feature_flags"): {
-    select(columns: string): {
-      eq(column: string, value: string): {
-        maybeSingle(): Promise<SupabaseResult<{ enabled: boolean }>>;
-      };
-    };
+    select(columns: string): SupabaseSingleQuery<{ enabled: boolean }>;
   };
   from(table: "module_rollouts"): {
-    select(columns: string): {
-      eq(column: string, value: string): {
-        maybeSingle(): Promise<SupabaseResult<{ status: ModuleRolloutStatus }>>;
-      };
-    };
+    select(columns: string): SupabaseSingleQuery<{ status: ModuleRolloutStatus }>;
   };
   from(table: "user_roles"): {
-    select(columns: string): {
-      eq(column: string, value: string): {
-        maybeSingle(): Promise<SupabaseResult<{ role: string }>>;
-      };
-    };
+    select(columns: string): SupabaseSingleQuery<{ role: string }>;
   };
   from(table: "account_feature_overrides"): {
-    select(columns: string): {
-      eq(column: string, value: string): {
-        maybeSingle(): Promise<SupabaseResult<{ enabled: boolean }>>;
-      };
-    };
+    select(columns: string): SupabaseSingleQuery<{ enabled: boolean }>;
   };
 };
 
@@ -224,8 +209,8 @@ export async function requireModuleAccess(
   pathname: string,
 ): Promise<PlanTierCheck> {
   const module = getModuleForPath(pathname);
-  if (!module) return requirePlanTier(context, "essential");
-  const access = await requirePlanTier(context, module.minimumTier);
+  if (!module) return requirePlanTier(context as never, "essential");
+  const access = await requirePlanTier(context as never, module.minimumTier);
 
   const [{ data: rollout, error: rolloutError }, { data: planFlag, error: flagError }, { data: override, error: overrideError }] = await Promise.all([
     context.supabase.from("module_rollouts").select("status").eq("feature_id", module.id).maybeSingle(),

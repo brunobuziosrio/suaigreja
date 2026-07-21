@@ -44,7 +44,7 @@ export type AssetRow = {
 export const listAssets = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "assets", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -74,7 +74,7 @@ export const upsertAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => upsertSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "assets", data.id ? "edit" : "create");
     const { supabase } = context;
     const payload = {
@@ -109,7 +109,7 @@ export const deleteAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => assetIdSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "assets", "delete");
     const { supabase } = context;
     const { error } = await supabase
@@ -130,7 +130,7 @@ export const loanAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => loanSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "assets", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -150,7 +150,7 @@ export const returnAsset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((input) => assetIdSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "assets", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -170,7 +170,7 @@ export const setAssetMaintenance = createServerFn({ method: "POST" })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "assets", "edit");
     const { supabase } = context;
     const payload = { status: data.status, holder_member_id: null, loaned_at: null };

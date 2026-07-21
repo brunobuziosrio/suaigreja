@@ -26,7 +26,7 @@ export const listSmallGroupMembers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ group_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", "view");
     const { supabase } = context;
     const { data: rows, error } = await supabase
@@ -51,7 +51,7 @@ export const addSmallGroupMember = createServerFn({ method: "POST" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", "edit");
     const { supabase } = context;
 
@@ -79,7 +79,7 @@ export const setSmallGroupMemberRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid(), role: z.string().min(1).max(40) }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", "edit");
     const { supabase } = context;
     const { error } = await supabase
@@ -95,7 +95,7 @@ export const removeSmallGroupMember = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/celulas");
+    const { accountId } = await requireModuleAccess(context as never, "/celulas");
     await requirePermission(context, "small_groups", "delete");
     const { supabase } = context;
     const { error } = await supabase

@@ -62,7 +62,7 @@ export const Route = createFileRoute("/n/$slug/$postId")({
 function NewsPostPage() {
   const { account, post, related, chrome } = Route.useLoaderData() as NewsPostLoaderData;
   const accent = account.primary_color || "#7d9b76";
-  const slug = account.custom_slug || account.site_id;
+  const slug = account.custom_slug || account.site_id || "";
   const brand = account.brand_title || "Notícias";
   const [imgOpen, setImgOpen] = useState(false);
 

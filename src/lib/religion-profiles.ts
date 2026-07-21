@@ -171,3 +171,10 @@ export function getProfile(id?: ReligionProfile | string | null) {
 export function getReligionTerms(id?: ReligionProfile | string | null) {
   return getProfile(id).terms;
 }
+
+export function mergeReligionTerms(
+  profile?: ReligionProfile | string | null,
+  overrides?: Partial<ReligionTerms> | null,
+) {
+  return { ...getReligionTerms(profile), ...(overrides ?? {}) };
+}

@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
 const PLATFORM_LEGAL_VERSION = "2026-07-16";
+const OAUTH_LEGAL_ACCEPTANCE_KEY = "suaigreja.oauth-legal-acceptance";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -66,15 +67,26 @@ function LoginPage() {
     }
     setSubmitting(true);
     try {
+      if (mode === "signup") {
+        sessionStorage.setItem(
+          OAUTH_LEGAL_ACCEPTANCE_KEY,
+          JSON.stringify({
+            platform_terms_version: PLATFORM_LEGAL_VERSION,
+            platform_privacy_version: PLATFORM_LEGAL_VERSION,
+          }),
+        );
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/dashboard`,
-          data: mode === "signup" ? { platform_terms_version: PLATFORM_LEGAL_VERSION, platform_privacy_version: PLATFORM_LEGAL_VERSION } : undefined,
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        sessionStorage.removeItem(OAUTH_LEGAL_ACCEPTANCE_KEY);
+        throw error;
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao entrar com Google");
       setSubmitting(false);

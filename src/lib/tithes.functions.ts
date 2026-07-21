@@ -23,7 +23,7 @@ const optionalUuid = z.preprocess(
 export const listTithes = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -39,7 +39,7 @@ export const getTithesByMember = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ memberId: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     const { data: tithes, error } = await supabase
@@ -73,7 +73,7 @@ export const upsertTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => upsertSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "finances", data.id ? "edit" : "create");
     const { supabase: client } = context;
     const payload: TithePayload = {
@@ -105,7 +105,7 @@ export const deleteTithe = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "finances", "delete");
     const { supabase: client } = context;
     const { error } = await client
@@ -128,7 +128,7 @@ export const getTithesReport = createServerFn({ method: "GET" })
       .parse(i),
   )
   .handler(async ({ data, context }) => {
-    const { accountId } = await requirePlanTier(context, "pro");
+    const { accountId } = await requirePlanTier(context as never, "pro");
     await requirePermission(context, "finances", "view");
     const { supabase } = context;
     let query = supabase

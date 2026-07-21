@@ -121,12 +121,13 @@ export function PlaceAutocomplete({
         const g = (window as GoogleMapsWindow).google;
         if (!g?.maps) throw new Error("Google Maps indisponível");
         const { PlaceAutocompleteElement } = await g.maps.importLibrary("places");
-        element = new PlaceAutocompleteElement();
-        element.style.width = "100%";
-        if (value) element.value = value;
+        const autocompleteElement = new PlaceAutocompleteElement();
+        element = autocompleteElement;
+        autocompleteElement.style.width = "100%";
+        if (value) autocompleteElement.value = value;
         container.innerHTML = "";
-        container.appendChild(element);
-        element.addEventListener("gmp-select", async (ev) => {
+        container.appendChild(autocompleteElement);
+        autocompleteElement.addEventListener("gmp-select", async (ev) => {
           try {
             const { placePrediction } = ev as GooglePlaceSelectEvent;
             const place = placePrediction.toPlace();
@@ -155,8 +156,8 @@ export function PlaceAutocomplete({
             setErr(e instanceof Error ? e.message : "Erro ao ler endereço");
           }
         });
-        element.addEventListener("input", () => {
-          onTextChange?.(element.value ?? "");
+        autocompleteElement.addEventListener("input", () => {
+          onTextChange?.(autocompleteElement.value ?? "");
         });
       })
       .catch((e) => setErr(e.message));

@@ -55,7 +55,7 @@ export const Route = createFileRoute("/n/$slug")({
 function NewsListPage() {
   const { account, news, chrome } = Route.useLoaderData() as NewsLoaderData;
   const accent = account.primary_color || "#7d9b76";
-  const slug = account.custom_slug || account.site_id;
+  const slug = account.custom_slug || account.site_id || "";
   const brand = account.brand_title || "Notícias";
 
   const fmtDate = (d: string) =>

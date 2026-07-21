@@ -1,8 +1,23 @@
 export type SupabaseRpcClient = {
   rpc(
-    fn: "reserve_whatsapp_credits" | "refund_whatsapp_message_credits",
-    args: Record<string, unknown>,
-  ): Promise<{ data: unknown; error: { message: string } | null }>;
+    fn: "reserve_whatsapp_credits",
+    args: {
+      p_account_id: string;
+      p_message_id: string;
+      p_cost: number;
+      p_idempotency_key: string;
+      p_metadata: Record<string, unknown>;
+    },
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
+  rpc(
+    fn: "refund_whatsapp_message_credits",
+    args: {
+      p_account_id: string;
+      p_message_id: string;
+      p_idempotency_key: string;
+      p_metadata: Record<string, unknown>;
+    },
+  ): PromiseLike<{ data: unknown; error: { message: string } | null }>;
 };
 
 type CreditResult = {

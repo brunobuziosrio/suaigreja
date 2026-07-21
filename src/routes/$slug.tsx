@@ -494,7 +494,7 @@ function HubPage() {
             {(() => {
               const [featured, ...rest] = news;
               const sideItems = rest.slice(0, 2);
-              const accountName = account?.display_name || "Notícias";
+              const accountName = account.brand_title || "Notícias";
               const fmtDate = (d: string) =>
                 new Date(d).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" });
               const truncate = (s: string | null | undefined, n: number) => {
@@ -2179,7 +2179,7 @@ function LiveOrNextBanner({
 }: {
   liveStatus?: { status: "live" | "upcoming" | "none"; title?: string; url?: string | null; date?: string; startTime?: string } | null;
   liveUrl: string | null;
-  nextEvent?: { event_date: string; start_time: string; type_name: string; location_name: string; is_live?: boolean; live_url?: string | null } | null;
+  nextEvent?: { event_date: string; start_time: string | null; type_name: string | null; location_name: string | null; is_live?: boolean | null; live_url?: string | null } | null;
   accent: string;
 }) {
   const [now, setNow] = useState(() => new Date());
@@ -2752,7 +2752,7 @@ function LiveCombinedSection({
 }: {
   liveStatus?: { status: "live" | "upcoming" | "none"; title?: string; url?: string | null; date?: string; startTime?: string } | null;
   liveUrl: string | null;
-  nextEvent?: { event_date: string; start_time: string; type_name: string; location_name: string; is_live?: boolean; live_url?: string | null } | null;
+  nextEvent?: { event_date: string; start_time: string | null; type_name: string | null; location_name: string | null; is_live?: boolean | null; live_url?: string | null } | null;
   schedule: Array<{ title: string; weekday: number; start_time: string }>;
   accent: string;
 }) {

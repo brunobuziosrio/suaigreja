@@ -86,15 +86,38 @@ type AgendaItem = {
 
 type EventPageAgendaRow = {
   id: string;
-  slug?: string | null;
-  title: string | null;
+  // Eventos ativos publicados exigem slug e título; o hub só os expõe nessa forma.
+  slug: string;
+  title: string;
+  description: string | null;
   event_date: string;
   start_time: string | null;
   location_name: string | null;
+  cover_image_url: string | null;
+  price_cents: number;
 };
 
 type LocationRow = {
+  id: string;
+  name: string;
   address: string | null;
+  is_main: boolean;
+  phone: string | null;
+  whatsapp: string | null;
+  office_hours: string | null;
+  transport_info: string | null;
+  maps_url: string | null;
+  waze_url: string | null;
+  uber_url: string | null;
+  sort_order: number;
+  latitude: number | null;
+  longitude: number | null;
+  place_id: string | null;
+  neighborhood: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
 };
 
 type HubMediaSettings = {
@@ -125,7 +148,7 @@ export const getPublicHub = createServerFn({ method: "GET" })
     let { data: account } = await supabaseAdmin
       .from("accounts")
       .select(
-        "id, site_id, custom_slug, hub_enabled, hub_bio, hub_cover_url, hub_show_agenda, hub_show_events, hub_show_prayer, hub_show_visitor, hub_show_all_locations, social_instagram, social_youtube, social_facebook, social_website, pix_key, live_url, brand_title, brand_subtitle, brand_empty_message, brand_today_title, brand_logo_url, brand_logo_height_px, force_show_type, primary_color, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, weekly_message, weekly_verse, weekly_verse_ref, gallery_urls, hub_slides, hub_highlights, cta_label, cta_enabled, media_youtube_url, media_audio_url, media_show_youtube, media_show_audio, donations_fixed_image_url, instagram_post_count, instagram_columns",
+        "id, site_id, custom_slug, hub_enabled, hub_bio, hub_cover_url, hub_show_agenda, hub_show_events, hub_show_prayer, hub_show_visitor, hub_show_all_locations, social_instagram, social_youtube, social_facebook, social_website, pix_key, live_url, brand_title, brand_subtitle, brand_empty_message, brand_today_title, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, force_show_type, primary_color, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, weekly_message, weekly_verse, weekly_verse_ref, gallery_urls, hub_slides, hub_highlights, cta_label, cta_enabled, media_youtube_url, media_audio_url, media_show_youtube, media_show_audio, donations_fixed_image_url, instagram_post_count, instagram_columns",
       )
       .eq("custom_slug", data.slug)
       .maybeSingle();
@@ -134,7 +157,7 @@ export const getPublicHub = createServerFn({ method: "GET" })
       const fb = await supabaseAdmin
         .from("accounts")
         .select(
-          "id, site_id, custom_slug, hub_enabled, hub_bio, hub_cover_url, hub_show_agenda, hub_show_events, hub_show_prayer, hub_show_visitor, hub_show_all_locations, social_instagram, social_youtube, social_facebook, social_website, pix_key, live_url, brand_title, brand_subtitle, brand_empty_message, brand_today_title, brand_logo_url, brand_logo_height_px, force_show_type, primary_color, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, weekly_message, weekly_verse, weekly_verse_ref, gallery_urls, hub_slides, hub_highlights, cta_label, cta_enabled, media_youtube_url, media_audio_url, media_show_youtube, media_show_audio, donations_fixed_image_url, instagram_post_count, instagram_columns",
+          "id, site_id, custom_slug, hub_enabled, hub_bio, hub_cover_url, hub_show_agenda, hub_show_events, hub_show_prayer, hub_show_visitor, hub_show_all_locations, social_instagram, social_youtube, social_facebook, social_website, pix_key, live_url, brand_title, brand_subtitle, brand_empty_message, brand_today_title, brand_logo_url, brand_logo_height_px, brand_footer_logo_url, force_show_type, primary_color, visitor_whatsapp, hub_whatsapp, hub_show_whatsapp, weekly_message, weekly_verse, weekly_verse_ref, gallery_urls, hub_slides, hub_highlights, cta_label, cta_enabled, media_youtube_url, media_audio_url, media_show_youtube, media_show_audio, donations_fixed_image_url, instagram_post_count, instagram_columns",
         )
         .eq("site_id", data.slug)
         .maybeSingle();
@@ -144,7 +167,7 @@ export const getPublicHub = createServerFn({ method: "GET" })
 
     // Next agenda items (today + 14 days)
     let agenda: AgendaItem[] = [];
-    let agendaTypes = [];
+    let agendaTypes: Array<{ id: string; name: string; color: string | null; icon: string | null }> = [];
     if (account.hub_show_agenda) {
       const today = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
@@ -225,7 +248,7 @@ export const getPublicHub = createServerFn({ method: "GET" })
         .from("celebration_types")
         .select("id, name, color, icon")
         .eq("account_id", account.id);
-      agendaTypes = tps ?? [];
+      agendaTypes = (tps ?? []) as typeof agendaTypes;
     }
 
     let events: EventPageAgendaRow[] = [];

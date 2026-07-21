@@ -58,7 +58,7 @@ async function assertTemplateAllowed(
 export const listDocumentTemplates = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { accountId } = await requireModuleAccess(context as never, "/documentos");
     await requirePermission(context, "documents", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -75,7 +75,7 @@ export const listDocumentTemplates = createServerFn({ method: "GET" })
 export const listMemberDocuments = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { accountId } = await requireModuleAccess(context as never, "/documentos");
     await requirePermission(context, "documents", "view");
     const { supabase } = context;
     const { data, error } = await supabase
@@ -120,7 +120,7 @@ export const upsertMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => issueSchema.parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { accountId } = await requireModuleAccess(context as never, "/documentos");
     await requirePermission(context, "documents", data.id ? "edit" : "create");
     const { supabase } = context;
     await assertMemberBelongsToAccount(supabase, accountId, data.member_id);
@@ -173,7 +173,7 @@ export const deleteMemberDocument = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator((i) => z.object({ id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
-    const { accountId } = await requireModuleAccess(context, "/documentos");
+    const { accountId } = await requireModuleAccess(context as never, "/documentos");
     await requirePermission(context, "documents", "delete");
     const { supabase } = context;
     const { data: deleted, error } = await supabase

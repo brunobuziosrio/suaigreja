@@ -12,22 +12,22 @@ export type PublicAgendaAccount = {
 export type PublicAgendaEvent = {
   id: string;
   event_date: string;
-  start_time: string;
+  start_time: string | null;
   end_time?: string | null;
-  location_name: string;
-  type_name: string;
+  location_name: string | null;
+  type_name: string | null;
   type_id?: string | null;
   description?: string | null;
-  show_type: boolean;
-  is_live: boolean;
+  show_type: boolean | null;
+  is_live: boolean | null;
   live_url?: string | null;
 };
 
 export type PublicAgendaType = {
   id: string;
   name: string;
-  color: string;
-  icon: string;
+  color: string | null;
+  icon: string | null;
 };
 
 const WEEKDAYS_FULL = [
