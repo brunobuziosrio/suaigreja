@@ -115,19 +115,24 @@ git status --short
 
 ## Próximo lote de execução
 
-1. Configurar o access token corporativo do Mercado Pago; a configuração existe
-   no banco, mas está sem token, então não é possível emitir nem validar a compra
-   das assinaturas. Em seguida, testar compra e webhook dos seis produtos.
-2. Criar credenciais isoladas de E2E para validar login, equipe, finanças,
-   acompanhamento, vocabulário, campanhas e talentos em navegador real.
-3. Executar uma prova de entrega SMTP em caixa de teste e validar convite de
-   equipe ponta a ponta. A infraestrutura SMTP está configurada, mas não foi
-   possível realizar envio sem um destinatário de teste autorizado.
-4. Validar visualmente em uma conta Premium com dados reais o resumo financeiro,
-   Livro Caixa, filtros, CSV, conciliação/repasses e responsividade de
-   Configurações em desktop/tablet/mobile.
-5. Confirmar preços, limites e política de upgrade/downgrade; manter domínio
-   gerenciado como fluxo assistido até a decisão sobre registrador e renovação.
+> Fila oficial para a retomada de 22/07/2026. Executar nesta ordem e atualizar
+> este arquivo ao concluir cada ponto.
+
+1. Configurar o access token corporativo do Mercado Pago.
+2. Testar compra e webhook Mercado Pago dos seis produtos/planos.
+3. Criar credenciais isoladas de E2E (`E2E_USER_EMAIL` e
+   `E2E_USER_PASSWORD`).
+4. Rodar e ampliar os testes autenticados: login, equipe, finanças,
+   acompanhamento, vocabulário, campanhas e talentos.
+5. Executar uma prova real de entrega SMTP com e-mail de teste.
+6. Validar o convite de equipe ponta a ponta.
+7. Validar em uma conta Premium com dados reais: resumo financeiro do dashboard,
+   Livro Caixa, filtros, CSV e conciliação/repasses; testar também a
+   responsividade de Configurações em desktop, tablet e celular.
+8. Confirmar preços, limites e política de upgrade/downgrade dos planos.
+9. Decidir o fluxo definitivo de domínio gerenciado: atendimento assistido ou
+   integração de registrador e renovação automática.
+10. Validar login Google e aceite de Termos/Privacidade com uma conta de teste.
 
 ## Pendências técnicas imediatas
 
