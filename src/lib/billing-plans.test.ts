@@ -4,6 +4,7 @@ import {
   isPurchasablePlanId,
   PURCHASABLE_PLAN_IDS,
 } from "@/lib/billing-plans";
+import { createPixPaymentInputSchema } from "@/lib/billing-purchase-schema.server";
 
 describe("billing plan purchase contract", () => {
   it("mantém somente os três planos mensais oficiais disponíveis para novas cobranças", () => {
@@ -24,5 +25,11 @@ describe("billing plan purchase contract", () => {
     expect(isPurchasablePlanId("pro_annual")).toBe(false);
     expect(isPurchasablePlanId("monthly")).toBe(false);
     expect(() => getPurchasablePlan("annual")).toThrow("não está disponível");
+  });
+
+  it("aplica a mesma regra no payload server-side do checkout", () => {
+    expect(createPixPaymentInputSchema.parse({ plan: "pro_monthly" })).toEqual({ plan: "pro_monthly" });
+    expect(() => createPixPaymentInputSchema.parse({ plan: "pro_annual" })).toThrow();
+    expect(() => createPixPaymentInputSchema.parse({ plan: "monthly" })).toThrow();
   });
 });

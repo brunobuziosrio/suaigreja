@@ -5,7 +5,6 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
   BILLING_PLANS,
   getPurchasablePlan,
-  PURCHASABLE_PLAN_IDS,
   type BillingPlanId,
 } from "@/lib/billing-plans";
 import {
@@ -16,7 +15,7 @@ import { resolveAccountContext } from "@/lib/account-context.server";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
 import { getPlatformPaymentLabel } from "@/lib/platform-payment-label.server";
-import { z } from "zod";
+import { createPixPaymentInputSchema } from "@/lib/billing-purchase-schema.server";
 
 async function getMercadoPagoAccessToken() {
   const key = await resolveMercadoPagoAccessToken();
@@ -94,13 +93,7 @@ export const getBillingSetup = createServerFn({ method: "GET" })
 
 export const createPixPayment = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .validator((input) =>
-    z
-      .object({
-        plan: z.enum(PURCHASABLE_PLAN_IDS),
-      })
-      .parse(input),
-  )
+  .validator((input) => createPixPaymentInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { claims } = context;
     const { accountId } = await resolveAccountContext(context.userId);
