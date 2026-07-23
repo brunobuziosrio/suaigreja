@@ -95,6 +95,7 @@ import { Route as AuthenticatedAdminPlanosRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminPaymentsRouteImport } from './routes/_authenticated.admin.payments'
 import { Route as AuthenticatedAdminFeedbackRouteImport } from './routes/_authenticated.admin.feedback'
 import { Route as AuthenticatedAdminDomainsRouteImport } from './routes/_authenticated.admin.domains'
+import { Route as AuthenticatedAdminBrandingRouteImport } from './routes/_authenticated.admin.branding'
 import { Route as ApiPublicInstagramCallbackRouteImport } from './routes/api.public.instagram.callback'
 import { Route as ApiPublicCronWhatsappDispatchRouteImport } from './routes/api.public.cron.whatsapp-dispatch'
 import { Route as ApiPublicCronWhatsappBirthdaysRouteImport } from './routes/api.public.cron.whatsapp-birthdays'
@@ -553,6 +554,12 @@ const AuthenticatedAdminDomainsRoute =
     path: '/admin/domains',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedAdminBrandingRoute =
+  AuthenticatedAdminBrandingRouteImport.update({
+    id: '/admin/branding',
+    path: '/admin/branding',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const ApiPublicInstagramCallbackRoute =
   ApiPublicInstagramCallbackRouteImport.update({
     id: '/api/public/instagram/callback',
@@ -655,6 +662,7 @@ export interface FileRoutesByFullPath {
   '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
+  '/admin/branding': typeof AuthenticatedAdminBrandingRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -747,6 +755,7 @@ export interface FileRoutesByTo {
   '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
+  '/admin/branding': typeof AuthenticatedAdminBrandingRoute
   '/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -841,6 +850,7 @@ export interface FileRoutesById {
   '/protocolo/$id': typeof ProtocoloIdRoute
   '/recibo/$donationId': typeof ReciboDonationIdRoute
   '/v/$siteId': typeof VSiteIdRoute
+  '/_authenticated/admin/branding': typeof AuthenticatedAdminBrandingRoute
   '/_authenticated/admin/domains': typeof AuthenticatedAdminDomainsRoute
   '/_authenticated/admin/feedback': typeof AuthenticatedAdminFeedbackRoute
   '/_authenticated/admin/payments': typeof AuthenticatedAdminPaymentsRoute
@@ -935,6 +945,7 @@ export interface FileRouteTypes {
     | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
+    | '/admin/branding'
     | '/admin/domains'
     | '/admin/feedback'
     | '/admin/payments'
@@ -1027,6 +1038,7 @@ export interface FileRouteTypes {
     | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
+    | '/admin/branding'
     | '/admin/domains'
     | '/admin/feedback'
     | '/admin/payments'
@@ -1120,6 +1132,7 @@ export interface FileRouteTypes {
     | '/protocolo/$id'
     | '/recibo/$donationId'
     | '/v/$siteId'
+    | '/_authenticated/admin/branding'
     | '/_authenticated/admin/domains'
     | '/_authenticated/admin/feedback'
     | '/_authenticated/admin/payments'
@@ -1780,6 +1793,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminDomainsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/admin/branding': {
+      id: '/_authenticated/admin/branding'
+      path: '/admin/branding'
+      fullPath: '/admin/branding'
+      preLoaderRoute: typeof AuthenticatedAdminBrandingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/api/public/instagram/callback': {
       id: '/api/public/instagram/callback'
       path: '/api/public/instagram/callback'
@@ -1882,6 +1902,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedVisitantesRoute: typeof AuthenticatedVisitantesRoute
   AuthenticatedVocabularioRoute: typeof AuthenticatedVocabularioRoute
   AuthenticatedWhatsappRoute: typeof AuthenticatedWhatsappRoute
+  AuthenticatedAdminBrandingRoute: typeof AuthenticatedAdminBrandingRoute
   AuthenticatedAdminDomainsRoute: typeof AuthenticatedAdminDomainsRoute
   AuthenticatedAdminFeedbackRoute: typeof AuthenticatedAdminFeedbackRoute
   AuthenticatedAdminPaymentsRoute: typeof AuthenticatedAdminPaymentsRoute
@@ -1942,6 +1963,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedVisitantesRoute: AuthenticatedVisitantesRoute,
   AuthenticatedVocabularioRoute: AuthenticatedVocabularioRoute,
   AuthenticatedWhatsappRoute: AuthenticatedWhatsappRoute,
+  AuthenticatedAdminBrandingRoute: AuthenticatedAdminBrandingRoute,
   AuthenticatedAdminDomainsRoute: AuthenticatedAdminDomainsRoute,
   AuthenticatedAdminFeedbackRoute: AuthenticatedAdminFeedbackRoute,
   AuthenticatedAdminPaymentsRoute: AuthenticatedAdminPaymentsRoute,

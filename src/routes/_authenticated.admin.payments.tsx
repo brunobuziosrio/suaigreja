@@ -8,12 +8,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { ShieldCheck, WalletCards } from "lucide-react";
+import { CheckCircle2, ExternalLink, KeyRound, Loader2, ShieldCheck, Trash2, WalletCards } from "lucide-react";
 import { getIsAdmin } from "@/lib/admin.functions";
 import { useBranding } from "@/hooks/use-branding";
-import { adminUpdateBranding } from "@/lib/branding.functions";
-import { getPlatformPaymentSettings, updatePlatformPaymentSettings } from "@/lib/admin-payment-settings.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { adminUpdateBranding, adminUploadBrandingAsset } from "@/lib/branding.functions";
+import {
+  getPlatformPaymentSettings,
+  updatePlatformPaymentSettings,
+  validatePlatformMercadoPagoAccessToken,
+} from "@/lib/admin-payment-settings.functions";
 import { validateImageFile } from "@/lib/file-validation";
 
 export const Route = createFileRoute("/_authenticated/admin/payments")({
@@ -54,20 +57,19 @@ function AdminPaymentsPage() {
             <WalletCards className="h-6 w-6" /> Pagamentos da plataforma
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Identidade visual exibida pra todos os clientes e gateways de pagamento da assinatura SaaS.
-            Visível só pra administradores da plataforma.
+            Configure o Mercado Pago para assinaturas, produtos do marketplace,
+            inscrições pagas e créditos WhatsApp.
           </p>
         </div>
-        <PlatformBrandingSection />
+        <PlatformPaymentsSection />
       </div>
     </AppShell>
   );
 }
 
-function PlatformBrandingSection() {
+export function PlatformBrandingSection() {
   const updateBranding = useServerFn(adminUpdateBranding);
-  const fetchPaymentSettings = useServerFn(getPlatformPaymentSettings);
-  const savePaymentSettings = useServerFn(updatePlatformPaymentSettings);
+  const uploadBrandingAsset = useServerFn(adminUploadBrandingAsset);
   const { data: branding } = useBranding();
   const qc = useQueryClient();
   const iconInputRef = useRef<HTMLInputElement | null>(null);
@@ -75,26 +77,6 @@ function PlatformBrandingSection() {
   const [uploading, setUploading] = useState<"icon" | "logo" | null>(null);
   const [iconError, setIconError] = useState(false);
   const [logoError, setLogoError] = useState(false);
-
-  const { data: paymentSettings } = useQuery({
-    queryKey: ["platform-payment-settings"],
-    queryFn: () => fetchPaymentSettings(),
-  });
-
-  const [paymentForm, setPaymentForm] = useState({
-    mercadopagoAccessToken: "",
-  });
-
-  const savePaymentMut = useMutation({
-    mutationFn: (data: { mercadopagoAccessToken?: string; clearMercadoPagoAccessToken?: boolean }) =>
-      savePaymentSettings({ data }),
-    onSuccess: () => {
-      toast.success("Configurações de pagamento atualizadas");
-      setPaymentForm({ mercadopagoAccessToken: "" });
-      qc.invalidateQueries({ queryKey: ["platform-payment-settings"] });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const [form, setForm] = useState({
     brand_text: "",
@@ -142,13 +124,20 @@ function PlatformBrandingSection() {
     if (validationError) return toast.error(validationError);
     setUploading(kind);
     try {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-      const path = `branding/${kind}-${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage
-        .from("product-images")
-        .upload(path, file, { upsert: false, contentType: file.type });
-      if (error) throw error;
-      const { data: pub } = supabase.storage.from("product-images").getPublicUrl(path);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",", 2)[1] ?? "");
+        reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+        reader.readAsDataURL(file);
+      });
+      const uploaded = await uploadBrandingAsset({
+        data: {
+          filename: file.name,
+          contentType: file.type as "image/jpeg" | "image/png" | "image/webp" | "image/gif" | "image/x-icon" | "image/vnd.microsoft.icon",
+          base64,
+          kind,
+        },
+      });
       const dims = await new Promise<{ w: number; h: number } | null>((resolve) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -163,8 +152,8 @@ function PlatformBrandingSection() {
         img.src = url;
       });
       const finalUrl = dims
-        ? `${pub.publicUrl}?dim=${dims.w}x${dims.h}`
-        : pub.publicUrl;
+        ? `${uploaded.url}?dim=${dims.w}x${dims.h}`
+        : uploaded.url;
       if (kind === "icon") setForm((f) => ({ ...f, icon_url: finalUrl }));
       else setForm((f) => ({ ...f, logo_url: finalUrl }));
       toast.success(
@@ -337,33 +326,134 @@ function PlatformBrandingSection() {
         </Button>
       </div>
 
-      <div className="rounded-md border p-4 space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold">Gateway de pagamento da plataforma</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Mercado Pago recebe assinaturas das igrejas, produtos do marketplace,
-            inscrições pagas e compras de créditos WhatsApp.
-          </p>
-          <p className="text-xs text-muted-foreground mt-2">
-            {paymentSettings?.hasMercadoPagoAccessToken
-              ? "Um token está configurado. Por segurança ele não é exibido; informe outro apenas para substituí-lo."
-              : "Nenhum token configurado."}
-          </p>
+    </Card>
+  );
+}
+
+function PlatformPaymentsSection() {
+  const fetchPaymentSettings = useServerFn(getPlatformPaymentSettings);
+  const savePaymentSettings = useServerFn(updatePlatformPaymentSettings);
+  const validatePaymentSettings = useServerFn(validatePlatformMercadoPagoAccessToken);
+  const qc = useQueryClient();
+  const { data: paymentSettings } = useQuery({
+    queryKey: ["platform-payment-settings"],
+    queryFn: () => fetchPaymentSettings(),
+  });
+  const [paymentForm, setPaymentForm] = useState({ mercadopagoAccessToken: "" });
+  const savePaymentMut = useMutation({
+    mutationFn: (data: { mercadopagoAccessToken?: string; clearMercadoPagoAccessToken?: boolean }) =>
+      savePaymentSettings({ data }),
+    onSuccess: async (_result, variables) => {
+      toast.success(
+        variables.clearMercadoPagoAccessToken
+          ? "Token do Mercado Pago removido"
+          : "Token do Mercado Pago salvo com segurança",
+      );
+      setPaymentForm({ mercadopagoAccessToken: "" });
+      await qc.invalidateQueries({ queryKey: ["platform-payment-settings"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const validatePaymentMut = useMutation({
+    mutationFn: () => validatePaymentSettings(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="p-6">
+      <div className="mb-5 rounded-lg border border-sky-500/25 bg-sky-500/[.04] p-4">
+        <p className="text-sm font-semibold">Antes de colar a credencial</p>
+        <p className="mt-1 text-xs leading-5 text-muted-foreground">
+          Este sistema usa somente o <strong>Access Token</strong> privado no servidor para criar Pix.
+          Não use a <strong>Public Key</strong>: ela é destinada ao front-end. Para receber pagamentos reais,
+          copie o token da seção <strong>Produção</strong>; tokens de <strong>Testes</strong> não realizam cobranças reais.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <a
+            href="https://www.mercadopago.com.br/developers/panel/app"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 items-center rounded-md border bg-background px-3 text-sm font-medium transition-colors hover:bg-muted"
+          >
+            Abrir credenciais no Mercado Pago <ExternalLink className="ml-2 h-3.5 w-3.5" />
+          </a>
+          <a
+            href="https://www.mercadopago.com.br/developers/pt/docs/credentials"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-9 items-center rounded-md px-3 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+          >
+            Como ativar Produção <ExternalLink className="ml-2 h-3.5 w-3.5" />
+          </a>
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs">Novo Access Token do Mercado Pago</Label>
+      </div>
+      <div className="rounded-lg border bg-card p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="rounded-full bg-primary/10 p-2 text-primary">
+            <KeyRound className="h-4 w-4" />
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold">Gateway de pagamento da plataforma</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Mercado Pago recebe assinaturas das igrejas, produtos do marketplace,
+              inscrições pagas e compras de créditos WhatsApp.
+            </p>
+          </div>
+        </div>
+
+        {paymentSettings?.hasMercadoPagoAccessToken ? (
+          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3.5">
+            <div className="flex items-start gap-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Token corporativo configurado</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  A credencial está armazenada com segurança e não é exibida novamente. Para trocar,
+                  informe um novo token abaixo; para desativar os pagamentos, remova-o explicitamente.
+                </p>
+              </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-emerald-500/20 pt-3">
+              <Button size="sm" variant="outline" onClick={() => validatePaymentMut.mutate()} disabled={validatePaymentMut.isPending}>
+                {validatePaymentMut.isPending ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="mr-2 h-3.5 w-3.5" />}
+                Validar credencial
+              </Button>
+              {validatePaymentMut.data && (
+                <p className={`text-xs font-medium ${validatePaymentMut.data.valid ? "text-emerald-700 dark:text-emerald-300" : "text-destructive"}`}>
+                  {validatePaymentMut.data.valid
+                    ? `Credencial aceita${validatePaymentMut.data.accountLabel ? ` para ${validatePaymentMut.data.accountLabel}` : ""}.`
+                    : "A credencial não foi aceita pelo Mercado Pago. Substitua o token."}
+                </p>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-muted-foreground">
+            Nenhum token está configurado. Assinaturas e cobranças PIX da plataforma não podem ser criadas.
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <Label className="text-xs">
+            {paymentSettings?.hasMercadoPagoAccessToken ? "Substituir Access Token" : "Access Token do Mercado Pago"}
+          </Label>
           <Input
             type="password"
             value={paymentForm.mercadopagoAccessToken}
             onChange={(e) => setPaymentForm({ ...paymentForm, mercadopagoAccessToken: e.target.value })}
-            placeholder={paymentSettings?.hasMercadoPagoAccessToken ? "Deixe em branco para manter o token atual" : undefined}
+            placeholder={paymentSettings?.hasMercadoPagoAccessToken ? "Cole um novo token para substituí-lo" : "Cole o token corporativo"}
             autoComplete="new-password"
           />
+          <p className="text-[11px] text-muted-foreground">
+            O valor é salvo, mas nunca volta para o navegador ou para esta tela.
+          </p>
         </div>
-        <div className="flex items-center justify-between gap-3 border-t pt-3">
+
+        <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
           {paymentSettings?.hasMercadoPagoAccessToken ? (
             <Button
-              variant="destructive"
+              variant="outline"
+              className="border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground"
               onClick={() => {
                 if (window.confirm("Remover o token do Mercado Pago? Os pagamentos da plataforma deixarão de funcionar até que um novo token seja salvo.")) {
                   savePaymentMut.mutate({ clearMercadoPagoAccessToken: true });
@@ -371,6 +461,7 @@ function PlatformBrandingSection() {
               }}
               disabled={savePaymentMut.isPending}
             >
+              <Trash2 className="mr-2 h-4 w-4" />
               Remover token
             </Button>
           ) : <span />}
@@ -378,7 +469,7 @@ function PlatformBrandingSection() {
             onClick={() => savePaymentMut.mutate(paymentForm.mercadopagoAccessToken.trim() ? paymentForm : {})}
             disabled={savePaymentMut.isPending || !paymentForm.mercadopagoAccessToken.trim()}
           >
-            {savePaymentMut.isPending ? "Salvando…" : "Salvar gateway"}
+            {savePaymentMut.isPending ? "Salvando…" : paymentSettings?.hasMercadoPagoAccessToken ? "Substituir token" : "Salvar token"}
           </Button>
         </div>
       </div>

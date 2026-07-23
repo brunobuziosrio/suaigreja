@@ -58,6 +58,33 @@ export const updatePlatformPaymentSettings = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Confirma que a credencial privada armazenada é aceita pelo Mercado Pago sem
+// criar cobrança ou expor o token ao navegador.
+export const validatePlatformMercadoPagoAccessToken = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const accessToken = await resolveMercadoPagoAccessToken();
+    if (!accessToken) return { configured: false, valid: false, accountLabel: null as string | null };
+
+    try {
+      const response = await fetch("https://api.mercadolibre.com/users/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!response.ok) return { configured: true, valid: false, accountLabel: null as string | null };
+
+      const profile = (await response.json()) as {
+        nickname?: string;
+        first_name?: string;
+        last_name?: string;
+      };
+      const fullName = [profile.first_name, profile.last_name].filter(Boolean).join(" ");
+      return { configured: true, valid: true, accountLabel: profile.nickname || fullName || null };
+    } catch {
+      throw new Error("Não foi possível validar a credencial do Mercado Pago agora. Tente novamente.");
+    }
+  });
+
 let cachedMercadoPagoAccessToken: { value: string; expiresAt: number } | null = null;
 const CACHE_TTL_MS = 60_000;
 
