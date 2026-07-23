@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getIsAdmin } from "@/lib/admin.functions";
 import { getMyAccount } from "@/lib/account.functions";
-import { canAccessAccountPath } from "@/lib/plan-access";
+import { getMyNavigationAccess, isNavigationPathVisible } from "@/lib/plan-access";
 import { mergeReligionTerms, type ReligionTerms } from "@/lib/religion-profiles";
 import { adminGroup, adminItems, getNavGroups, primaryItems, type NavItem } from "@/lib/navigation";
 import { useAuth } from "@/hooks/use-auth";
@@ -83,6 +83,7 @@ export function AppSidebar() {
   const { user } = useAuth();
   const checkAdmin = useServerFn(getIsAdmin);
   const fetchAccount = useServerFn(getMyAccount);
+  const fetchNavigationAccess = useServerFn(getMyNavigationAccess);
   const { data: adminCheck } = useQuery({
     queryKey: ["is-admin"],
     queryFn: () => checkAdmin(),
@@ -91,6 +92,12 @@ export function AppSidebar() {
   const { data: account } = useQuery({
     queryKey: ["account", user?.id],
     queryFn: () => fetchAccount(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const { data: navigationAccess } = useQuery({
+    queryKey: ["navigation-access", user?.id],
+    queryFn: () => fetchNavigationAccess(),
     enabled: !!user,
     staleTime: 60_000,
   });
@@ -155,7 +162,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Início</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {primaryItems.map((item) => (
+              {primaryItems.filter((item) => isNavigationPathVisible(account, item.url, navigationAccess?.visibleModulePaths)).map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={currentPath === item.url} className="h-10">
                     <Link to={item.url} activeOptions={{ exact: true }}>
@@ -174,7 +181,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {navGroups.map((group) => {
-                const items = group.items.filter((item) => canAccessAccountPath(account, item.url));
+                const items = group.items.filter((item) => isNavigationPathVisible(account, item.url, navigationAccess?.visibleModulePaths));
                 if (items.length === 0) return null;
                 return (
                   <NavGroup

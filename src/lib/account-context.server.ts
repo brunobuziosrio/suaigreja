@@ -18,6 +18,23 @@ export type AccountContext = {
   role: string;
 };
 
+export type ActiveAccountMembership = {
+  account_id: string;
+  role: string;
+  created_at: string;
+};
+
+export function resolveAccountContextFromMemberships(
+  userId: string,
+  memberships: readonly ActiveAccountMembership[],
+): AccountContext {
+  if (memberships.length === 0) return { accountId: userId, role: "owner" };
+
+  const owner = memberships.find((membership) => membership.role === "owner");
+  const chosen = owner ?? [...memberships].sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
+  return { accountId: chosen.account_id, role: chosen.role };
+}
+
 // Resolve a conta ativa e o cargo do usuario. Prefere o vinculo de dono quando o
 // usuario participa de mais de uma conta. Faz fallback seguro para a conta
 // propria (compatibilidade pre-backfill).
@@ -29,16 +46,13 @@ export async function resolveAccountContext(userId: string): Promise<AccountCont
     .eq("status", "active");
 
   if (error) {
-    // Tabela ausente ou erro transitorio: mantem o comportamento legado.
-    return { accountId: userId, role: "owner" };
+    // Falha fechada: o service role ignora RLS e nunca pode conceder o
+    // contexto legado de proprietário quando não foi possível verificar vínculos.
+    throw new Error("Não foi possível validar o vínculo da conta ativa.");
   }
 
-  const rows = (data ?? []) as Array<{ account_id: string; role: string; created_at: string }>;
-  if (rows.length === 0) {
-    return { accountId: userId, role: "owner" };
-  }
-
-  const owner = rows.find((row) => row.role === "owner");
-  const chosen = owner ?? rows.sort((a, b) => a.created_at.localeCompare(b.created_at))[0];
-  return { accountId: chosen.account_id, role: chosen.role };
+  return resolveAccountContextFromMemberships(
+    userId,
+    (data ?? []) as ActiveAccountMembership[],
+  );
 }

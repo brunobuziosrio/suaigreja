@@ -1,5 +1,8 @@
 import type { PlanTier } from "@/lib/billing-plans";
 import { resolveAccountContext } from "@/lib/account-context.server";
+import { createServerFn } from "@tanstack/react-start";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type ModuleStatus = "core" | "beta" | "lab" | "ready";
 export type ModuleRolloutStatus = "hidden" | "internal" | "beta" | "live";
@@ -63,22 +66,43 @@ export const MODULE_CATALOG: ModuleAccess[] = [
   { id: "reports", label: "Relatórios", path: "/relatorios", minimumTier: "pro", status: "ready", sellable: true },
   { id: "whatsapp", label: "WhatsApp", path: "/whatsapp", minimumTier: "pro", status: "beta", sellable: true },
   { id: "members", label: "Membros e pessoas", path: "/membros", minimumTier: "pro", status: "core", sellable: true },
-  { id: "congregations", label: "Multiunidade e congregações", path: "/congregacoes", minimumTier: "premium", status: "ready", sellable: true },
+  { id: "congregations", label: "Multiunidade e congregações", path: "/congregacoes", minimumTier: "pro", status: "ready", sellable: true },
   { id: "visitors", label: "Visitantes", path: "/visitantes", minimumTier: "pro", status: "ready", sellable: true },
   { id: "events", label: "Eventos", path: "/eventos", minimumTier: "pro", status: "core", sellable: true },
   { id: "festinhas", label: "Festinhas e barracas", path: "/festinhas", minimumTier: "pro", status: "beta", sellable: true },
   { id: "checkin", label: "Check-in", path: "/checkin", minimumTier: "pro", status: "ready", sellable: true },
-  { id: "child_checkin", label: "Check-in Infantil Seguro", path: "/checkin-infantil", minimumTier: "premium", status: "ready", sellable: true },
+  { id: "child_checkin", label: "Check-in Infantil Seguro", path: "/checkin-infantil", minimumTier: "pro", status: "ready", sellable: true },
   { id: "campaigns", label: "Campanhas e contribuições", path: "/campanhas", minimumTier: "pro", status: "core", sellable: true },
-  { id: "small_groups", label: "Células, grupos e pastorais", path: "/celulas", minimumTier: "premium", status: "ready", sellable: true },
+  { id: "small_groups", label: "Células, grupos e pastorais", path: "/celulas", minimumTier: "pro", status: "ready", sellable: true },
   { id: "education", label: "Ensino e turmas", path: "/ebd", minimumTier: "premium", status: "ready", sellable: true },
   { id: "documents", label: "Documentos", path: "/documentos", minimumTier: "premium", status: "beta", sellable: true },
-  { id: "finances", label: "Financeiro", path: "/finances", minimumTier: "premium", status: "ready", sellable: true },
-  { id: "bank_accounts", label: "Contas Bancárias e Pix", path: "/contas-bancarias", minimumTier: "premium", status: "ready", sellable: true },
-  { id: "cash_book", label: "Livro Caixa", path: "/livro-caixa", minimumTier: "premium", status: "ready", sellable: true },
-  { id: "volunteer_shifts", label: "Escalas", path: "/escalas", minimumTier: "premium", status: "ready", sellable: true },
+  { id: "finances", label: "Financeiro", path: "/finances", minimumTier: "pro", status: "ready", sellable: true },
+  { id: "bank_accounts", label: "Contas Bancárias e Pix", path: "/contas-bancarias", minimumTier: "pro", status: "ready", sellable: true },
+  { id: "cash_book", label: "Livro Caixa", path: "/livro-caixa", minimumTier: "pro", status: "ready", sellable: true },
+  { id: "volunteer_shifts", label: "Escalas", path: "/escalas", minimumTier: "pro", status: "ready", sellable: true },
   { id: "secretaria", label: "Secretaria Digital", path: "/secretaria", minimumTier: "pro", status: "beta", sellable: true },
 ];
+
+// Módulos mantidos no código, mas fora da navegação comercial da versão 1.0.
+// Eles só voltam ao menu quando a fase correspondente for autorizada e validada.
+const COMMERCIAL_NAVIGATION_HIDDEN_PATHS = new Set([
+  "/campanhas-whatsapp",
+  "/jornada-espiritual",
+  "/ausencias",
+  "/decisoes",
+  "/acompanhamento",
+  "/talentos",
+  "/acao-social",
+  "/assistente-eventos",
+  "/festinhas",
+  "/reservas",
+  "/patrimonio",
+  "/ebd",
+  "/devocional",
+  "/documentos",
+  "/embed",
+  "/marketplace",
+]);
 
 function getModuleForPath(pathname: string) {
   return MODULE_CATALOG.find((module) => pathname === module.path || pathname.startsWith(`${module.path}/`));
@@ -150,6 +174,58 @@ export function canAccessAccountPath(account: AccountAccess, pathname: string) {
   if (!access.billingActive) return false;
   return canAccessPath(access.tier, pathname);
 }
+
+export function isNavigationPathVisible(
+  account: AccountAccess,
+  pathname: string,
+  visibleModulePaths: readonly string[] | undefined,
+) {
+  if (!canAccessAccountPath(account, pathname)) return false;
+  if (COMMERCIAL_NAVIGATION_HIDDEN_PATHS.has(pathname)) return false;
+
+  const module = getModuleForPath(pathname);
+  return !module || !!visibleModulePaths?.includes(module.path);
+}
+
+export const getMyNavigationAccess = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { accountId } = await resolveAccountContext(context.userId);
+    const [{ data: account, error: accountError }, { data: flags, error: flagsError }, { data: rollouts, error: rolloutsError }, { data: overrides, error: overridesError }] = await Promise.all([
+      supabaseAdmin
+        .from("accounts")
+        .select("plan_tier, subscription_status, subscription_ends_at, trial_ends_at")
+        .eq("id", accountId)
+        .maybeSingle(),
+      supabaseAdmin.from("plan_feature_flags").select("feature_id, plan_tier, enabled"),
+      supabaseAdmin.from("module_rollouts").select("feature_id, status"),
+      supabaseAdmin
+        .from("account_feature_overrides")
+        .select("feature_id, enabled")
+        .eq("account_id", accountId),
+    ]);
+    if (accountError) throw new Error(accountError.message);
+    if (flagsError) throw new Error(flagsError.message);
+    if (rolloutsError) throw new Error(rolloutsError.message);
+    if (overridesError) throw new Error(overridesError.message);
+
+    const tier = resolveAccountAccess(account).tier;
+    const flagsByModule = new Map((flags ?? []).filter((flag) => flag.plan_tier === tier).map((flag) => [flag.feature_id, flag.enabled]));
+    const rolloutByModule = new Map((rollouts ?? []).map((rollout) => [rollout.feature_id, rollout.status]));
+    const overridesByModule = new Map((overrides ?? []).map((override) => [override.feature_id, override.enabled]));
+
+    const visibleModulePaths = MODULE_CATALOG.filter((module) => {
+      if (!canAccessAccountPath(account, module.path)) return false;
+      const override = overridesByModule.get(module.id);
+      if (override === false) return false;
+      if (override === true) return true;
+      const rollout = rolloutByModule.get(module.id) ?? (module.status === "lab" ? "internal" : "live");
+      if (rollout !== "live" || module.status === "beta") return false;
+      return flagsByModule.get(module.id) ?? true;
+    }).map((module) => module.path);
+
+    return { visibleModulePaths };
+  });
 
 export function getMinimumTier(pathname: string) {
   return getModuleForPath(pathname)?.minimumTier ?? null;

@@ -33,7 +33,7 @@ import {
 import { getMyAccount } from "@/lib/account.functions";
 import { getIsAdmin } from "@/lib/admin.functions";
 import { getReligionTerms } from "@/lib/religion-profiles";
-import { canAccessAccountPath } from "@/lib/plan-access";
+import { getMyNavigationAccess, isNavigationPathVisible } from "@/lib/plan-access";
 import { adminItems, getNavGroups, primaryItems, type NavItem } from "@/lib/navigation";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -44,6 +44,7 @@ export function GlobalSearch() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const fetchAccount = useServerFn(getMyAccount);
+  const fetchNavigationAccess = useServerFn(getMyNavigationAccess);
   const checkAdmin = useServerFn(getIsAdmin);
 
   const { data: account } = useQuery({
@@ -56,6 +57,12 @@ export function GlobalSearch() {
     queryKey: ["is-admin"],
     queryFn: () => checkAdmin(),
     enabled: !!user,
+  });
+  const { data: navigationAccess } = useQuery({
+    queryKey: ["navigation-access", user?.id],
+    queryFn: () => fetchNavigationAccess(),
+    enabled: !!user,
+    staleTime: 60_000,
   });
 
   const terms = getReligionTerms(account?.religion_profile);
@@ -76,8 +83,8 @@ export function GlobalSearch() {
   const navItems = useMemo<NavItem[]>(() => {
     const groups = getNavGroups(terms);
     const flat = [...primaryItems, ...groups.flatMap((group) => group.items)];
-    return flat.filter((item) => canAccessAccountPath(account, item.url));
-  }, [account, terms]);
+    return flat.filter((item) => isNavigationPathVisible(account, item.url, navigationAccess?.visibleModulePaths));
+  }, [account, navigationAccess, terms]);
 
   const quickActions = useMemo<QuickAction[]>(() => {
     const actions: QuickAction[] = [
@@ -87,8 +94,8 @@ export function GlobalSearch() {
       { title: "Nova solicitação", url: "/secretaria", icon: ClipboardList, description: "Registrar pedido na secretaria" },
       { title: "Enviar WhatsApp", url: "/whatsapp", icon: MessageCircle, description: "Abrir mensagens e comunicados" },
     ];
-    return actions.filter((action) => canAccessAccountPath(account, action.url));
-  }, [account, terms]);
+    return actions.filter((action) => isNavigationPathVisible(account, action.url, navigationAccess?.visibleModulePaths));
+  }, [account, navigationAccess, terms]);
 
   const adminNav = useMemo<NavItem[]>(() => {
     if (!adminCheck?.isAdmin) return [];
