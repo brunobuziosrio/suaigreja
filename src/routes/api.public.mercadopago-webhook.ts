@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
 import { resolveMercadoPagoAccessToken } from "@/lib/admin-payment-settings.functions";
+import { validateMercadoPagoWebhookSignature } from "@/lib/mercadopago-webhook-signature.server";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -200,6 +201,17 @@ export const Route = createFileRoute("/api/public/mercadopago-webhook")({
         const rawPaymentId = readPaymentId(payload, url);
         if (!rawPaymentId) return json({ error: "missing payment id" }, 400);
         const paymentId = String(rawPaymentId);
+
+        const signature = validateMercadoPagoWebhookSignature({
+          xSignature: request.headers.get("x-signature"),
+          xRequestId: request.headers.get("x-request-id"),
+          dataId: paymentId,
+          secret: process.env.MERCADOPAGO_WEBHOOK_SECRET,
+        });
+        if (!signature.ok) {
+          const status = signature.reason === "not_configured" ? 503 : 401;
+          return json({ error: "invalid webhook signature" }, status);
+        }
 
         const accountId = url.searchParams.get("account_id");
         if (accountId) return handleDonationWebhook(accountId, paymentId, payload);
