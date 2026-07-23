@@ -9,6 +9,7 @@ import {
 import { requireModuleAccess } from "@/lib/plan-access";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
+import { getPlatformPaymentLabel } from "@/lib/platform-payment-label.server";
 import { z } from "zod";
 
 function slugify(input: string) {
@@ -346,7 +347,7 @@ export const registerForEvent = createServerFn({ method: "POST" })
     const payment = await createMercadoPagoPixPayment({
       accessToken,
       amountCents: page.price_cents,
-      description: `Inscrição: ${page.title}`,
+    description: getPlatformPaymentLabel(),
       payerEmail: data.email,
       payerName: data.name,
       notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),

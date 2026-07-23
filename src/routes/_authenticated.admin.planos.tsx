@@ -14,9 +14,9 @@ import { listAccountFeatureOverrides, listAllAccounts, listModuleRollouts, listP
 export const Route = createFileRoute("/_authenticated/admin/planos")({ component: PlanFeaturesPage });
 
 const tiers = [
-  { id: "essential", label: "Essencial", tone: "bg-stone-100" },
-  { id: "pro", label: "Pro", tone: "bg-sky-50" },
-  { id: "premium", label: "Premium", tone: "bg-amber-50" },
+  { id: "essential", label: "Presença", tone: "bg-stone-100" },
+  { id: "pro", label: "Gestão", tone: "bg-sky-50" },
+  { id: "premium", label: "Rede", tone: "bg-amber-50" },
 ] as const;
 
 const rolloutOptions = [

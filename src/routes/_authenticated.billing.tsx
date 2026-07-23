@@ -18,7 +18,7 @@ import { Check, Copy, Lock, Loader2, QrCode, WalletCards } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
 
-const TIER_LABELS: Record<string, string> = { essential: "Essencial", pro: "Pro", premium: "Premium" };
+const TIER_LABELS: Record<string, string> = { essential: "Presença", pro: "Gestão", premium: "Rede" };
 
 export const Route = createFileRoute("/_authenticated/billing")({
   component: BillingPage,
@@ -177,26 +177,26 @@ function BillingPage() {
           </Card>
         )}
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-3 md:items-center">
           {PURCHASABLE_PLAN_IDS.map((planId) => {
             const plan = BILLING_PLANS[planId];
             return (
               <Card
                 key={plan.id}
                 className={selectedPlanId === planId
-                  ? "space-y-5 border-primary p-6 shadow-md ring-2 ring-primary/20"
-                  : plan.tier === "pro" ? "space-y-5 border-primary/40 p-6 shadow-sm" : "space-y-5 p-6"}
+                  ? "space-y-5 border-primary p-6 shadow-xl ring-2 ring-primary/20 md:-my-3"
+                  : plan.tier === "pro" ? "space-y-5 border-primary bg-primary/[0.035] p-6 shadow-xl ring-1 ring-primary/20 md:-my-3" : "space-y-5 p-6"}
               >
                 <div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-lg font-semibold">Plano {plan.tierLabel}</h2>
                     <div className="flex items-center gap-2">
                       {selectedPlanId === planId && <Badge>Sua escolha</Badge>}
-                      {plan.cycle === "annual" && <Badge variant="neutral">2 meses grátis</Badge>}
+                      {plan.tier === "pro" && <Badge>Recomendado</Badge>}
                     </div>
                   </div>
                   <p className="mt-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Ciclo {plan.cycleLabel.toLowerCase()}
+                    Cobrança mensal por PIX
                   </p>
                   <div className="text-3xl font-semibold mt-3">{plan.priceLabel}</div>
                 </div>

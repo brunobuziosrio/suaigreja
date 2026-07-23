@@ -8,6 +8,7 @@ import {
 } from "@/lib/admin-payment-settings.functions";
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
+import { getPlatformPaymentLabel } from "@/lib/platform-payment-label.server";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { z } from "zod";
 
@@ -102,7 +103,7 @@ export const createProductPixPayment = createServerFn({ method: "POST" })
     const payment = await createMercadoPagoPixPayment({
       accessToken: await getMercadoPagoAccessToken(),
       amountCents: product.price_cents,
-      description: product.name,
+    description: getPlatformPaymentLabel(),
       payerEmail: customerEmail,
       payerName: customerName,
       notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),

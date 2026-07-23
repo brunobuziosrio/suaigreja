@@ -11,9 +11,9 @@ export type MarketingTier = {
 };
 
 const TIER_TAGLINES: Record<PlanTier, string> = {
-  essential: "Comece sua presença digital",
-  pro: "Organize pessoas, eventos e comunicação",
-  premium: "Opere sua igreja com mais profundidade",
+  essential: "Presença digital para começar",
+  pro: "A administração completa da comunidade",
+  premium: "Para redes e operações mais amplas",
 };
 
 export const MARKETING_TIERS: MarketingTier[] = (["essential", "pro", "premium"] as const).map((tier) => {

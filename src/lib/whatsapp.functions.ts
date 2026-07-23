@@ -16,6 +16,7 @@ import {
   resolveMercadoPagoAccessToken,
 } from "@/lib/admin-payment-settings.functions";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
+import { getPlatformPaymentLabel } from "@/lib/platform-payment-label.server";
 import {
   createWhatsappMessageId,
   refundWhatsappMessageCredits,
@@ -241,7 +242,7 @@ export const createWhatsappCreditPixPayment = createServerFn({ method: "POST" })
       payment = await createMercadoPagoPixPayment({
         accessToken: await getMercadoPagoAccessToken(),
         amountCents: pack.price_cents,
-        description: `Créditos WhatsApp - ${pack.name}`,
+    description: getPlatformPaymentLabel(),
         payerEmail: customerEmail,
         payerName: customerName,
         notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),

@@ -10,6 +10,7 @@ import {
 import { resolveAccountContext } from "@/lib/account-context.server";
 import { requirePermission } from "@/lib/permission-guard.server";
 import { createMercadoPagoPixPayment } from "@/lib/mercadopago-payments.server";
+import { getPlatformPaymentLabel } from "@/lib/platform-payment-label.server";
 import { z } from "zod";
 
 async function getMercadoPagoAccessToken() {
@@ -93,11 +94,8 @@ export const createPixPayment = createServerFn({ method: "POST" })
       .object({
         plan: z.enum([
           "essential_monthly",
-          "essential_annual",
           "pro_monthly",
-          "pro_annual",
           "premium_monthly",
-          "premium_annual",
         ]),
       })
       .parse(input),
@@ -139,7 +137,7 @@ export const createPixPayment = createServerFn({ method: "POST" })
     const payment = await createMercadoPagoPixPayment({
       accessToken: await getMercadoPagoAccessToken(),
       amountCents: planInfo.amountCents,
-      description: `Saas Igreja - Plano ${planInfo.label}`,
+    description: getPlatformPaymentLabel(),
       payerEmail: customerEmail,
       payerName: customerName,
       notificationUrl: buildMercadoPagoPlatformNotificationUrl(getRequestHost()),
