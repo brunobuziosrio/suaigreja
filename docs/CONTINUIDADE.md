@@ -213,5 +213,13 @@ npx eslint src/lib/admin.functions.ts src/lib/account.functions.ts src/lib/membe
 - `npx tsc --noEmit`, `npm run lint`, `npm test` (12 testes), `npm run build` e
   o smoke E2E público desktop/mobile (4 testes) passaram. Os testes autenticados
   continuam condicionados a `E2E_USER_EMAIL` e `E2E_USER_PASSWORD`.
+- Em 22/07, a suíte E2E autenticada foi ampliada para dashboard, equipe,
+  finanças, acompanhamento, vocabulário, campanhas WhatsApp e talentos, em
+  desktop e mobile. Ela foi validada sem credenciais: lint passou, o smoke
+  público passou (4 testes) e os 14 cenários autenticados ficaram corretamente
+  ignorados até existirem credenciais isoladas.
+- `npm run secrets:check` passou em 22/07. O convite de equipe continua
+  operacional sem SMTP por meio de link seguro de ativação; a prova real de
+  entrega SMTP continua pendente de uma caixa de teste.
 - O build ainda emite apenas avisos conhecidos de tamanho de chunk/imports de
   terceiros. `dist/` continua sendo artefato de build e não deve ser versionado.
