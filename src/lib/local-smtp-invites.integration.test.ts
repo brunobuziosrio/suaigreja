@@ -17,6 +17,9 @@ describe("MISSION-003: SMTP local e convite de equipe", () => {
     expect(env.accept("org-a", "member@example.test", invite.token)).toMatchObject({ accountId: "org-a", role: "recepcao" });
     expect(() => env.accept("org-a", "member@example.test", invite.token)).toThrow(/utilizado/);
     expect(env.memberCount("org-a", "member@example.test")).toBe(1);
+    const duplicateEmail = env.invite("org-a", "Organização E2E A", "Admin A", "member@example.test", "recepcao");
+    env.accept("org-a", "member@example.test", duplicateEmail.token);
+    expect(env.memberCount("org-a", "member@example.test")).toBe(1);
   });
 
   it("rejeita expiração, cancelamento, token anterior, e manipulação de outra organização", () => {
