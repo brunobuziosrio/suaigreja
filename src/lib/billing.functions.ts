@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHost } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { BILLING_PLANS, type BillingPlanId } from "@/lib/billing-plans";
+import {
+  BILLING_PLANS,
+  getPurchasablePlan,
+  PURCHASABLE_PLAN_IDS,
+  type BillingPlanId,
+} from "@/lib/billing-plans";
 import {
   buildMercadoPagoPlatformNotificationUrl,
   resolveMercadoPagoAccessToken,
@@ -92,11 +97,7 @@ export const createPixPayment = createServerFn({ method: "POST" })
   .validator((input) =>
     z
       .object({
-        plan: z.enum([
-          "essential_monthly",
-          "pro_monthly",
-          "premium_monthly",
-        ]),
+        plan: z.enum(PURCHASABLE_PLAN_IDS),
       })
       .parse(input),
   )
@@ -104,8 +105,8 @@ export const createPixPayment = createServerFn({ method: "POST" })
     const { claims } = context;
     const { accountId } = await resolveAccountContext(context.userId);
     await requirePermission(context, "settings", "manage");
-    const plan = data.plan as BillingPlanId;
-    const planInfo = BILLING_PLANS[plan];
+    const plan = data.plan;
+    const planInfo = getPurchasablePlan(plan);
 
     const { data: existingPending, error: pendingError } = await supabaseAdmin
       .from("payment_transactions")

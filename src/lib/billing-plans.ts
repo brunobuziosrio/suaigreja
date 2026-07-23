@@ -53,6 +53,24 @@ export const PURCHASABLE_PLAN_IDS = [
   "premium_monthly",
 ] as const satisfies readonly BillingPlanId[];
 
+export type PurchasableBillingPlanId = (typeof PURCHASABLE_PLAN_IDS)[number];
+
+/**
+ * Mantém a regra comercial de checkout em uma única fonte. Planos legados e
+ * anuais podem continuar existindo para leitura/histórico, mas não podem ser
+ * iniciados como uma nova cobrança pela interface ou por uma requisição direta.
+ */
+export function isPurchasablePlanId(planId: string): planId is PurchasableBillingPlanId {
+  return (PURCHASABLE_PLAN_IDS as readonly string[]).includes(planId);
+}
+
+export function getPurchasablePlan(planId: string) {
+  if (!isPurchasablePlanId(planId)) {
+    throw new Error("Este plano não está disponível para uma nova cobrança.");
+  }
+  return BILLING_PLANS[planId];
+}
+
 export const PLAN_FEATURES: Record<PlanTier, readonly string[]> = {
   essential: ["Site público em subdomínio", "Agenda, notícias e transmissões", "Pedidos de oração, Pix e campanhas", "Galeria e comunicação essencial"],
   pro: ["Tudo do Presença", "Pessoas, famílias, visitantes e grupos", "Eventos, inscrições e check-in infantil", "Financeiro, escalas, secretaria e relatórios", "WhatsApp e campanhas de contribuição"],
