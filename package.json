@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "test": "vitest run src",
     "test:tenant-isolation": "vitest run src/lib/e2e-local-multitenant.test.ts",
+    "test:tenant-isolation-real": "vitest run src/lib/real-schema-multitenant.integration.test.ts",
     "test:e2e": "playwright test",
     "secrets:check": "node scripts/check-secrets.mjs",
     "preview": "vite preview",
@@ -79,6 +80,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.4",
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.3.1",
     "@playwright/test": "^1.61.1",
